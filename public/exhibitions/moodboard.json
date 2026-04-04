@@ -1,0 +1,83 @@
+{
+  "id": "moodboard",
+  "name": "배경화면",
+  "nameKo": "배경화면",
+  "description": "haerong22's mood board collection",
+  "descriptionKo": "haerong22의 무드보드 컬렉션",
+  "roomShape": "rectangular",
+  "roomWidth": 16,
+  "roomDepth": 12,
+  "wallHeight": 4.0,
+  "artworks": [
+    {
+      "id": "76ab3512157943c7b6a4d80ced151329",
+      "imageUrl": "/img-proxy/preview/v1/content/real/5f4b798811fbe/IMAGE/e3d22c4f-6d85-4ff4-a163-4dcef51a9fe4.jpeg",
+      "title": "달과 노을 노트북 배경화면",
+      "artist": "OCS5f4b7987f3289",
+      "width": 1.6,
+      "height": 1.2,
+      "frameStyle": "modern",
+      "frameColor": "#2a2a2a"
+    },
+    {
+      "id": "7e9a234be111463a8df55cfc316d160c",
+      "imageUrl": "/img-proxy/preview/v1/content/real/5f4b798811fbe/IMAGE/b0352246-7b88-4bd9-9ec3-c97d759fb761.jpeg",
+      "title": "cozy",
+      "artist": "OCS5f4b7987f3289",
+      "width": 1.6,
+      "height": 1.2,
+      "frameStyle": "modern",
+      "frameColor": "#2a2a2a"
+    },
+    {
+      "id": "852da5b0e6434b88bf551fa4d50f8246",
+      "imageUrl": "/img-proxy/preview/v1/content/real/5f4b798811fbe/IMAGE/e2933f1d-4284-4b01-98d0-975910bee15c.jpeg",
+      "title": "Baby romantica",
+      "artist": "OCS5f4b7987f3289",
+      "width": 1.6,
+      "height": 1.2,
+      "frameStyle": "modern",
+      "frameColor": "#2a2a2a"
+    },
+    {
+      "id": "550e91fabff348faaf9c63ce492af371",
+      "imageUrl": "/img-proxy/preview/v1/content/real/d84480fe1dd64b5793336485088882e0/IMAGE/44c0c96b-7f14-4891-bf90-d1efce06f120.jpg",
+      "title": "[배경화면] 혀땳은앙꼬_수영장",
+      "artist": "'도'시락을 아십니까?",
+      "width": 1.6,
+      "height": 1.2,
+      "frameStyle": "modern",
+      "frameColor": "#333333"
+    },
+    {
+      "id": "ab22869c1775421ab7ddfff83457bbfd",
+      "imageUrl": "/img-proxy/preview/v1/content/real/72777a45aeab471f9287b5ff54d3aed9/IMAGE/84cbf769-3fc9-413f-9097-e2f80335d372.jpg",
+      "title": "인어공주의 바다",
+      "artist": "선풍기필수",
+      "width": 1.6,
+      "height": 1.2,
+      "frameStyle": "modern",
+      "frameColor": "#333333"
+    },
+    {
+      "id": "cb2f71113f1a446ab1401db14adf9bd4",
+      "imageUrl": "/img-proxy/preview/v1/content/real/5f4b798811fbe/IMAGE/df7cd138-ea01-4dcd-88da-a4eabd6c13b8.jpeg",
+      "title": "무지개 노트북 배경화면",
+      "artist": "OCS5f4b7987f3289",
+      "width": 1.6,
+      "height": 1.2,
+      "frameStyle": "modern",
+      "frameColor": "#2a2a2a"
+    },
+    {
+      "id": "356a706aedc44591b04eaa85f7294594",
+      "imageUrl": "/img-proxy/preview/v1/content/real/5ec8a1ceb74cd/IMAGE/a7331c4f-57e1-46c6-80a3-2856c3a727c0.png",
+      "title": "Loved you",
+      "artist": "BG5ec8a1ceb71e8",
+      "width": 1.6,
+      "height": 1.2,
+      "frameStyle": "modern",
+      "frameColor": "#2a2a2a"
+    }
+  ]
+}

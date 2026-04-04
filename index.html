@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>3D Exhibition</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; overflow: hidden; background: #111; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+    #canvas { display: block; width: 100%; height: 100%; }
+
+    /* Loading Screen */
+    #loading-screen {
+      position: fixed; inset: 0; z-index: 100;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      background: #0a0a0a; color: #fff; transition: opacity 0.6s ease;
+    }
+    #loading-screen.hidden { opacity: 0; pointer-events: none; }
+    #loading-title { font-size: 2rem; font-weight: 300; letter-spacing: 0.3em; margin-bottom: 2rem; text-transform: uppercase; }
+    #loading-bar-container { width: 300px; height: 2px; background: #333; border-radius: 1px; overflow: hidden; }
+    #loading-bar { width: 0%; height: 100%; background: #fff; transition: width 0.3s ease; }
+    #loading-status { margin-top: 1rem; font-size: 0.85rem; color: #888; letter-spacing: 0.1em; }
+
+    /* Enter Prompt */
+    #enter-prompt {
+      display: none; margin-top: 2rem; padding: 0.8rem 2.5rem;
+      background: transparent; border: 1px solid #555; color: #fff;
+      font-size: 1rem; letter-spacing: 0.15em; cursor: pointer;
+      transition: all 0.3s ease; text-transform: uppercase;
+    }
+    #enter-prompt:hover { background: #fff; color: #000; border-color: #fff; }
+    #enter-prompt.visible { display: block; }
+
+    /* Crosshair */
+    #crosshair {
+      position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+      width: 20px; height: 20px; z-index: 10; pointer-events: none; display: none;
+    }
+    #crosshair::before, #crosshair::after {
+      content: ''; position: absolute; background: rgba(255,255,255,0.5);
+    }
+    #crosshair::before { width: 2px; height: 100%; left: 50%; transform: translateX(-50%); }
+    #crosshair::after { width: 100%; height: 2px; top: 50%; transform: translateY(-50%); }
+    #crosshair.visible { display: block; }
+
+    /* HUD */
+    #hud {
+      position: fixed; bottom: 1.5rem; left: 50%; transform: translateX(-50%);
+      color: rgba(255,255,255,0.5); font-size: 0.75rem; letter-spacing: 0.1em;
+      text-align: center; z-index: 10; pointer-events: none; display: none;
+      transition: opacity 0.5s ease;
+    }
+    #hud.visible { display: block; }
+
+    /* Artwork Info Panel */
+    #artwork-panel {
+      position: fixed; right: 0; top: 0; bottom: 0; width: 380px;
+      background: rgba(0,0,0,0.92); color: #fff; z-index: 20;
+      padding: 3rem 2rem; transform: translateX(100%);
+      transition: transform 0.4s cubic-bezier(0.4,0,0.2,1);
+      overflow-y: auto; backdrop-filter: blur(20px);
+    }
+    #artwork-panel.visible { transform: translateX(0); }
+    #artwork-panel .close-btn {
+      position: absolute; top: 1rem; right: 1rem;
+      background: none; border: none; color: #888; font-size: 1.5rem; cursor: pointer;
+      transition: color 0.2s;
+    }
+    #artwork-panel .close-btn:hover { color: #fff; }
+    #artwork-panel .art-title { font-size: 1.5rem; font-weight: 300; margin-bottom: 0.5rem; letter-spacing: 0.05em; }
+    #artwork-panel .art-artist { font-size: 1rem; color: #aaa; margin-bottom: 0.3rem; }
+    #artwork-panel .art-year { font-size: 0.85rem; color: #666; margin-bottom: 1.5rem; }
+    #artwork-panel .art-divider { width: 40px; height: 1px; background: #444; margin-bottom: 1.5rem; }
+    #artwork-panel .art-desc { font-size: 0.9rem; line-height: 1.7; color: #ccc; font-weight: 300; }
+    #artwork-panel .art-category { font-size: 0.8rem; color: #999; margin-bottom: 0.8rem; }
+    #artwork-panel .art-tags { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 1.2rem; }
+    #artwork-panel .art-tag { font-size: 0.75rem; color: #aaa; background: rgba(255,255,255,0.08); padding: 0.25rem 0.6rem; border-radius: 12px; }
+    #artwork-panel .art-stats { font-size: 0.8rem; color: #666; margin-top: 1.2rem; }
+    #artwork-panel .art-loading { font-size: 0.85rem; color: #666; }
+
+    /* Exhibition Picker */
+    #exhibition-picker {
+      position: fixed; inset: 0; z-index: 50;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      background: #0a0a0a; color: #fff;
+    }
+    #exhibition-picker.hidden { display: none; }
+    #picker-title { font-size: 1.2rem; font-weight: 300; letter-spacing: 0.3em; text-transform: uppercase; margin-bottom: 3rem; color: #888; }
+    .exhibition-card {
+      width: 400px; max-width: 90vw; padding: 1.5rem 2rem; margin-bottom: 1rem;
+      background: #161616; border: 1px solid #2a2a2a; cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    .exhibition-card:hover { border-color: #555; background: #1e1e1e; }
+    .exhibition-card h3 { font-weight: 400; font-size: 1.1rem; margin-bottom: 0.4rem; }
+    .exhibition-card p { font-size: 0.8rem; color: #888; }
+
+    @media (max-width: 768px) {
+      #artwork-panel { width: 100%; }
+      #loading-title { font-size: 1.3rem; }
+    }
+  </style>
+</head>
+<body>
+  <canvas id="canvas"></canvas>
+
+  <div id="loading-screen">
+    <div id="loading-title">EXHIBITION</div>
+    <div id="loading-bar-container"><div id="loading-bar"></div></div>
+    <div id="loading-status">준비 중...</div>
+    <button id="enter-prompt">입장하기</button>
+  </div>
+
+  <div id="crosshair"></div>
+
+  <div id="hud">WASD 이동 · 마우스 시선 · 클릭 작품 감상 · ESC 나가기</div>
+
+  <div id="artwork-panel">
+    <button class="close-btn">&times;</button>
+    <h2 class="art-title"></h2>
+    <p class="art-artist"></p>
+    <p class="art-category"></p>
+    <p class="art-year"></p>
+    <div class="art-divider"></div>
+    <p class="art-desc"></p>
+    <div class="art-tags"></div>
+    <p class="art-stats"></p>
+    <p class="art-loading"></p>
+  </div>
+
+  <div id="exhibition-picker" class="hidden">
+    <div id="picker-title">전시 선택</div>
+    <div id="picker-list"></div>
+  </div>
+
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>
