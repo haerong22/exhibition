@@ -1,4 +1,5 @@
 import { defineConfig } from 'vite';
+import { resolve } from 'path';
 import fs from 'fs';
 
 export default defineConfig({
@@ -29,6 +30,10 @@ export default defineConfig({
     outDir: 'dist',
     assetsDir: 'assets',
     rollupOptions: {
+      input: {
+        main: resolve(__dirname, 'index.html'),
+        editor: resolve(__dirname, 'editor.html'),
+      },
       output: {
         manualChunks(id: string) {
           if (id.includes('node_modules/three')) {

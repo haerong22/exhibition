@@ -37,7 +37,7 @@ export class FirstPersonControls {
     this.pointerLock.unlock();
   }
 
-  setBoundary(b: { minX: number; maxX: number; minZ: number; maxZ: number }): void {
+  setBoundary(b: { minX: number; maxX: number; minZ: number; maxZ: number } | null): void {
     this.boundary = b;
   }
 

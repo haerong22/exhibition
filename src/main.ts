@@ -6,12 +6,17 @@ import { FirstPersonControls } from './controls/FirstPersonControls';
 import { TouchControls } from './controls/TouchControls';
 import { ArtworkInteraction } from './controls/ArtworkInteraction';
 import { GalleryBuilder } from './gallery/GalleryBuilder';
+import { TiledGalleryBuilder } from './gallery/TiledGalleryBuilder';
+import { TiledMapParser } from './gallery/TiledMapParser';
+import { TiledCollision } from './systems/TiledCollision';
 import { TextureManager } from './systems/TextureManager';
+import type { GridMap } from './types/tiled';
 import { ExhibitionLoader } from './systems/ExhibitionLoader';
 import { Router } from './systems/Router';
 import { LoadingScreen } from './ui/LoadingScreen';
 import { ArtworkInfoPanel } from './ui/ArtworkInfoPanel';
 import { HUD } from './ui/HUD';
+import { DEFAULTS } from './utils/constants';
 
 class App {
   private engine: Engine;
@@ -22,7 +27,9 @@ class App {
   private isMobile: boolean;
   private artworkInteraction: ArtworkInteraction;
   private galleryBuilder: GalleryBuilder;
+  private tiledBuilder: TiledGalleryBuilder;
   private textureManager: TextureManager;
+  private tiledCollision: TiledCollision | null = null;
   private loader: ExhibitionLoader;
   private router: Router;
   private loadingScreen: LoadingScreen;
@@ -40,6 +47,7 @@ class App {
     this.touchControls = new TouchControls(this.engine.camera);
     this.textureManager = new TextureManager();
     this.galleryBuilder = new GalleryBuilder(this.textureManager);
+    this.tiledBuilder = new TiledGalleryBuilder(this.textureManager);
     this.loader = new ExhibitionLoader();
     this.router = new Router();
     this.loadingScreen = new LoadingScreen();
@@ -65,6 +73,13 @@ class App {
           this.touchControls.update(delta);
         } else {
           this.fpControls.update(delta);
+        }
+        // Tile-based collision
+        if (this.tiledCollision) {
+          const cam = this.engine.camera;
+          const clamped = this.tiledCollision.clampPosition(cam.position.x, cam.position.z);
+          cam.position.x = clamped.x;
+          cam.position.z = clamped.z;
         }
       }
     });
@@ -169,11 +184,72 @@ class App {
 
   private async handleInitialRoute(): Promise<void> {
     const route = this.router.currentRoute();
-    if (route.type === 'exhibition') {
+    if (route.type === 'exhibition' && route.exhibitionId === 'editor-preview') {
+      await this.loadEditorPreview();
+    } else if (route.type === 'exhibition') {
       await this.loadExhibition(route.exhibitionId ?? 'default', route.configUrl);
     } else {
       await this.loadExhibition('moodboard');
     }
+  }
+
+  private async loadEditorPreview(): Promise<void> {
+    this.loadingScreen.show();
+    this.loadingScreen.setTitle('에디터 미리보기');
+
+    const raw = sessionStorage.getItem('editor-map');
+    if (!raw) {
+      this.loadingScreen.setTitle('오류');
+      document.getElementById('loading-status')!.textContent = '맵 데이터가 없습니다. 에디터에서 미리보기를 눌러주세요.';
+      return;
+    }
+
+    const gridMap: GridMap = JSON.parse(raw);
+    const parser = new TiledMapParser();
+    const parsedMap = parser.parse(gridMap);
+
+    // Build with empty artworks config for preview
+    const dummyConfig = {
+      id: 'editor-preview',
+      name: '에디터 미리보기',
+      description: '',
+      roomShape: 'rectangular' as const,
+      artworks: [],
+    };
+
+    // Pass original grid so builder knows where walls are for ceiling/floor coverage
+    this.tiledBuilder.setOriginalGrid(gridMap.grid);
+
+    const result = await this.tiledBuilder.build(parsedMap, dummyConfig, (loaded, total) =>
+      this.loadingScreen.updateProgress(loaded, total)
+    );
+
+    this.engine.scene.clear();
+    this.engine.scene.add(result.group);
+    this.engine.scene.fog = new THREE.Fog(0xf5f5f0, 10, 30);
+
+    // Set camera at spawn or center
+    const spawn = result.spawnPoint;
+    if (spawn) {
+      this.engine.camera.position.set(spawn.x, DEFAULTS.EYE_HEIGHT, spawn.z);
+    } else {
+      this.engine.camera.position.set(result.mapWidth / 2, DEFAULTS.EYE_HEIGHT, -result.mapDepth / 2);
+    }
+
+    // Clear old boundary, use tile-based collision instead
+    this.fpControls.setBoundary(null);
+    this.tiledCollision = new TiledCollision(result.walkableGrid, result.mapWidth, result.mapDepth);
+
+    this.artworkInteraction.setArtworks(this.tiledBuilder.artworkFrames);
+
+    this.loadingScreen.showEnterButton(() => {
+      if (this.isMobile) {
+        this.touchControls.enable();
+        this.hud.show();
+      } else {
+        this.fpControls.lock();
+      }
+    });
   }
 
   private async loadExhibition(id: string, configUrl?: string): Promise<void> {
@@ -196,6 +272,7 @@ class App {
 
       // Set camera to center of room
       this.engine.camera.position.set(0, 1.7, boundary.maxZ * 0.6);
+      this.tiledCollision = null;
       this.fpControls.setBoundary(boundary);
       this.touchControls.setBoundary(boundary);
 

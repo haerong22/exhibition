@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gallery Map Editor</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #0a0a0a; color: #fff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; height: 100vh; display: flex; flex-direction: column; }
+
+    /* Header */
+    .header { display: flex; align-items: center; justify-content: space-between; padding: 0.8rem 1.5rem; background: #111; border-bottom: 1px solid #222; }
+    .header h1 { font-size: 1rem; font-weight: 400; letter-spacing: 0.15em; text-transform: uppercase; color: #888; }
+    .header-actions { display: flex; gap: 0.6rem; }
+    .btn { padding: 0.5rem 1.2rem; border: 1px solid #444; background: transparent; color: #ccc; font-size: 0.8rem; cursor: pointer; transition: all 0.2s; letter-spacing: 0.05em; }
+    .btn:hover { background: #fff; color: #000; border-color: #fff; }
+    .btn.primary { background: #fff; color: #000; border-color: #fff; }
+    .btn.primary:hover { background: #ccc; }
+
+    /* Main layout */
+    .main { display: flex; flex: 1; overflow: hidden; }
+
+    /* Toolbar */
+    .toolbar { width: 220px; background: #111; border-right: 1px solid #222; padding: 1rem; display: flex; flex-direction: column; gap: 1rem; }
+    .tool-section h3 { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em; color: #666; margin-bottom: 0.6rem; }
+    .tool-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem; }
+    .tool-btn { padding: 0.6rem 0.5rem; border: 1px solid #2a2a2a; background: #1a1a1a; color: #aaa; font-size: 0.75rem; cursor: pointer; text-align: center; transition: all 0.2s; border-radius: 4px; }
+    .tool-btn:hover { border-color: #555; color: #fff; }
+    .tool-btn.active { border-color: #fff; color: #fff; background: #2a2a2a; }
+    .tool-btn .icon { font-size: 1.2rem; display: block; margin-bottom: 0.2rem; }
+
+    /* Size controls */
+    .size-row { display: flex; align-items: center; gap: 0.5rem; }
+    .size-row label { font-size: 0.75rem; color: #888; min-width: 25px; }
+    .size-row input { flex: 1; background: #1a1a1a; border: 1px solid #333; color: #fff; padding: 0.4rem; font-size: 0.8rem; width: 60px; text-align: center; }
+
+    /* Artwork ID input */
+    .artwork-input { display: none; margin-top: 0.5rem; }
+    .artwork-input.visible { display: block; }
+    .artwork-input label { font-size: 0.75rem; color: #888; display: block; margin-bottom: 0.3rem; }
+    .artwork-input input { width: 100%; background: #1a1a1a; border: 1px solid #333; color: #fff; padding: 0.4rem; font-size: 0.8rem; }
+    .artwork-input select { width: 100%; background: #1a1a1a; border: 1px solid #333; color: #fff; padding: 0.4rem; font-size: 0.8rem; margin-top: 0.3rem; }
+
+    /* Canvas area */
+    .canvas-area { flex: 1; display: flex; align-items: center; justify-content: center; overflow: auto; background: #080808; position: relative; }
+    #grid-canvas { cursor: crosshair; image-rendering: pixelated; }
+
+    /* Status */
+    .status { padding: 0.4rem 1.5rem; background: #111; border-top: 1px solid #222; font-size: 0.75rem; color: #666; display: flex; justify-content: space-between; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>Gallery Map Editor</h1>
+    <div class="header-actions">
+      <button class="btn" id="btn-clear">초기화</button>
+      <button class="btn" id="btn-export">JSON 내보내기</button>
+      <button class="btn primary" id="btn-preview">3D 미리보기</button>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="toolbar">
+      <div class="tool-section">
+        <h3>도구</h3>
+        <div class="tool-grid">
+          <button class="tool-btn active" data-tool="floor"><span class="icon">⬜</span>바닥</button>
+          <button class="tool-btn" data-tool="wall"><span class="icon">⬛</span>벽</button>
+          <button class="tool-btn" data-tool="door"><span class="icon">🚪</span>문</button>
+          <button class="tool-btn" data-tool="artwork"><span class="icon">🖼</span>작품</button>
+          <button class="tool-btn" data-tool="spawn"><span class="icon">📍</span>시작점</button>
+          <button class="tool-btn" data-tool="empty"><span class="icon">✕</span>지우기</button>
+        </div>
+      </div>
+
+      <div class="artwork-input" id="artwork-options">
+        <label>작품 ID</label>
+        <input type="text" id="artwork-id" placeholder="예: art-1" />
+        <label style="margin-top:0.4rem">방향</label>
+        <select id="artwork-facing">
+          <option value="auto">자동 감지</option>
+          <option value="north">북 (위)</option>
+          <option value="south">남 (아래)</option>
+          <option value="east">동 (오른쪽)</option>
+          <option value="west">서 (왼쪽)</option>
+        </select>
+      </div>
+
+      <div class="tool-section">
+        <h3>맵 크기</h3>
+        <div class="size-row">
+          <label>W</label>
+          <input type="number" id="map-width" value="20" min="5" max="50" />
+          <label>H</label>
+          <input type="number" id="map-height" value="15" min="5" max="50" />
+        </div>
+        <button class="btn" id="btn-resize" style="margin-top:0.5rem;width:100%">크기 변경</button>
+      </div>
+
+      <div class="tool-section">
+        <h3>벽 높이 (m)</h3>
+        <input type="number" id="wall-height" value="4" min="2" max="8" step="0.5" style="width:100%;background:#1a1a1a;border:1px solid #333;color:#fff;padding:0.4rem;font-size:0.8rem;" />
+      </div>
+
+      <div class="tool-section" style="margin-top:auto">
+        <h3>범례</h3>
+        <div style="font-size:0.7rem;color:#888;line-height:1.8">
+          <div><span style="color:#e0d5c0">■</span> 바닥 — 걸을 수 있는 영역</div>
+          <div><span style="color:#555">■</span> 벽 — 막힌 영역</div>
+          <div><span style="color:#8B6914">■</span> 문 — 통과 가능</div>
+          <div><span style="color:#4a9eff">■</span> 작품 위치</div>
+          <div><span style="color:#4eff7e">■</span> 시작 위치</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="canvas-area">
+      <canvas id="grid-canvas"></canvas>
+    </div>
+  </div>
+
+  <div class="status">
+    <span id="status-pos">0, 0</span>
+    <span id="status-info">클릭/드래그로 타일 배치</span>
+  </div>
+
+  <script type="module" src="/src/editor.ts"></script>
+</body>
+</html>
