@@ -1,4 +1,4 @@
-import type { GridMap, TileType, ParsedMap, ParsedWallSegment, ParsedArtworkSlot } from '../types/tiled';
+import type { GridMap, TileType, ParsedMap, ParsedWallSegment, ParsedArtworkSlot, ParsedDoorway } from '../types/tiled';
 import { DEFAULTS } from '../utils/constants';
 
 export class TiledMapParser {
@@ -8,6 +8,7 @@ export class TiledMapParser {
     const walkableGrid: boolean[][] = [];
     const wallSegments: ParsedWallSegment[] = [];
     const artworkSlots: ParsedArtworkSlot[] = [];
+    const doorways: ParsedDoorway[] = [];
     let spawnPoint: { x: number; z: number } | null = null;
 
     // Build walkable grid and collect special tiles
@@ -20,6 +21,20 @@ export class TiledMapParser {
 
         if (cell.type === 'spawn') {
           spawnPoint = { x: col + 0.5, z: -(row + 0.5) };
+        }
+
+        if (cell.type === 'door') {
+          // Detect orientation: if wall/empty is above/below → horizontal passage, else vertical
+          const leftWall = col > 0 && (grid[row][col - 1].type === 'wall' || grid[row][col - 1].type === 'empty');
+          const rightWall = col < width - 1 && (grid[row][col + 1].type === 'wall' || grid[row][col + 1].type === 'empty');
+          // If walls are on left/right → passage goes along Z (vertical), pillars on X sides
+          // If walls are on top/bottom → passage goes along X (horizontal), pillars on Z sides
+          const orientation = (leftWall || rightWall) ? 'vertical' : 'horizontal';
+          doorways.push({
+            worldX: col + 0.5,
+            worldZ: -(row + 0.5),
+            orientation,
+          });
         }
 
         if (cell.type === 'artwork' && cell.artworkId) {
@@ -51,6 +66,7 @@ export class TiledMapParser {
       walkableGrid,
       wallSegments,
       artworkSlots,
+      doorways,
       spawnPoint,
     };
   }

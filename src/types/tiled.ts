@@ -34,6 +34,12 @@ export interface ParsedArtworkSlot {
   normalZ: number;
 }
 
+export interface ParsedDoorway {
+  worldX: number;
+  worldZ: number;
+  orientation: 'horizontal' | 'vertical'; // horizontal = passage along X, vertical = along Z
+}
+
 export interface ParsedMap {
   widthMeters: number;
   depthMeters: number;
@@ -41,5 +47,6 @@ export interface ParsedMap {
   walkableGrid: boolean[][];
   wallSegments: ParsedWallSegment[];
   artworkSlots: ParsedArtworkSlot[];
+  doorways: ParsedDoorway[];
   spawnPoint: { x: number; z: number } | null;
 }

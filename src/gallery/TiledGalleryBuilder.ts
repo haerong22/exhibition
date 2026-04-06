@@ -49,6 +49,9 @@ export class TiledGalleryBuilder {
     // Walls (DoubleSide so visible from both directions)
     this.buildWalls(group, parsedMap, h);
 
+    // Door frames
+    this.buildDoorFrames(group, parsedMap, h);
+
     // Lighting
     this.buildLighting(group, parsedMap, h);
 
@@ -160,6 +163,120 @@ export class TiledGalleryBuilder {
       mesh.receiveShadow = true;
       group.add(mesh);
     }
+  }
+
+  private buildDoorFrames(group: THREE.Group, map: ParsedMap, h: number): void {
+    const frameMat = new THREE.MeshStandardMaterial({
+      color: 0x8b7d6b, roughness: 0.4, metalness: 0.1,
+    });
+    const wallAboveMat = new THREE.MeshStandardMaterial({
+      color: COLORS.WALL, roughness: 0.92, side: THREE.DoubleSide,
+    });
+
+    const doorHeight = h * 0.75;
+    const frameThickness = 0.06;
+    const wallThickness = 0.12;
+
+    // Merge adjacent doors into groups
+    const merged = this.mergeDoors(map.doorways);
+
+    for (const doorGroup of merged) {
+      const { minX, maxX, minZ, maxZ, orientation } = doorGroup;
+      const centerX = (minX + maxX) / 2;
+      const centerZ = (minZ + maxZ) / 2;
+
+      if (orientation === 'vertical') {
+        // Passage along Z, pillars on X sides
+        const spanZ = maxZ - minZ;
+
+        // Left pillar
+        group.add(this.makeBox(frameThickness, doorHeight, spanZ, minX + frameThickness / 2, doorHeight / 2, centerZ, frameMat));
+        // Right pillar
+        group.add(this.makeBox(frameThickness, doorHeight, spanZ, maxX - frameThickness / 2, doorHeight / 2, centerZ, frameMat));
+        // Top beam
+        group.add(this.makeBox(maxX - minX, frameThickness, spanZ, centerX, doorHeight, centerZ, frameMat));
+        // Wall above door — full width and depth to seal the gap (slightly inset to avoid z-fighting)
+        if (doorHeight < h) {
+          const aboveH = h - doorHeight - 0.01;
+          group.add(this.makeBox(maxX - minX - 0.01, aboveH, spanZ - 0.01, centerX, doorHeight + aboveH / 2, centerZ, wallAboveMat));
+        }
+      } else {
+        // Passage along X, pillars on Z sides
+        const spanX = maxX - minX;
+
+        // Front pillar (positive Z)
+        group.add(this.makeBox(spanX, doorHeight, frameThickness, centerX, doorHeight / 2, maxZ - frameThickness / 2, frameMat));
+        // Back pillar (negative Z)
+        group.add(this.makeBox(spanX, doorHeight, frameThickness, centerX, doorHeight / 2, minZ + frameThickness / 2, frameMat));
+        // Top beam
+        group.add(this.makeBox(spanX, frameThickness, maxZ - minZ, centerX, doorHeight, centerZ, frameMat));
+        // Wall above door — full width and depth to seal the gap (slightly inset to avoid z-fighting)
+        if (doorHeight < h) {
+          const aboveH = h - doorHeight - 0.01;
+          group.add(this.makeBox(spanX - 0.01, aboveH, maxZ - minZ - 0.01, centerX, doorHeight + aboveH / 2, centerZ, wallAboveMat));
+        }
+      }
+    }
+  }
+
+  private makeBox(w: number, h: number, d: number, x: number, y: number, z: number, mat: THREE.Material): THREE.Mesh {
+    const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
+    mesh.position.set(x, y, z);
+    return mesh;
+  }
+
+  private mergeDoors(doorways: ParsedMap['doorways']): { minX: number; maxX: number; minZ: number; maxZ: number; orientation: string }[] {
+    if (doorways.length === 0) return [];
+
+    // Group by orientation and adjacency
+    const used = new Set<number>();
+    const groups: { minX: number; maxX: number; minZ: number; maxZ: number; orientation: string }[] = [];
+
+    for (let i = 0; i < doorways.length; i++) {
+      if (used.has(i)) continue;
+      used.add(i);
+
+      const d = doorways[i];
+      let minX = d.worldX - 0.5;
+      let maxX = d.worldX + 0.5;
+      let minZ = d.worldZ - 0.5;
+      let maxZ = d.worldZ + 0.5;
+
+      // Find adjacent doors with same orientation
+      let found = true;
+      while (found) {
+        found = false;
+        for (let j = 0; j < doorways.length; j++) {
+          if (used.has(j)) continue;
+          if (doorways[j].orientation !== d.orientation) continue;
+
+          const dj = doorways[j];
+          const djMinX = dj.worldX - 0.5;
+          const djMaxX = dj.worldX + 0.5;
+          const djMinZ = dj.worldZ - 0.5;
+          const djMaxZ = dj.worldZ + 0.5;
+
+          // Check if adjacent (touching)
+          const touchX = Math.abs(djMinX - maxX) < 0.01 || Math.abs(djMaxX - minX) < 0.01;
+          const touchZ = Math.abs(djMinZ - maxZ) < 0.01 || Math.abs(djMaxZ - minZ) < 0.01;
+          const overlapX = djMinX < maxX + 0.01 && djMaxX > minX - 0.01;
+          const overlapZ = djMinZ < maxZ + 0.01 && djMaxZ > minZ - 0.01;
+
+          if ((touchX && overlapZ) || (touchZ && overlapX)) {
+            used.add(j);
+            minX = Math.min(minX, djMinX);
+            maxX = Math.max(maxX, djMaxX);
+            minZ = Math.min(minZ, djMinZ);
+            maxZ = Math.max(maxZ, djMaxZ);
+            found = true;
+          }
+        }
+      }
+
+      groups.push({ minX, maxX, minZ, maxZ, orientation: d.orientation });
+    }
+
+    return groups;
   }
 
   private buildLighting(group: THREE.Group, map: ParsedMap, h: number): void {
