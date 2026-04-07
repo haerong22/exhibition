@@ -10,6 +10,15 @@ const COLORS: Record<TileType, string> = {
   spawn: '#4eff7e',
 };
 
+const MOODBOARD_API_BASE = '/api-proxy/proj/v1/mood-boards';
+
+interface ProjectItem {
+  projectId: string;
+  title: string;
+  imageUrl: string;
+  owner: { nickname: string };
+}
+
 class MapEditor {
   private canvas: HTMLCanvasElement;
   private ctx: CanvasRenderingContext2D;
@@ -17,8 +26,8 @@ class MapEditor {
   private height = 15;
   private grid: TileCell[][] = [];
   private currentTool: TileType = 'floor';
-  private artworkIdCounter = 1;
   private isDrawing = false;
+  private projects: ProjectItem[] = [];
 
   constructor() {
     this.canvas = document.getElementById('grid-canvas') as HTMLCanvasElement;
@@ -27,6 +36,38 @@ class MapEditor {
     this.initGrid();
     this.bindEvents();
     this.render();
+  }
+
+  private async loadMoodboard(moodboardId: string): Promise<void> {
+    const statusEl = document.getElementById('moodboard-status')!;
+    const select = document.getElementById('artwork-select') as HTMLSelectElement;
+
+    statusEl.textContent = '불러오는 중...';
+    statusEl.style.color = '#888';
+    select.innerHTML = '<option value="">불러오는 중...</option>';
+
+    try {
+      const res = await fetch(`${MOODBOARD_API_BASE}/${moodboardId}/projects`);
+      if (!res.ok) throw new Error('not found');
+      const data = await res.json();
+      this.projects = data.elements ?? [];
+
+      select.innerHTML = '<option value="">-- 작품 선택 --</option>';
+      for (const p of this.projects) {
+        const opt = document.createElement('option');
+        opt.value = p.projectId;
+        opt.textContent = `${p.title} (${p.owner.nickname})`;
+        select.appendChild(opt);
+      }
+
+      statusEl.textContent = `${this.projects.length}개 작품 로드 완료`;
+      statusEl.style.color = '#4eff7e';
+    } catch {
+      this.projects = [];
+      select.innerHTML = '<option value="">로드 실패</option>';
+      statusEl.textContent = '무드보드를 찾을 수 없습니다';
+      statusEl.style.color = '#ff6b6b';
+    }
   }
 
   private initGrid(): void {
@@ -93,6 +134,24 @@ class MapEditor {
     document.getElementById('btn-preview')!.addEventListener('click', () => {
       this.preview();
     });
+
+    // Load moodboard
+    document.getElementById('btn-load-moodboard')!.addEventListener('click', () => {
+      const id = (document.getElementById('moodboard-id') as HTMLInputElement).value.trim();
+      if (id) this.loadMoodboard(id);
+    });
+    (document.getElementById('moodboard-id') as HTMLInputElement).addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        const id = (e.target as HTMLInputElement).value.trim();
+        if (id) this.loadMoodboard(id);
+      }
+    });
+  }
+
+  private getSelectedArtworkId(): string {
+    const select = (document.getElementById('artwork-select') as HTMLSelectElement).value;
+    const manual = (document.getElementById('artwork-id') as HTMLInputElement).value;
+    return select || manual || '';
   }
 
   private handleDraw(e: MouseEvent): void {
@@ -105,8 +164,12 @@ class MapEditor {
     const cell: TileCell = { type: this.currentTool };
 
     if (this.currentTool === 'artwork') {
-      const idInput = (document.getElementById('artwork-id') as HTMLInputElement).value;
-      cell.artworkId = idInput || `art-${this.artworkIdCounter++}`;
+      const artId = this.getSelectedArtworkId();
+      if (!artId) {
+        alert('작품을 선택하거나 ID를 입력해주세요');
+        return;
+      }
+      cell.artworkId = artId;
       const facing = (document.getElementById('artwork-facing') as HTMLSelectElement).value;
       if (facing !== 'auto') cell.wallFacing = facing as TileCell['wallFacing'];
     }
@@ -135,7 +198,10 @@ class MapEditor {
     if (row >= 0 && row < this.height && col >= 0 && col < this.width) {
       const cell = this.grid[row][col];
       let info = cell.type;
-      if (cell.artworkId) info += ` (${cell.artworkId})`;
+      if (cell.artworkId) {
+        const proj = this.projects.find(p => p.projectId === cell.artworkId);
+        info += proj ? ` (${proj.title})` : ` (${cell.artworkId})`;
+      }
       document.getElementById('status-info')!.textContent = info;
     }
   }
@@ -211,6 +277,52 @@ class MapEditor {
     };
   }
 
+  private buildArtworksConfig(): { id: string; imageUrl: string; title: string; artist: string; width: number; height: number; frameStyle: string; frameColor: string }[] {
+    // Collect unique artwork IDs used in the grid
+    const usedIds = new Set<string>();
+    for (const row of this.grid) {
+      for (const cell of row) {
+        if (cell.type === 'artwork' && cell.artworkId) {
+          usedIds.add(cell.artworkId);
+        }
+      }
+    }
+
+    const artworks: { id: string; imageUrl: string; title: string; artist: string; width: number; height: number; frameStyle: string; frameColor: string }[] = [];
+
+    for (const id of usedIds) {
+      const proj = this.projects.find(p => p.projectId === id);
+      if (proj) {
+        // Use proxy URL for images
+        const imgUrl = proj.imageUrl.replace('https://dev-files.grafolio.ogq.me/', '/img-proxy/').replace('?type=THUMBNAIL', '');
+        artworks.push({
+          id: proj.projectId,
+          imageUrl: imgUrl,
+          title: proj.title,
+          artist: proj.owner.nickname,
+          width: 1.4,
+          height: 1.0,
+          frameStyle: 'modern',
+          frameColor: '#2a2a2a',
+        });
+      } else {
+        // Manual ID — placeholder
+        artworks.push({
+          id,
+          imageUrl: '',
+          title: id,
+          artist: 'Unknown',
+          width: 1.4,
+          height: 1.0,
+          frameStyle: 'modern',
+          frameColor: '#2a2a2a',
+        });
+      }
+    }
+
+    return artworks;
+  }
+
   private exportJSON(): void {
     const data = this.getGridMap();
     const json = JSON.stringify(data, null, 2);
@@ -225,8 +337,10 @@ class MapEditor {
 
   private preview(): void {
     const data = this.getGridMap();
-    // Store in sessionStorage and navigate to viewer
+    const artworks = this.buildArtworksConfig();
+
     sessionStorage.setItem('editor-map', JSON.stringify(data));
+    sessionStorage.setItem('editor-artworks', JSON.stringify(artworks));
     window.open('/#/exhibition/editor-preview', '_blank');
   }
 }

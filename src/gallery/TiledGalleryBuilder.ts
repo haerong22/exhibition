@@ -175,7 +175,6 @@ export class TiledGalleryBuilder {
 
     const doorHeight = h * 0.75;
     const frameThickness = 0.06;
-    const wallThickness = 0.12;
 
     // Merge adjacent doors into groups
     const merged = this.mergeDoors(map.doorways);

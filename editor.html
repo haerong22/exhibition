@@ -73,9 +73,22 @@
         </div>
       </div>
 
+      <div class="tool-section">
+        <h3>무드보드</h3>
+        <div style="display:flex;gap:0.3rem">
+          <input type="text" id="moodboard-id" placeholder="무드보드 ID" style="flex:1;background:#1a1a1a;border:1px solid #333;color:#fff;padding:0.4rem;font-size:0.75rem;" />
+          <button class="btn" id="btn-load-moodboard" style="padding:0.4rem 0.6rem;font-size:0.7rem;">불러오기</button>
+        </div>
+        <div id="moodboard-status" style="font-size:0.7rem;color:#666;margin-top:0.3rem;"></div>
+      </div>
+
       <div class="artwork-input" id="artwork-options">
-        <label>작품 ID</label>
-        <input type="text" id="artwork-id" placeholder="예: art-1" />
+        <label>작품 선택</label>
+        <select id="artwork-select">
+          <option value="">무드보드를 먼저 불러오세요</option>
+        </select>
+        <label style="margin-top:0.4rem">또는 직접 입력</label>
+        <input type="text" id="artwork-id" placeholder="작품 ID 직접 입력" />
         <label style="margin-top:0.4rem">방향</label>
         <select id="artwork-facing">
           <option value="auto">자동 감지</option>

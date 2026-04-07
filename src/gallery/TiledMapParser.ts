@@ -42,10 +42,19 @@ export class TiledMapParser {
           const rotation = this.facingToRotation(facing);
           const normal = this.facingToNormal(facing);
 
+          // Push artwork against the wall (offset toward the wall direction)
+          const wallOffset = 0.48;
+          let ax = col + 0.5;
+          let az = -(row + 0.5);
+          if (facing === 'south') az += wallOffset;  // wall is north, push toward north
+          if (facing === 'north') az -= wallOffset;   // wall is south, push toward south
+          if (facing === 'west') ax += wallOffset;    // wall is east, push toward east
+          if (facing === 'east') ax -= wallOffset;    // wall is west, push toward west
+
           artworkSlots.push({
             artworkId: cell.artworkId,
-            worldX: col + 0.5,
-            worldZ: -(row + 0.5),
+            worldX: ax,
+            worldZ: az,
             wallFacing: facing,
             rotation,
             normalX: normal.x,
@@ -160,12 +169,13 @@ export class TiledMapParser {
   }
 
   private detectWallFacing(grid: GridMap['grid'], col: number, row: number, w: number, h: number): 'north' | 'south' | 'east' | 'west' {
-    // Check neighbors to find which direction has a wall/empty
-    if (row > 0 && (grid[row - 1][col].type === 'wall' || grid[row - 1][col].type === 'empty')) return 'north';
-    if (row < h - 1 && (grid[row + 1][col].type === 'wall' || grid[row + 1][col].type === 'empty')) return 'south';
-    if (col < w - 1 && (grid[row][col + 1].type === 'wall' || grid[row][col + 1].type === 'empty')) return 'east';
-    if (col > 0 && (grid[row][col - 1].type === 'wall' || grid[row][col - 1].type === 'empty')) return 'west';
-    return 'north';
+    // Artwork faces AWAY from the wall (into the room)
+    // If wall is above (north) → artwork faces south
+    if (row > 0 && (grid[row - 1][col].type === 'wall' || grid[row - 1][col].type === 'empty')) return 'south';
+    if (row < h - 1 && (grid[row + 1][col].type === 'wall' || grid[row + 1][col].type === 'empty')) return 'north';
+    if (col < w - 1 && (grid[row][col + 1].type === 'wall' || grid[row][col + 1].type === 'empty')) return 'west';
+    if (col > 0 && (grid[row][col - 1].type === 'wall' || grid[row][col - 1].type === 'empty')) return 'east';
+    return 'south';
   }
 
   private facingToRotation(facing: string): number {

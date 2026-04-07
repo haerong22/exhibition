@@ -208,19 +208,22 @@ class App {
     const parser = new TiledMapParser();
     const parsedMap = parser.parse(gridMap);
 
-    // Build with empty artworks config for preview
-    const dummyConfig = {
+    // Load artworks from editor if available
+    const artworksRaw = sessionStorage.getItem('editor-artworks');
+    const artworks = artworksRaw ? JSON.parse(artworksRaw) : [];
+
+    const previewConfig = {
       id: 'editor-preview',
       name: '에디터 미리보기',
       description: '',
       roomShape: 'rectangular' as const,
-      artworks: [],
+      artworks,
     };
 
     // Pass original grid so builder knows where walls are for ceiling/floor coverage
     this.tiledBuilder.setOriginalGrid(gridMap.grid);
 
-    const result = await this.tiledBuilder.build(parsedMap, dummyConfig, (loaded, total) =>
+    const result = await this.tiledBuilder.build(parsedMap, previewConfig, (loaded, total) =>
       this.loadingScreen.updateProgress(loaded, total)
     );
 
