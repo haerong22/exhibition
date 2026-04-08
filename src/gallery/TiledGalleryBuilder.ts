@@ -6,12 +6,150 @@ import { TextureManager } from '../systems/TextureManager';
 import { COLORS, DEFAULTS } from '../utils/constants';
 import { disposeObject } from '../utils/disposer';
 
+export interface TextureConfig {
+  floor: string;
+  wall: string;
+  ceiling: string;
+}
+
+// Built-in procedural texture presets
+const TEXTURE_PRESETS: Record<string, { color: number; generate?: (canvas: HTMLCanvasElement) => void }> = {
+  'wood-light': {
+    color: 0xd4b896,
+    generate: (c) => {
+      const ctx = c.getContext('2d')!;
+      c.width = 512; c.height = 512;
+      ctx.fillStyle = '#d4b896';
+      ctx.fillRect(0, 0, 512, 512);
+      for (let i = 0; i < 60; i++) {
+        ctx.strokeStyle = `rgba(160,120,70,${0.05 + Math.random() * 0.1})`;
+        ctx.lineWidth = 1 + Math.random() * 2;
+        const y = Math.random() * 512;
+        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(512, y + (Math.random() - 0.5) * 20); ctx.stroke();
+      }
+      // Plank lines
+      for (let x = 0; x < 512; x += 64) {
+        ctx.strokeStyle = 'rgba(100,70,40,0.15)';
+        ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, 512); ctx.stroke();
+      }
+    },
+  },
+  'wood-dark': {
+    color: 0x8b6f47,
+    generate: (c) => {
+      const ctx = c.getContext('2d')!;
+      c.width = 512; c.height = 512;
+      ctx.fillStyle = '#8b6f47';
+      ctx.fillRect(0, 0, 512, 512);
+      for (let i = 0; i < 80; i++) {
+        ctx.strokeStyle = `rgba(60,40,20,${0.05 + Math.random() * 0.12})`;
+        ctx.lineWidth = 1 + Math.random() * 3;
+        const y = Math.random() * 512;
+        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(512, y + (Math.random() - 0.5) * 15); ctx.stroke();
+      }
+      for (let x = 0; x < 512; x += 72) {
+        ctx.strokeStyle = 'rgba(40,25,10,0.2)';
+        ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, 512); ctx.stroke();
+      }
+    },
+  },
+  'marble': {
+    color: 0xf0ece4,
+    generate: (c) => {
+      const ctx = c.getContext('2d')!;
+      c.width = 512; c.height = 512;
+      ctx.fillStyle = '#f0ece4';
+      ctx.fillRect(0, 0, 512, 512);
+      for (let i = 0; i < 30; i++) {
+        ctx.strokeStyle = `rgba(180,170,160,${0.08 + Math.random() * 0.12})`;
+        ctx.lineWidth = 1 + Math.random() * 4;
+        ctx.beginPath();
+        let x = Math.random() * 512, y = Math.random() * 512;
+        ctx.moveTo(x, y);
+        for (let s = 0; s < 8; s++) {
+          x += (Math.random() - 0.5) * 120;
+          y += (Math.random() - 0.5) * 120;
+          ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+      }
+    },
+  },
+  'concrete': {
+    color: 0xb0b0a8,
+    generate: (c) => {
+      const ctx = c.getContext('2d')!;
+      c.width = 512; c.height = 512;
+      ctx.fillStyle = '#b0b0a8';
+      ctx.fillRect(0, 0, 512, 512);
+      const imgData = ctx.getImageData(0, 0, 512, 512);
+      for (let i = 0; i < imgData.data.length; i += 4) {
+        const n = (Math.random() - 0.5) * 20;
+        imgData.data[i] += n; imgData.data[i + 1] += n; imgData.data[i + 2] += n;
+      }
+      ctx.putImageData(imgData, 0, 0);
+    },
+  },
+  'plaster': {
+    color: 0xf5f0e8,
+    generate: (c) => {
+      const ctx = c.getContext('2d')!;
+      c.width = 512; c.height = 512;
+      ctx.fillStyle = '#f5f0e8';
+      ctx.fillRect(0, 0, 512, 512);
+      const imgData = ctx.getImageData(0, 0, 512, 512);
+      for (let i = 0; i < imgData.data.length; i += 4) {
+        const n = (Math.random() - 0.5) * 10;
+        imgData.data[i] += n; imgData.data[i + 1] += n; imgData.data[i + 2] += n;
+      }
+      ctx.putImageData(imgData, 0, 0);
+    },
+  },
+  'brick': {
+    color: 0xb5705a,
+    generate: (c) => {
+      const ctx = c.getContext('2d')!;
+      c.width = 512; c.height = 512;
+      ctx.fillStyle = '#c8b09a';
+      ctx.fillRect(0, 0, 512, 512);
+      const bw = 64, bh = 32, gap = 3;
+      for (let row = 0; row < 512 / bh; row++) {
+        const offset = (row % 2) * (bw / 2);
+        for (let col = -1; col < 512 / bw + 1; col++) {
+          const r = 160 + Math.random() * 30, g = 90 + Math.random() * 30, b = 70 + Math.random() * 20;
+          ctx.fillStyle = `rgb(${r},${g},${b})`;
+          ctx.fillRect(col * bw + offset + gap / 2, row * bh + gap / 2, bw - gap, bh - gap);
+        }
+      }
+    },
+  },
+  'white-tile': {
+    color: 0xf8f8f8,
+    generate: (c) => {
+      const ctx = c.getContext('2d')!;
+      c.width = 512; c.height = 512;
+      ctx.fillStyle = '#f8f8f8';
+      ctx.fillRect(0, 0, 512, 512);
+      ctx.strokeStyle = '#e0e0e0';
+      ctx.lineWidth = 2;
+      for (let x = 0; x <= 512; x += 128) {
+        ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, 512); ctx.stroke();
+      }
+      for (let y = 0; y <= 512; y += 128) {
+        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(512, y); ctx.stroke();
+      }
+    },
+  },
+};
+
 export class TiledGalleryBuilder {
   private textureManager: TextureManager;
   private currentGroup: THREE.Group | null = null;
   artworkFrames: ArtworkFrame[] = [];
-  // Store original grid for floor/ceiling coverage
   private originalGrid: string[][] = [];
+  private texConfig: TextureConfig = { floor: '', wall: '', ceiling: '' };
 
   constructor(textureManager: TextureManager) {
     this.textureManager = textureManager;
@@ -19,6 +157,57 @@ export class TiledGalleryBuilder {
 
   setOriginalGrid(grid: { type: string }[][]): void {
     this.originalGrid = grid.map(row => row.map(cell => cell.type));
+  }
+
+  setTextureConfig(config: TextureConfig): void {
+    this.texConfig = config;
+  }
+
+  private async createMaterial(
+    presetOrUrl: string,
+    fallbackColor: number,
+    roughness: number,
+    repeatX = 1,
+    repeatY = 1,
+    side: THREE.Side = THREE.FrontSide
+  ): Promise<THREE.MeshStandardMaterial> {
+    const mat = new THREE.MeshStandardMaterial({ color: fallbackColor, roughness, metalness: 0, side });
+
+    if (!presetOrUrl) return mat;
+
+    let texture: THREE.Texture | null = null;
+
+    // Check if it's a built-in preset
+    const preset = TEXTURE_PRESETS[presetOrUrl];
+    if (preset) {
+      const canvas = document.createElement('canvas');
+      if (preset.generate) {
+        preset.generate(canvas);
+        texture = new THREE.CanvasTexture(canvas);
+      }
+      mat.color.set(preset.color);
+    } else if (presetOrUrl.startsWith('http') || presetOrUrl.startsWith('/')) {
+      // It's a URL
+      try {
+        const loader = new THREE.TextureLoader();
+        loader.setCrossOrigin('anonymous');
+        texture = await loader.loadAsync(presetOrUrl);
+      } catch {
+        // Failed to load, keep fallback color
+      }
+    }
+
+    if (texture) {
+      texture.colorSpace = THREE.SRGBColorSpace;
+      texture.wrapS = THREE.RepeatWrapping;
+      texture.wrapT = THREE.RepeatWrapping;
+      texture.repeat.set(repeatX, repeatY);
+      mat.map = texture;
+      mat.color.set(0xffffff);
+      mat.needsUpdate = true;
+    }
+
+    return mat;
   }
 
   async build(
@@ -40,14 +229,19 @@ export class TiledGalleryBuilder {
 
     const h = parsedMap.wallHeight;
 
-    // Floor (walkable tiles only)
-    this.buildFloor(group, parsedMap);
+    // Create materials with textures
+    const floorMat = await this.createMaterial(this.texConfig.floor, COLORS.FLOOR, 0.8, 2, 2);
+    const wallMat = await this.createMaterial(this.texConfig.wall, COLORS.WALL, 0.92, 1, 1, THREE.DoubleSide);
+    const ceilingMat = await this.createMaterial(this.texConfig.ceiling, COLORS.CEILING, 0.9);
 
-    // Ceiling (covers walkable + wall tiles to avoid black gaps)
-    this.buildCeiling(group, parsedMap, h);
+    // Floor
+    this.buildFloor(group, parsedMap, floorMat);
 
-    // Walls (DoubleSide so visible from both directions)
-    this.buildWalls(group, parsedMap, h);
+    // Ceiling
+    this.buildCeiling(group, parsedMap, h, ceilingMat);
+
+    // Walls
+    this.buildWalls(group, parsedMap, h, wallMat);
 
     // Door frames
     this.buildDoorFrames(group, parsedMap, h);
@@ -100,11 +294,7 @@ export class TiledGalleryBuilder {
     return map.walkableGrid[row][col];
   }
 
-  private buildFloor(group: THREE.Group, map: ParsedMap): void {
-    const mat = new THREE.MeshStandardMaterial({
-      color: COLORS.FLOOR, roughness: 0.8, metalness: 0.0,
-    });
-
+  private buildFloor(group: THREE.Group, map: ParsedMap, mat: THREE.MeshStandardMaterial): void {
     for (let row = 0; row < map.depthMeters; row++) {
       for (let col = 0; col < map.widthMeters; col++) {
         // Place floor under walkable tiles AND wall tiles
@@ -119,11 +309,7 @@ export class TiledGalleryBuilder {
     }
   }
 
-  private buildCeiling(group: THREE.Group, map: ParsedMap, h: number): void {
-    const mat = new THREE.MeshStandardMaterial({
-      color: COLORS.CEILING, roughness: 0.9, metalness: 0.0,
-    });
-
+  private buildCeiling(group: THREE.Group, map: ParsedMap, h: number, mat: THREE.MeshStandardMaterial): void {
     for (let row = 0; row < map.depthMeters; row++) {
       for (let col = 0; col < map.widthMeters; col++) {
         // Place ceiling over walkable tiles AND wall tiles
@@ -137,12 +323,7 @@ export class TiledGalleryBuilder {
     }
   }
 
-  private buildWalls(group: THREE.Group, map: ParsedMap, h: number): void {
-    const mat = new THREE.MeshStandardMaterial({
-      color: COLORS.WALL, roughness: 0.92, metalness: 0.0,
-      side: THREE.DoubleSide,
-    });
-
+  private buildWalls(group: THREE.Group, map: ParsedMap, h: number, mat: THREE.MeshStandardMaterial): void {
     for (const seg of map.wallSegments) {
       const geo = new THREE.PlaneGeometry(seg.length, h);
       const mesh = new THREE.Mesh(geo, mat);

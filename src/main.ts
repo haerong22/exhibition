@@ -223,6 +223,12 @@ class App {
     // Pass original grid so builder knows where walls are for ceiling/floor coverage
     this.tiledBuilder.setOriginalGrid(gridMap.grid);
 
+    // Load texture config
+    const texRaw = sessionStorage.getItem('editor-textures');
+    if (texRaw) {
+      this.tiledBuilder.setTextureConfig(JSON.parse(texRaw));
+    }
+
     const result = await this.tiledBuilder.build(parsedMap, previewConfig, (loaded, total) =>
       this.loadingScreen.updateProgress(loaded, total)
     );

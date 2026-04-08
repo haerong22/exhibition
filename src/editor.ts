@@ -135,6 +135,14 @@ class MapEditor {
       this.preview();
     });
 
+    // Texture select: show/hide custom URL input
+    for (const id of ['tex-floor', 'tex-wall', 'tex-ceiling']) {
+      document.getElementById(id)!.addEventListener('change', (e) => {
+        const urlInput = document.getElementById(id + '-url') as HTMLInputElement;
+        urlInput.style.display = (e.target as HTMLSelectElement).value === 'custom' ? 'block' : 'none';
+      });
+    }
+
     // Load moodboard
     document.getElementById('btn-load-moodboard')!.addEventListener('click', () => {
       const id = (document.getElementById('moodboard-id') as HTMLInputElement).value.trim();
@@ -335,12 +343,27 @@ class MapEditor {
     URL.revokeObjectURL(url);
   }
 
+  private getTextureConfig(): { floor: string; wall: string; ceiling: string } {
+    const resolve = (selectId: string, urlId: string): string => {
+      const sel = (document.getElementById(selectId) as HTMLSelectElement).value;
+      if (sel === 'custom') return (document.getElementById(urlId) as HTMLInputElement).value || '';
+      return sel;
+    };
+    return {
+      floor: resolve('tex-floor', 'tex-floor-url'),
+      wall: resolve('tex-wall', 'tex-wall-url'),
+      ceiling: resolve('tex-ceiling', 'tex-ceiling-url'),
+    };
+  }
+
   private preview(): void {
     const data = this.getGridMap();
     const artworks = this.buildArtworksConfig();
+    const textures = this.getTextureConfig();
 
     sessionStorage.setItem('editor-map', JSON.stringify(data));
     sessionStorage.setItem('editor-artworks', JSON.stringify(artworks));
+    sessionStorage.setItem('editor-textures', JSON.stringify(textures));
     window.open('/#/exhibition/editor-preview', '_blank');
   }
 }
