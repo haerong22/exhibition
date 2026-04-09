@@ -1,4 +1,4 @@
-import type { GridMap, TileType, ParsedMap, ParsedWallSegment, ParsedArtworkSlot, ParsedDoorway } from '../types/tiled';
+import type { GridMap, ParsedMap, ParsedWallSegment, ParsedArtworkSlot, ParsedDoorway } from '../types/tiled';
 import { DEFAULTS } from '../utils/constants';
 
 export class TiledMapParser {
@@ -65,7 +65,7 @@ export class TiledMapParser {
       }
     }
 
-    // Extract wall segments from floor edges
+    // Extract walls from explicit wall tiles
     this.extractWalls(grid, width, height, wallSegments);
 
     return {
@@ -80,90 +80,32 @@ export class TiledMapParser {
     };
   }
 
-  private isWalkable(type: TileType): boolean {
-    return type === 'floor' || type === 'door' || type === 'spawn' || type === 'artwork';
-  }
-
   private extractWalls(grid: GridMap['grid'], w: number, h: number, segments: ParsedWallSegment[]): void {
-    // Horizontal edges (north/south facing walls)
-    for (let row = 0; row <= h; row++) {
-      let segStart: number | null = null;
+    // For each wall tile, create wall planes on its edges that face walkable/empty neighbors
+    for (let row = 0; row < h; row++) {
       for (let col = 0; col < w; col++) {
-        const above = row > 0 ? grid[row - 1][col].type : 'empty';
-        const below = row < h ? grid[row][col].type : 'empty';
-        const aboveWalk = this.isWalkable(above);
-        const belowWalk = this.isWalkable(below);
+        if (grid[row][col].type !== 'wall') continue;
 
-        const needsWall = (aboveWalk && !belowWalk) || (!aboveWalk && belowWalk);
-        // Don't create walls at door tiles
-        const isDoor = (above === 'door' || below === 'door');
+        const x = col;
+        const z = -row;
 
-        if (needsWall && !isDoor) {
-          if (segStart === null) segStart = col;
-        } else {
-          if (segStart !== null) {
-            const nz = aboveWalk ? -1 : 1; // normal points away from walkable
-            segments.push({
-              startX: segStart,
-              startZ: -row,
-              endX: col,
-              endZ: -row,
-              normalX: 0,
-              normalZ: nz,
-              length: col - segStart,
-            });
-            segStart = null;
-          }
+        // Check each neighbor — if not a wall tile, place a wall face on that edge
+        // North edge (row-1)
+        if (row === 0 || grid[row - 1][col].type !== 'wall') {
+          segments.push({ startX: x, startZ: z, endX: x + 1, endZ: z, normalX: 0, normalZ: 1, length: 1 });
         }
-      }
-      if (segStart !== null) {
-        const above = row > 0 ? grid[row - 1][segStart].type : 'empty';
-        const nz = this.isWalkable(above) ? -1 : 1;
-        segments.push({
-          startX: segStart, startZ: -row,
-          endX: w, endZ: -row,
-          normalX: 0, normalZ: nz,
-          length: w - segStart,
-        });
-      }
-    }
-
-    // Vertical edges (east/west facing walls)
-    for (let col = 0; col <= w; col++) {
-      let segStart: number | null = null;
-      for (let row = 0; row < h; row++) {
-        const left = col > 0 ? grid[row][col - 1].type : 'empty';
-        const right = col < w ? grid[row][col].type : 'empty';
-        const leftWalk = this.isWalkable(left);
-        const rightWalk = this.isWalkable(right);
-
-        const needsWall = (leftWalk && !rightWalk) || (!leftWalk && rightWalk);
-        const isDoor = (left === 'door' || right === 'door');
-
-        if (needsWall && !isDoor) {
-          if (segStart === null) segStart = row;
-        } else {
-          if (segStart !== null) {
-            const nx = leftWalk ? 1 : -1;
-            segments.push({
-              startX: col, startZ: -segStart,
-              endX: col, endZ: -(row),
-              normalX: nx, normalZ: 0,
-              length: row - segStart,
-            });
-            segStart = null;
-          }
+        // South edge (row+1)
+        if (row === h - 1 || grid[row + 1][col].type !== 'wall') {
+          segments.push({ startX: x, startZ: z - 1, endX: x + 1, endZ: z - 1, normalX: 0, normalZ: -1, length: 1 });
         }
-      }
-      if (segStart !== null) {
-        const left = col > 0 ? grid[segStart][col - 1].type : 'empty';
-        const nx = this.isWalkable(left) ? 1 : -1;
-        segments.push({
-          startX: col, startZ: -segStart,
-          endX: col, endZ: -h,
-          normalX: nx, normalZ: 0,
-          length: h - segStart,
-        });
+        // West edge (col-1)
+        if (col === 0 || grid[row][col - 1].type !== 'wall') {
+          segments.push({ startX: x, startZ: z, endX: x, endZ: z - 1, normalX: -1, normalZ: 0, length: 1 });
+        }
+        // East edge (col+1)
+        if (col === w - 1 || grid[row][col + 1].type !== 'wall') {
+          segments.push({ startX: x + 1, startZ: z, endX: x + 1, endZ: z - 1, normalX: 1, normalZ: 0, length: 1 });
+        }
       }
     }
   }

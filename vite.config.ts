@@ -13,13 +13,13 @@ export default defineConfig({
     },
     proxy: {
       '/img-proxy': {
-        target: 'https://dev-files.grafolio.ogq.me',
+        target: 'https://files.grafolio.ogq.me',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/img-proxy/, ''),
         secure: true,
       },
       '/api-proxy': {
-        target: 'https://dev-api.grafolio.ogq.me',
+        target: 'https://api.grafolio.ogq.me',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api-proxy/, ''),
         secure: true,

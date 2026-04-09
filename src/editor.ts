@@ -1,4 +1,10 @@
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import type { TileType, TileCell, GridMap } from './types/tiled';
+import { TiledMapParser } from './gallery/TiledMapParser';
+import { TiledGalleryBuilder, type TextureConfig } from './gallery/TiledGalleryBuilder';
+import { TextureManager } from './systems/TextureManager';
+import { disposeObject } from './utils/disposer';
 
 const TILE_SIZE = 32;
 const COLORS: Record<TileType, string> = {
@@ -29,13 +35,147 @@ class MapEditor {
   private isDrawing = false;
   private projects: ProjectItem[] = [];
 
+  // 3D Preview
+  private previewRenderer: THREE.WebGLRenderer;
+  private previewScene: THREE.Scene;
+  private previewCamera: THREE.PerspectiveCamera;
+  private previewControls: OrbitControls;
+  private previewBuilder: TiledGalleryBuilder;
+  private textureManager: TextureManager;
+  private previewTimer: ReturnType<typeof setTimeout> | null = null;
+  private currentPreviewGroup: THREE.Group | null = null;
+
   constructor() {
     this.canvas = document.getElementById('grid-canvas') as HTMLCanvasElement;
     this.ctx = this.canvas.getContext('2d')!;
 
+    // Setup 3D preview
+    const previewCanvas = document.getElementById('preview-canvas') as HTMLCanvasElement;
+    this.previewRenderer = new THREE.WebGLRenderer({ canvas: previewCanvas, antialias: true });
+    this.previewRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    this.previewRenderer.toneMapping = THREE.ACESFilmicToneMapping;
+    this.previewRenderer.toneMappingExposure = 1.0;
+    this.previewRenderer.outputColorSpace = THREE.SRGBColorSpace;
+    this.previewRenderer.shadowMap.enabled = true;
+    this.previewRenderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+    this.previewScene = new THREE.Scene();
+    this.previewScene.background = new THREE.Color(0x111111);
+
+    this.previewCamera = new THREE.PerspectiveCamera(60, 1, 0.1, 100);
+    this.previewCamera.position.set(10, 8, 10);
+
+    this.previewControls = new OrbitControls(this.previewCamera, previewCanvas);
+    this.previewControls.enableDamping = true;
+    this.previewControls.dampingFactor = 0.1;
+    this.previewControls.target.set(5, 1, -5);
+
+    this.textureManager = new TextureManager();
+    this.previewBuilder = new TiledGalleryBuilder(this.textureManager);
+
     this.initGrid();
     this.bindEvents();
     this.render();
+    this.resizePreview();
+    this.startPreviewLoop();
+
+    window.addEventListener('resize', () => this.resizePreview());
+  }
+
+  private resizePreview(): void {
+    const panel = document.querySelector('.preview-panel') as HTMLElement;
+    const header = panel.querySelector('.preview-header') as HTMLElement;
+    const w = panel.clientWidth;
+    const h = panel.clientHeight - header.clientHeight;
+    this.previewRenderer.setSize(w, h);
+    this.previewCamera.aspect = w / h;
+    this.previewCamera.updateProjectionMatrix();
+  }
+
+  private startPreviewLoop(): void {
+    const animate = () => {
+      requestAnimationFrame(animate);
+      this.previewControls.update();
+      this.previewRenderer.render(this.previewScene, this.previewCamera);
+    };
+    animate();
+  }
+
+  private schedulePreviewUpdate(): void {
+    if (this.previewTimer) clearTimeout(this.previewTimer);
+    this.previewTimer = setTimeout(() => this.updatePreview(), 300);
+  }
+
+  private async updatePreview(): Promise<void> {
+    const statusEl = document.getElementById('preview-status')!;
+    const overlayEl = document.getElementById('preview-overlay')!;
+
+    // Check if there are any floor tiles
+    let hasFloor = false;
+    for (const row of this.grid) {
+      for (const cell of row) {
+        if (cell.type === 'floor' || cell.type === 'spawn' || cell.type === 'artwork' || cell.type === 'door') {
+          hasFloor = true;
+          break;
+        }
+      }
+      if (hasFloor) break;
+    }
+
+    if (!hasFloor) {
+      overlayEl.style.display = 'flex';
+      statusEl.textContent = '대기 중';
+      statusEl.style.color = '#666';
+      return;
+    }
+
+    statusEl.textContent = '업데이트 중...';
+    statusEl.style.color = '#ff0';
+    overlayEl.style.display = 'none';
+
+    // Clean previous
+    if (this.currentPreviewGroup) {
+      disposeObject(this.currentPreviewGroup);
+      this.previewScene.remove(this.currentPreviewGroup);
+      this.currentPreviewGroup = null;
+    }
+
+    const gridMap = this.getGridMap();
+    const parser = new TiledMapParser();
+    const parsedMap = parser.parse(gridMap);
+
+    const artworks = this.buildArtworksConfig();
+    const textures = this.getTextureConfig();
+
+    this.previewBuilder.setOriginalGrid(gridMap.grid);
+    this.previewBuilder.setTextureConfig(textures);
+
+    const config = {
+      id: 'preview',
+      name: 'Preview',
+      description: '',
+      roomShape: 'rectangular' as const,
+      artworks,
+    };
+
+    try {
+      const result = await this.previewBuilder.build(parsedMap, config);
+      this.currentPreviewGroup = result.group;
+      this.previewScene.add(result.group);
+
+      // Update camera target to center of map
+      const cx = parsedMap.widthMeters / 2;
+      const cz = -parsedMap.depthMeters / 2;
+      this.previewControls.target.set(cx, 1.5, cz);
+      this.previewCamera.position.set(cx + parsedMap.widthMeters * 0.6, parsedMap.wallHeight * 1.5, cz + parsedMap.depthMeters * 0.6);
+
+      statusEl.textContent = '최신';
+      statusEl.style.color = '#4eff7e';
+    } catch (e) {
+      statusEl.textContent = '오류';
+      statusEl.style.color = '#ff6b6b';
+      console.error('Preview error:', e);
+    }
   }
 
   private async loadMoodboard(moodboardId: string): Promise<void> {
@@ -108,13 +248,19 @@ class MapEditor {
       this.updateStatus(e);
       if (this.isDrawing) this.handleDraw(e);
     });
-    window.addEventListener('mouseup', () => { this.isDrawing = false; });
+    window.addEventListener('mouseup', () => {
+      if (this.isDrawing) {
+        this.isDrawing = false;
+        this.schedulePreviewUpdate();
+      }
+    });
 
     // Resize
     document.getElementById('btn-resize')!.addEventListener('click', () => {
       const w = parseInt((document.getElementById('map-width') as HTMLInputElement).value);
       const h = parseInt((document.getElementById('map-height') as HTMLInputElement).value);
       this.resize(w, h);
+      this.schedulePreviewUpdate();
     });
 
     // Clear
@@ -122,6 +268,7 @@ class MapEditor {
       if (confirm('맵을 초기화할까요?')) {
         this.initGrid();
         this.render();
+        this.schedulePreviewUpdate();
       }
     });
 
@@ -130,18 +277,25 @@ class MapEditor {
       this.exportJSON();
     });
 
-    // Preview
+    // Preview in new tab
     document.getElementById('btn-preview')!.addEventListener('click', () => {
-      this.preview();
+      this.previewInNewTab();
     });
 
-    // Texture select: show/hide custom URL input
+    // Texture select: show/hide custom URL input + trigger preview update
     for (const id of ['tex-floor', 'tex-wall', 'tex-ceiling']) {
       document.getElementById(id)!.addEventListener('change', (e) => {
         const urlInput = document.getElementById(id + '-url') as HTMLInputElement;
         urlInput.style.display = (e.target as HTMLSelectElement).value === 'custom' ? 'block' : 'none';
+        this.schedulePreviewUpdate();
       });
     }
+    for (const id of ['tex-floor-url', 'tex-wall-url', 'tex-ceiling-url']) {
+      document.getElementById(id)!.addEventListener('change', () => this.schedulePreviewUpdate());
+    }
+
+    // Wall height change
+    document.getElementById('wall-height')!.addEventListener('change', () => this.schedulePreviewUpdate());
 
     // Load moodboard
     document.getElementById('btn-load-moodboard')!.addEventListener('click', () => {
@@ -175,6 +329,7 @@ class MapEditor {
       const artId = this.getSelectedArtworkId();
       if (!artId) {
         alert('작품을 선택하거나 ID를 입력해주세요');
+        this.isDrawing = false;
         return;
       }
       cell.artworkId = artId;
@@ -224,16 +379,13 @@ class MapEditor {
         const x = col * TILE_SIZE;
         const y = row * TILE_SIZE;
 
-        // Fill
         ctx.fillStyle = COLORS[cell.type];
         ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE);
 
-        // Grid line
         ctx.strokeStyle = '#222';
         ctx.lineWidth = 1;
         ctx.strokeRect(x + 0.5, y + 0.5, TILE_SIZE - 1, TILE_SIZE - 1);
 
-        // Icons for special tiles
         if (cell.type === 'artwork') {
           ctx.fillStyle = '#fff';
           ctx.font = '10px sans-serif';
@@ -285,8 +437,20 @@ class MapEditor {
     };
   }
 
-  private buildArtworksConfig(): { id: string; imageUrl: string; title: string; artist: string; width: number; height: number; frameStyle: string; frameColor: string }[] {
-    // Collect unique artwork IDs used in the grid
+  private getTextureConfig(): TextureConfig {
+    const resolve = (selectId: string, urlId: string): string => {
+      const sel = (document.getElementById(selectId) as HTMLSelectElement).value;
+      if (sel === 'custom') return (document.getElementById(urlId) as HTMLInputElement).value || '';
+      return sel;
+    };
+    return {
+      floor: resolve('tex-floor', 'tex-floor-url'),
+      wall: resolve('tex-wall', 'tex-wall-url'),
+      ceiling: resolve('tex-ceiling', 'tex-ceiling-url'),
+    };
+  }
+
+  private buildArtworksConfig(): { id: string; imageUrl: string; title: string; artist: string; width: number; height: number; frameStyle: 'modern'; frameColor: string }[] {
     const usedIds = new Set<string>();
     for (const row of this.grid) {
       for (const cell of row) {
@@ -296,13 +460,12 @@ class MapEditor {
       }
     }
 
-    const artworks: { id: string; imageUrl: string; title: string; artist: string; width: number; height: number; frameStyle: string; frameColor: string }[] = [];
+    const artworks: { id: string; imageUrl: string; title: string; artist: string; width: number; height: number; frameStyle: 'modern'; frameColor: string }[] = [];
 
     for (const id of usedIds) {
       const proj = this.projects.find(p => p.projectId === id);
       if (proj) {
-        // Use proxy URL for images
-        const imgUrl = proj.imageUrl.replace('https://dev-files.grafolio.ogq.me/', '/img-proxy/').replace('?type=THUMBNAIL', '');
+        const imgUrl = proj.imageUrl.replace(/https:\/\/(dev-)?files\.grafolio\.ogq\.me\//, '/img-proxy/').replace('?type=THUMBNAIL', '');
         artworks.push({
           id: proj.projectId,
           imageUrl: imgUrl,
@@ -310,11 +473,10 @@ class MapEditor {
           artist: proj.owner.nickname,
           width: 1.4,
           height: 1.0,
-          frameStyle: 'modern',
+          frameStyle: 'modern' as const,
           frameColor: '#2a2a2a',
         });
       } else {
-        // Manual ID — placeholder
         artworks.push({
           id,
           imageUrl: '',
@@ -322,7 +484,7 @@ class MapEditor {
           artist: 'Unknown',
           width: 1.4,
           height: 1.0,
-          frameStyle: 'modern',
+          frameStyle: 'modern' as const,
           frameColor: '#2a2a2a',
         });
       }
@@ -343,20 +505,7 @@ class MapEditor {
     URL.revokeObjectURL(url);
   }
 
-  private getTextureConfig(): { floor: string; wall: string; ceiling: string } {
-    const resolve = (selectId: string, urlId: string): string => {
-      const sel = (document.getElementById(selectId) as HTMLSelectElement).value;
-      if (sel === 'custom') return (document.getElementById(urlId) as HTMLInputElement).value || '';
-      return sel;
-    };
-    return {
-      floor: resolve('tex-floor', 'tex-floor-url'),
-      wall: resolve('tex-wall', 'tex-wall-url'),
-      ceiling: resolve('tex-ceiling', 'tex-ceiling-url'),
-    };
-  }
-
-  private preview(): void {
+  private previewInNewTab(): void {
     const data = this.getGridMap();
     const artworks = this.buildArtworksConfig();
     const textures = this.getTextureConfig();

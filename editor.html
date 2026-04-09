@@ -41,9 +41,18 @@
     .artwork-input input { width: 100%; background: #1a1a1a; border: 1px solid #333; color: #fff; padding: 0.4rem; font-size: 0.8rem; }
     .artwork-input select { width: 100%; background: #1a1a1a; border: 1px solid #333; color: #fff; padding: 0.4rem; font-size: 0.8rem; margin-top: 0.3rem; }
 
-    /* Canvas area */
-    .canvas-area { flex: 1; display: flex; align-items: center; justify-content: center; overflow: auto; background: #080808; position: relative; }
+    /* Content area (2D + 3D split) */
+    .content { flex: 1; display: flex; overflow: hidden; }
+    .canvas-area { flex: 1; display: flex; align-items: center; justify-content: center; overflow: auto; background: #080808; position: relative; min-width: 0; }
     #grid-canvas { cursor: crosshair; image-rendering: pixelated; }
+
+    /* 3D Preview panel */
+    .preview-panel { width: 45%; min-width: 300px; background: #0a0a0a; border-left: 1px solid #222; position: relative; display: flex; flex-direction: column; }
+    .preview-header { display: flex; align-items: center; justify-content: space-between; padding: 0.5rem 1rem; background: #111; border-bottom: 1px solid #222; }
+    .preview-header span { font-size: 0.75rem; color: #666; text-transform: uppercase; letter-spacing: 0.1em; }
+    .preview-header .preview-status { font-size: 0.7rem; color: #4eff7e; }
+    #preview-canvas { flex: 1; width: 100%; display: block; }
+    .preview-overlay { position: absolute; inset: 0; top: 32px; display: flex; align-items: center; justify-content: center; color: #444; font-size: 0.85rem; pointer-events: none; }
 
     /* Status */
     .status { padding: 0.4rem 1.5rem; background: #111; border-top: 1px solid #222; font-size: 0.75rem; color: #666; display: flex; justify-content: space-between; }
@@ -166,8 +175,18 @@
       </div>
     </div>
 
-    <div class="canvas-area">
-      <canvas id="grid-canvas"></canvas>
+    <div class="content">
+      <div class="canvas-area">
+        <canvas id="grid-canvas"></canvas>
+      </div>
+      <div class="preview-panel">
+        <div class="preview-header">
+          <span>3D 미리보기</span>
+          <span class="preview-status" id="preview-status">대기 중</span>
+        </div>
+        <canvas id="preview-canvas"></canvas>
+        <div class="preview-overlay" id="preview-overlay">바닥 타일을 배치하면 미리보기가 시작됩니다</div>
+      </div>
     </div>
   </div>
 
