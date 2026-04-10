@@ -240,7 +240,7 @@ export class TiledGalleryBuilder {
     // Ceiling
     this.buildCeiling(group, parsedMap, h, ceilingMat);
 
-    // Walls
+    // Walls (solid boxes for each wall tile)
     this.buildWalls(group, parsedMap, h, wallMat);
 
     // Door frames
@@ -323,26 +323,18 @@ export class TiledGalleryBuilder {
     }
   }
 
-  private buildWalls(group: THREE.Group, map: ParsedMap, h: number, mat: THREE.MeshStandardMaterial): void {
-    for (const seg of map.wallSegments) {
-      const geo = new THREE.PlaneGeometry(seg.length, h);
-      const mesh = new THREE.Mesh(geo, mat);
-
-      const midX = (seg.startX + seg.endX) / 2;
-      const midZ = (seg.startZ + seg.endZ) / 2;
-      mesh.position.set(midX, h / 2, midZ);
-
-      // Orient wall
-      if (seg.normalZ !== 0) {
-        // Horizontal wall (along X axis)
-        mesh.rotation.y = seg.normalZ > 0 ? 0 : Math.PI;
-      } else {
-        // Vertical wall (along Z axis)
-        mesh.rotation.y = seg.normalX > 0 ? Math.PI / 2 : -Math.PI / 2;
+  private buildWalls(group: THREE.Group, _map: ParsedMap, h: number, mat: THREE.MeshStandardMaterial): void {
+    // Place a solid box for each wall tile
+    for (let row = 0; row < this.originalGrid.length; row++) {
+      for (let col = 0; col < this.originalGrid[row].length; col++) {
+        if (this.originalGrid[row][col] !== 'wall') continue;
+        const geo = new THREE.BoxGeometry(1, h, 1);
+        const mesh = new THREE.Mesh(geo, mat);
+        mesh.position.set(col + 0.5, h / 2, -(row + 0.5));
+        mesh.receiveShadow = true;
+        mesh.castShadow = true;
+        group.add(mesh);
       }
-
-      mesh.receiveShadow = true;
-      group.add(mesh);
     }
   }
 
@@ -484,6 +476,6 @@ export class TiledGalleryBuilder {
       this.currentGroup = null;
     }
     this.artworkFrames = [];
-    this.originalGrid = [];
+    // originalGrid and texConfig are kept — they're set before build() and needed during build()
   }
 }
