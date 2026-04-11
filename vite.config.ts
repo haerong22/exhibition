@@ -4,6 +4,21 @@ import fs from 'fs';
 
 export default defineConfig({
   base: '/',
+  plugins: [
+    {
+      name: 'trailing-slash-redirect',
+      configureServer(server) {
+        server.middlewares.use((req, _res, next) => {
+          if (req.url === '/editor') {
+            _res.writeHead(301, { Location: '/editor/' });
+            _res.end();
+            return;
+          }
+          next();
+        });
+      },
+    },
+  ],
   server: {
     host: 'test.ogq.me',
     port: 5173,
@@ -32,7 +47,7 @@ export default defineConfig({
     rollupOptions: {
       input: {
         main: resolve(__dirname, 'index.html'),
-        editor: resolve(__dirname, 'editor.html'),
+        editor: resolve(__dirname, 'editor/index.html'),
       },
       output: {
         manualChunks(id: string) {
