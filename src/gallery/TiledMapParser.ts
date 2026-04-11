@@ -128,11 +128,13 @@ export class TiledMapParser {
   }
 
   private facingToRotation(facing: string): number {
+    // Rotation around Y so that a PlaneGeometry's default +Z normal points in the facing direction.
+    // R_y(θ) applied to (0,0,1): θ=0→+Z, θ=π→-Z, θ=+π/2→+X, θ=-π/2→-X.
     switch (facing) {
       case 'north': return 0;
       case 'south': return Math.PI;
-      case 'east': return -Math.PI / 2;
-      case 'west': return Math.PI / 2;
+      case 'east': return Math.PI / 2;
+      case 'west': return -Math.PI / 2;
       default: return 0;
     }
   }
@@ -141,8 +143,8 @@ export class TiledMapParser {
     switch (facing) {
       case 'north': return { x: 0, z: 1 };
       case 'south': return { x: 0, z: -1 };
-      case 'east': return { x: -1, z: 0 };
-      case 'west': return { x: 1, z: 0 };
+      case 'east': return { x: 1, z: 0 };
+      case 'west': return { x: -1, z: 0 };
       default: return { x: 0, z: 1 };
     }
   }

@@ -77,6 +77,23 @@
     #artwork-panel .art-tag { font-size: 0.75rem; color: #aaa; background: rgba(255,255,255,0.08); padding: 0.25rem 0.6rem; border-radius: 12px; }
     #artwork-panel .art-stats { font-size: 0.8rem; color: #666; margin-top: 1.2rem; }
     #artwork-panel .art-loading { font-size: 0.85rem; color: #666; }
+    #artwork-panel .art-link {
+      display: inline-block; margin-top: 1rem; padding: 0.5rem 0.9rem;
+      font-size: 0.8rem; color: #ccc; text-decoration: none;
+      border: 1px solid #3a3a3a; border-radius: 3px;
+      transition: all 0.2s ease;
+    }
+    #artwork-panel .art-link:hover { border-color: #666; color: #fff; background: rgba(255,255,255,0.04); }
+    #artwork-panel .art-body {
+      font-size: 0.85rem; line-height: 1.7; color: #bbb; font-weight: 300;
+      margin-top: 1.5rem; padding-top: 1.2rem; border-top: 1px solid #2a2a2a;
+      word-break: break-word;
+    }
+    #artwork-panel .art-body p { margin: 0 0 0.8rem 0; }
+    #artwork-panel .art-body strong { color: #e0e0e0; font-weight: 500; }
+    #artwork-panel .art-body img { display: block; max-width: 100%; height: auto; margin: 0.8rem 0; border-radius: 3px; }
+    #artwork-panel .art-body a { color: #8ab4f8; text-decoration: none; }
+    #artwork-panel .art-body a:hover { text-decoration: underline; }
 
     /* Exhibition Picker */
     #exhibition-picker {
@@ -125,6 +142,8 @@
     <p class="art-desc"></p>
     <div class="art-tags"></div>
     <p class="art-stats"></p>
+    <a class="art-link" target="_blank" rel="noopener noreferrer">Grafolio에서 보기 →</a>
+    <div class="art-body"></div>
     <p class="art-loading"></p>
   </div>
 
