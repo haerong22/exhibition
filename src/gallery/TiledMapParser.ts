@@ -24,12 +24,19 @@ export class TiledMapParser {
         }
 
         if (cell.type === 'door') {
-          // Detect orientation: if wall/empty is above/below → horizontal passage, else vertical
-          const leftWall = col > 0 && (grid[row][col - 1].type === 'wall' || grid[row][col - 1].type === 'empty');
-          const rightWall = col < width - 1 && (grid[row][col + 1].type === 'wall' || grid[row][col + 1].type === 'empty');
-          // If walls are on left/right → passage goes along Z (vertical), pillars on X sides
-          // If walls are on top/bottom → passage goes along X (horizontal), pillars on Z sides
-          const orientation = (leftWall || rightWall) ? 'vertical' : 'horizontal';
+          // Detect orientation by looking at which axis the passage opens onto floor.
+          // A door replaces a wall tile, so along one axis its neighbors are floor-like
+          // (the passage direction) and along the other axis they're wall-like (the wall
+          // continues, possibly through more adjacent doors).
+          const isFloor = (t: string) => t === 'floor' || t === 'spawn' || t === 'artwork';
+          const floorN = row > 0 && isFloor(grid[row - 1][col].type);
+          const floorS = row < height - 1 && isFloor(grid[row + 1][col].type);
+          const floorE = col < width - 1 && isFloor(grid[row][col + 1].type);
+          const floorW = col > 0 && isFloor(grid[row][col - 1].type);
+          // Passage along X (E-W) → 'horizontal', passage along Z (N-S) → 'vertical'
+          // Prefer the axis where a floor neighbor exists; fall back to 'vertical'.
+          const orientation: 'horizontal' | 'vertical' =
+            (floorE || floorW) ? 'horizontal' : (floorN || floorS) ? 'vertical' : 'vertical';
           doorways.push({
             worldX: col + 0.5,
             worldZ: -(row + 0.5),

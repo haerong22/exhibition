@@ -244,7 +244,7 @@ export class TiledGalleryBuilder {
     this.buildWalls(group, parsedMap, h, wallMat);
 
     // Door frames
-    this.buildDoorFrames(group, parsedMap, h);
+    this.buildDoorFrames(group, parsedMap, h, wallMat);
 
     // Lighting
     this.buildLighting(group, parsedMap, h);
@@ -338,12 +338,9 @@ export class TiledGalleryBuilder {
     }
   }
 
-  private buildDoorFrames(group: THREE.Group, map: ParsedMap, h: number): void {
+  private buildDoorFrames(group: THREE.Group, map: ParsedMap, h: number, wallMat: THREE.MeshStandardMaterial): void {
     const frameMat = new THREE.MeshStandardMaterial({
       color: 0x8b7d6b, roughness: 0.4, metalness: 0.1,
-    });
-    const wallAboveMat = new THREE.MeshStandardMaterial({
-      color: COLORS.WALL, roughness: 0.92, side: THREE.DoubleSide,
     });
 
     const doorHeight = h * 0.75;
@@ -356,36 +353,33 @@ export class TiledGalleryBuilder {
       const { minX, maxX, minZ, maxZ, orientation } = doorGroup;
       const centerX = (minX + maxX) / 2;
       const centerZ = (minZ + maxZ) / 2;
+      const spanX = maxX - minX;
+      const spanZ = maxZ - minZ;
+      const aboveH = doorHeight < h ? h - doorHeight - 0.01 : 0;
 
-      if (orientation === 'vertical') {
-        // Passage along Z, pillars on X sides
-        const spanZ = maxZ - minZ;
-
-        // Left pillar
-        group.add(this.makeBox(frameThickness, doorHeight, spanZ, minX + frameThickness / 2, doorHeight / 2, centerZ, frameMat));
-        // Right pillar
-        group.add(this.makeBox(frameThickness, doorHeight, spanZ, maxX - frameThickness / 2, doorHeight / 2, centerZ, frameMat));
-        // Top beam
-        group.add(this.makeBox(maxX - minX, frameThickness, spanZ, centerX, doorHeight, centerZ, frameMat));
-        // Wall above door — full width and depth to seal the gap (slightly inset to avoid z-fighting)
-        if (doorHeight < h) {
-          const aboveH = h - doorHeight - 0.01;
-          group.add(this.makeBox(maxX - minX - 0.01, aboveH, spanZ - 0.01, centerX, doorHeight + aboveH / 2, centerZ, wallAboveMat));
+      if (orientation === 'horizontal') {
+        // Passage along X (wall runs N-S). Jambs at Z endpoints, spanning the wall thickness (X).
+        // North jamb (at maxZ)
+        group.add(this.makeBox(spanX, doorHeight, frameThickness, centerX, doorHeight / 2, maxZ - frameThickness / 2, frameMat));
+        // South jamb (at minZ)
+        group.add(this.makeBox(spanX, doorHeight, frameThickness, centerX, doorHeight / 2, minZ + frameThickness / 2, frameMat));
+        // Lintel across the top of the opening
+        group.add(this.makeBox(spanX, frameThickness, spanZ, centerX, doorHeight, centerZ, frameMat));
+        // Wall above door — seals the gap above the lintel using the main wall material
+        if (aboveH > 0) {
+          group.add(this.makeWallBox(spanX - 0.01, aboveH, spanZ - 0.01, centerX, doorHeight + aboveH / 2, centerZ, wallMat, h));
         }
       } else {
-        // Passage along X, pillars on Z sides
-        const spanX = maxX - minX;
-
-        // Front pillar (positive Z)
-        group.add(this.makeBox(spanX, doorHeight, frameThickness, centerX, doorHeight / 2, maxZ - frameThickness / 2, frameMat));
-        // Back pillar (negative Z)
-        group.add(this.makeBox(spanX, doorHeight, frameThickness, centerX, doorHeight / 2, minZ + frameThickness / 2, frameMat));
-        // Top beam
-        group.add(this.makeBox(spanX, frameThickness, maxZ - minZ, centerX, doorHeight, centerZ, frameMat));
-        // Wall above door — full width and depth to seal the gap (slightly inset to avoid z-fighting)
-        if (doorHeight < h) {
-          const aboveH = h - doorHeight - 0.01;
-          group.add(this.makeBox(spanX - 0.01, aboveH, maxZ - minZ - 0.01, centerX, doorHeight + aboveH / 2, centerZ, wallAboveMat));
+        // Passage along Z (wall runs E-W). Jambs at X endpoints, spanning the wall thickness (Z).
+        // West jamb (at minX)
+        group.add(this.makeBox(frameThickness, doorHeight, spanZ, minX + frameThickness / 2, doorHeight / 2, centerZ, frameMat));
+        // East jamb (at maxX)
+        group.add(this.makeBox(frameThickness, doorHeight, spanZ, maxX - frameThickness / 2, doorHeight / 2, centerZ, frameMat));
+        // Lintel across the top of the opening
+        group.add(this.makeBox(spanX, frameThickness, spanZ, centerX, doorHeight, centerZ, frameMat));
+        // Wall above door — seals the gap above the lintel using the main wall material
+        if (aboveH > 0) {
+          group.add(this.makeWallBox(spanX - 0.01, aboveH, spanZ - 0.01, centerX, doorHeight + aboveH / 2, centerZ, wallMat, h));
         }
       }
     }
@@ -393,6 +387,37 @@ export class TiledGalleryBuilder {
 
   private makeBox(w: number, h: number, d: number, x: number, y: number, z: number, mat: THREE.Material): THREE.Mesh {
     const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
+    mesh.position.set(x, y, z);
+    return mesh;
+  }
+
+  // Box with per-face UVs scaled to world dimensions, so a textured wall material
+  // tiles at the same spatial frequency as a reference wall tile of size (1, refH, 1).
+  // This keeps brick/tile scale consistent between the main wall tiles and door wall-above fills.
+  private makeWallBox(w: number, boxH: number, d: number, x: number, y: number, z: number, mat: THREE.Material, refH: number): THREE.Mesh {
+    const geo = new THREE.BoxGeometry(w, boxH, d);
+    const uv = geo.getAttribute('uv') as THREE.BufferAttribute;
+    // BoxGeometry face order: +X, -X, +Y, -Y, +Z, -Z (4 vertices per face)
+    // Side faces (+X/-X/+Z/-Z) should match a 1×refH×1 wall tile's scaling:
+    //   u ≈ world meters horizontally, v ≈ world meters / refH
+    // Top/bottom faces (+Y/-Y) use 1 unit/m (rarely visible).
+    const faceScales: [number, number][] = [
+      [d, boxH / refH], // +X
+      [d, boxH / refH], // -X
+      [w, d],           // +Y
+      [w, d],           // -Y
+      [w, boxH / refH], // +Z
+      [w, boxH / refH], // -Z
+    ];
+    for (let face = 0; face < 6; face++) {
+      const [sx, sy] = faceScales[face];
+      for (let v = 0; v < 4; v++) {
+        const i = face * 4 + v;
+        uv.setXY(i, uv.getX(i) * sx, uv.getY(i) * sy);
+      }
+    }
+    uv.needsUpdate = true;
+    const mesh = new THREE.Mesh(geo, mat);
     mesh.position.set(x, y, z);
     return mesh;
   }
