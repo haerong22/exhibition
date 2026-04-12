@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import type { ParsedMap } from '../types/tiled';
 import type { ExhibitionConfig } from '../types/exhibition';
 import { ArtworkFrame } from './ArtworkFrame';
@@ -295,47 +296,62 @@ export class TiledGalleryBuilder {
   }
 
   private buildFloor(group: THREE.Group, map: ParsedMap, mat: THREE.MeshStandardMaterial): void {
+    const geos: THREE.BufferGeometry[] = [];
     for (let row = 0; row < map.depthMeters; row++) {
       for (let col = 0; col < map.widthMeters; col++) {
-        // Place floor under walkable tiles AND wall tiles
         if (!this.isNonEmpty(row, col, map)) continue;
         const geo = new THREE.PlaneGeometry(1, 1);
-        const mesh = new THREE.Mesh(geo, mat);
-        mesh.rotation.x = -Math.PI / 2;
-        mesh.position.set(col + 0.5, 0, -(row + 0.5));
-        mesh.receiveShadow = true;
-        group.add(mesh);
+        geo.rotateX(-Math.PI / 2);
+        geo.translate(col + 0.5, 0, -(row + 0.5));
+        geos.push(geo);
       }
     }
+    if (geos.length === 0) return;
+    const merged = mergeGeometries(geos, false);
+    if (!merged) return;
+    const mesh = new THREE.Mesh(merged, mat);
+    mesh.receiveShadow = true;
+    group.add(mesh);
+    for (const g of geos) g.dispose();
   }
 
   private buildCeiling(group: THREE.Group, map: ParsedMap, h: number, mat: THREE.MeshStandardMaterial): void {
+    const geos: THREE.BufferGeometry[] = [];
     for (let row = 0; row < map.depthMeters; row++) {
       for (let col = 0; col < map.widthMeters; col++) {
-        // Place ceiling over walkable tiles AND wall tiles
         if (!this.isNonEmpty(row, col, map)) continue;
         const geo = new THREE.PlaneGeometry(1, 1);
-        const mesh = new THREE.Mesh(geo, mat);
-        mesh.rotation.x = Math.PI / 2;
-        mesh.position.set(col + 0.5, h, -(row + 0.5));
-        group.add(mesh);
+        geo.rotateX(Math.PI / 2);
+        geo.translate(col + 0.5, h, -(row + 0.5));
+        geos.push(geo);
       }
     }
+    if (geos.length === 0) return;
+    const merged = mergeGeometries(geos, false);
+    if (!merged) return;
+    const mesh = new THREE.Mesh(merged, mat);
+    group.add(mesh);
+    for (const g of geos) g.dispose();
   }
 
   private buildWalls(group: THREE.Group, _map: ParsedMap, h: number, mat: THREE.MeshStandardMaterial): void {
-    // Place a solid box for each wall tile
+    const geos: THREE.BufferGeometry[] = [];
     for (let row = 0; row < this.originalGrid.length; row++) {
       for (let col = 0; col < this.originalGrid[row].length; col++) {
         if (this.originalGrid[row][col] !== 'wall') continue;
         const geo = new THREE.BoxGeometry(1, h, 1);
-        const mesh = new THREE.Mesh(geo, mat);
-        mesh.position.set(col + 0.5, h / 2, -(row + 0.5));
-        mesh.receiveShadow = true;
-        mesh.castShadow = true;
-        group.add(mesh);
+        geo.translate(col + 0.5, h / 2, -(row + 0.5));
+        geos.push(geo);
       }
     }
+    if (geos.length === 0) return;
+    const merged = mergeGeometries(geos, false);
+    if (!merged) return;
+    const mesh = new THREE.Mesh(merged, mat);
+    mesh.receiveShadow = true;
+    mesh.castShadow = true;
+    group.add(mesh);
+    for (const g of geos) g.dispose();
   }
 
   private buildDoorFrames(group: THREE.Group, map: ParsedMap, h: number, wallMat: THREE.MeshStandardMaterial): void {
@@ -477,19 +493,28 @@ export class TiledGalleryBuilder {
   }
 
   private buildLighting(group: THREE.Group, map: ParsedMap, h: number): void {
-    const ambient = new THREE.AmbientLight(COLORS.AMBIENT_LIGHT, 0.5);
+    const ambient = new THREE.AmbientLight(COLORS.AMBIENT_LIGHT, 0.6);
     group.add(ambient);
 
-    const hemi = new THREE.HemisphereLight(COLORS.HEMISPHERE_SKY, COLORS.HEMISPHERE_GROUND, 0.3);
+    const hemi = new THREE.HemisphereLight(COLORS.HEMISPHERE_SKY, COLORS.HEMISPHERE_GROUND, 0.4);
     group.add(hemi);
 
-    // Place ceiling lights over walkable areas every ~3 tiles
-    for (let row = 1; row < map.depthMeters; row += 3) {
-      for (let col = 1; col < map.widthMeters; col += 3) {
+    // Dynamically adjust light spacing based on map area to keep total count reasonable.
+    // Target ~12 lights max; wider spacing + larger radius for big maps.
+    const area = map.widthMeters * map.depthMeters;
+    const maxLights = 12;
+    const step = Math.max(3, Math.ceil(Math.sqrt(area / maxLights)));
+    const radius = Math.max(10, step * 2.5);
+
+    let count = 0;
+    for (let row = Math.floor(step / 2); row < map.depthMeters; row += step) {
+      for (let col = Math.floor(step / 2); col < map.widthMeters; col += step) {
         if (!map.walkableGrid[row]?.[col]) continue;
-        const light = new THREE.PointLight(COLORS.CEILING_LIGHT, 0.6, 10, 1.5);
+        const light = new THREE.PointLight(COLORS.CEILING_LIGHT, 0.8, radius, 1.5);
         light.position.set(col + 0.5, h - 0.1, -(row + 0.5));
         group.add(light);
+        count++;
+        if (count >= maxLights) return;
       }
     }
   }

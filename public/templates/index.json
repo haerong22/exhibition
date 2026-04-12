@@ -1,0 +1,10 @@
+[
+  { "id": "tiny", "name": "아담한 갤러리", "description": "소규모 전시에 적합한 정사각형 공간", "size": "7×7", "recommended": "2~4점" },
+  { "id": "simple-rect", "name": "직사각형 갤러리", "description": "기본 직사각형 전시 공간", "size": "10×8", "recommended": "4~6점" },
+  { "id": "corridor", "name": "복도형 갤러리", "description": "좁고 긴 복도를 따라 감상하는 전시", "size": "20×6", "recommended": "6~10점" },
+  { "id": "l-shaped", "name": "L자 갤러리", "description": "L자 형태로 꺾이는 전시 동선", "size": "12×10", "recommended": "6~8점" },
+  { "id": "hall", "name": "넓은 홀", "description": "여유로운 대형 단일 전시실", "size": "16×10", "recommended": "8~12점" },
+  { "id": "two-room", "name": "두 개의 방", "description": "문으로 연결된 두 개의 전시실", "size": "14×8", "recommended": "6~10점" },
+  { "id": "three-room", "name": "세 개의 방", "description": "세 구역으로 나뉜 대규모 전시 공간", "size": "20×10", "recommended": "10~14점" },
+  { "id": "grand", "name": "대형 갤러리", "description": "중앙 기둥이 있는 넓은 전시관", "size": "24×16", "recommended": "14~20점" }
+]

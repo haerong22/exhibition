@@ -31,6 +31,9 @@ class App {
   private tiledBuilder: TiledGalleryBuilder;
   private textureManager: TextureManager;
   private tiledCollision: TiledCollision | null = null;
+  private allTemplates: { id: string; name: string; description: string; size?: string; recommended?: string }[] = [];
+  private templatePage = 0;
+  private static readonly TEMPLATES_PER_PAGE = 6;
   private loader: ExhibitionLoader;
   private router: Router;
   private loadingScreen: LoadingScreen;
@@ -218,17 +221,17 @@ class App {
     const templatesEl = document.getElementById('picker-templates')!;
     const customEl = document.getElementById('picker-custom')!;
 
-    // Templates (from /exhibitions/index.json)
+    // Templates (tile-based room layouts from /templates/index.json)
     templatesEl.innerHTML = '<div class="picker-empty">불러오는 중...</div>';
     try {
-      const templates = await this.loader.listAvailable();
+      const res = await fetch('/templates/index.json');
+      const templates: { id: string; name: string; description: string; size?: string; recommended?: string }[] = await res.json();
       if (templates.length === 0) {
         templatesEl.innerHTML = '<div class="picker-empty">템플릿이 없습니다</div>';
       } else {
-        templatesEl.innerHTML = '';
-        for (const t of templates) {
-          templatesEl.appendChild(this.renderTemplateCard(t));
-        }
+        this.allTemplates = templates;
+        this.templatePage = 0;
+        this.renderTemplatePage(templatesEl);
       }
     } catch {
       templatesEl.innerHTML = '<div class="picker-empty">템플릿을 불러올 수 없습니다</div>';
@@ -242,7 +245,7 @@ class App {
     const maps = CustomMapStore.list();
     containerEl.innerHTML = '';
     if (maps.length === 0) {
-      containerEl.innerHTML = '<div class="picker-empty">저장된 맵이 없습니다. 에디터에서 맵을 만들어 저장하세요.</div>';
+      containerEl.innerHTML = '<div class="picker-empty">저장된 전시회가 없습니다. 템플릿을 선택하여 전시회를 만들어보세요.</div>';
       return;
     }
     for (const map of maps) {
@@ -250,31 +253,149 @@ class App {
     }
   }
 
-  private renderTemplateCard(t: { id: string; name: string; description: string }): HTMLElement {
-    const card = document.createElement('div');
-    card.className = 'exhibition-card';
-    const main = document.createElement('div');
-    main.className = 'card-main';
-    main.innerHTML = `<h3></h3><p></p>`;
-    main.querySelector('h3')!.textContent = t.name;
-    main.querySelector('p')!.textContent = t.description;
-    main.addEventListener('click', () => {
-      this.router.navigateTo(t.id);
-    });
-    card.appendChild(main);
+  private renderTemplatePage(container: HTMLElement): void {
+    const perPage = App.TEMPLATES_PER_PAGE;
+    const totalPages = Math.ceil(this.allTemplates.length / perPage);
+    const page = Math.min(this.templatePage, totalPages - 1);
+    const start = page * perPage;
+    const slice = this.allTemplates.slice(start, start + perPage);
 
-    const actions = document.createElement('div');
-    actions.className = 'card-actions';
-    const copyBtn = document.createElement('button');
-    copyBtn.className = 'card-btn';
-    copyBtn.textContent = '링크 복사';
-    copyBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      this.copyLink(t.id, copyBtn);
+    container.innerHTML = '';
+
+    // Grid
+    const grid = document.createElement('div');
+    grid.className = 'template-grid';
+    for (const t of slice) {
+      const card = this.renderTemplateCard(t);
+      grid.appendChild(card);
+      this.drawTemplatePreview(t.id, card.querySelector('.template-preview') as HTMLCanvasElement);
+    }
+    container.appendChild(grid);
+
+    // Pagination (only if more than 1 page)
+    if (totalPages <= 1) return;
+    const nav = document.createElement('div');
+    nav.className = 'template-pagination';
+
+    const prevBtn = document.createElement('button');
+    prevBtn.textContent = '←';
+    prevBtn.disabled = page === 0;
+    prevBtn.addEventListener('click', () => {
+      this.templatePage = page - 1;
+      this.renderTemplatePage(container);
     });
-    actions.appendChild(copyBtn);
-    card.appendChild(actions);
+    nav.appendChild(prevBtn);
+
+    for (let i = 0; i < totalPages; i++) {
+      const btn = document.createElement('button');
+      btn.textContent = String(i + 1);
+      if (i === page) btn.classList.add('active');
+      btn.addEventListener('click', () => {
+        this.templatePage = i;
+        this.renderTemplatePage(container);
+      });
+      nav.appendChild(btn);
+    }
+
+    const nextBtn = document.createElement('button');
+    nextBtn.textContent = '→';
+    nextBtn.disabled = page === totalPages - 1;
+    nextBtn.addEventListener('click', () => {
+      this.templatePage = page + 1;
+      this.renderTemplatePage(container);
+    });
+    nav.appendChild(nextBtn);
+
+    container.appendChild(nav);
+  }
+
+  private renderTemplateCard(t: { id: string; name: string; description: string; size?: string; recommended?: string }): HTMLElement {
+    const card = document.createElement('div');
+    card.className = 'template-card';
+
+    const canvas = document.createElement('canvas');
+    canvas.className = 'template-preview';
+    card.appendChild(canvas);
+
+    const body = document.createElement('div');
+    body.className = 'card-body';
+    body.innerHTML = `<h3></h3><p></p><p class="card-meta"></p>`;
+    body.querySelector('h3')!.textContent = t.name;
+    body.querySelector('p')!.textContent = t.description;
+    const meta: string[] = [];
+    if (t.size) meta.push(t.size);
+    if (t.recommended) meta.push(`추천 ${t.recommended}`);
+    body.querySelector('.card-meta')!.textContent = meta.join(' · ');
+    card.appendChild(body);
+
+    card.addEventListener('click', () => {
+      window.location.href = `/editor/?template=${encodeURIComponent(t.id)}`;
+    });
     return card;
+  }
+
+  private static readonly TILE_COLORS: Record<string, string> = {
+    empty: '#0c0c0c',
+    floor: '#d4c9ae',
+    wall: '#5a5a5a',
+    door: '#8B6914',
+    artwork: '#4a9eff',
+    spawn: '#4eff7e',
+  };
+
+  private async drawTemplatePreview(templateId: string, canvas: HTMLCanvasElement): Promise<void> {
+    try {
+      const res = await fetch(`/templates/${encodeURIComponent(templateId)}.json`);
+      if (!res.ok) return;
+      const gridMap: GridMap = await res.json();
+
+      // Size canvas to its display dimensions
+      const rect = canvas.getBoundingClientRect();
+      const dpr = Math.min(window.devicePixelRatio, 2);
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+
+      const ctx = canvas.getContext('2d')!;
+      ctx.scale(dpr, dpr);
+
+      const { width, height, grid } = gridMap;
+      const displayW = rect.width;
+      const displayH = rect.height;
+
+      // Calculate tile size to fit, centered
+      const tileSize = Math.min(
+        (displayW - 16) / width,
+        (displayH - 16) / height,
+      );
+      const totalW = width * tileSize;
+      const totalH = height * tileSize;
+      const offsetX = (displayW - totalW) / 2;
+      const offsetY = (displayH - totalH) / 2;
+
+      // Background
+      ctx.fillStyle = '#0c0c0c';
+      ctx.fillRect(0, 0, displayW, displayH);
+
+      // Draw each tile
+      const gap = Math.max(0.5, tileSize * 0.06);
+      const colors = App.TILE_COLORS;
+      for (let r = 0; r < height; r++) {
+        for (let c = 0; c < width; c++) {
+          const cell = grid[r]?.[c];
+          if (!cell) continue;
+          const color = colors[cell.type] ?? colors.empty;
+          ctx.fillStyle = color;
+          ctx.fillRect(
+            offsetX + c * tileSize + gap / 2,
+            offsetY + r * tileSize + gap / 2,
+            tileSize - gap,
+            tileSize - gap,
+          );
+        }
+      }
+    } catch {
+      // Silently fail — canvas stays dark
+    }
   }
 
   private renderCustomCard(map: CustomMap, containerEl: HTMLElement): HTMLElement {
@@ -321,7 +442,7 @@ class App {
     deleteBtn.textContent = '삭제';
     deleteBtn.addEventListener('click', (e) => {
       e.stopPropagation();
-      if (confirm(`"${map.name}" 맵을 삭제할까요?`)) {
+      if (confirm(`"${map.name}" 전시회를 삭제할까요?`)) {
         CustomMapStore.delete(map.id);
         this.refreshCustomList(containerEl);
       }

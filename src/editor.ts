@@ -90,14 +90,49 @@ class MapEditor {
 
   private handleInitialLoad(): void {
     const params = new URLSearchParams(window.location.search);
+
     const editId = params.get('edit');
-    if (!editId) return;
-    const map = CustomMapStore.get(editId);
-    if (!map) {
-      alert('요청한 맵을 찾을 수 없습니다.');
+    if (editId) {
+      const map = CustomMapStore.get(editId);
+      if (!map) {
+        alert('요청한 전시회를 찾을 수 없습니다.');
+        return;
+      }
+      this.loadMapIntoEditor(map);
       return;
     }
-    this.loadMapIntoEditor(map);
+
+    const templateId = params.get('template');
+    if (templateId) {
+      this.loadTemplate(templateId);
+    }
+  }
+
+  private async loadTemplate(templateId: string): Promise<void> {
+    try {
+      const res = await fetch(`/templates/${encodeURIComponent(templateId)}.json`);
+      if (!res.ok) throw new Error('not found');
+      const gridMap: GridMap = await res.json();
+
+      this.width = gridMap.width;
+      this.height = gridMap.height;
+      this.grid = gridMap.grid.map((row) => row.map((c) => ({ ...c })));
+
+      (document.getElementById('map-width') as HTMLInputElement).value = String(this.width);
+      (document.getElementById('map-height') as HTMLInputElement).value = String(this.height);
+      (document.getElementById('wall-height') as HTMLInputElement).value = String(gridMap.wallHeight ?? 4);
+
+      // Do NOT set currentMapId — saving will create a brand new exhibition
+      this.currentMapId = null;
+      this.currentMapName = null;
+      this.updateCurrentMapLabel();
+
+      this.resizeCanvas();
+      this.render();
+      this.schedulePreviewUpdate();
+    } catch {
+      alert('템플릿을 불러올 수 없습니다: ' + templateId);
+    }
   }
 
   private resizePreview(): void {
@@ -283,7 +318,7 @@ class MapEditor {
 
     // New map (reset state and drop current id)
     document.getElementById('btn-new')!.addEventListener('click', () => {
-      if (confirm('현재 맵을 지우고 새 맵을 시작할까요? 저장되지 않은 변경 사항은 사라집니다.')) {
+      if (confirm('현재 상태를 초기화할까요? 저장되지 않은 변경 사항은 사라집니다.')) {
         this.currentMapId = null;
         this.currentMapName = null;
         this.projects = [];
@@ -558,12 +593,12 @@ class MapEditor {
     // Check that the map has at least something placed
     const hasContent = this.grid.some((row) => row.some((c) => c.type !== 'empty'));
     if (!hasContent) {
-      alert('빈 맵은 저장할 수 없습니다.');
+      alert('빈 전시회는 저장할 수 없습니다.');
       return;
     }
 
-    const defaultName = this.currentMapName ?? `내 맵 ${new Date().toLocaleDateString('ko-KR')}`;
-    const name = prompt('맵 이름을 입력하세요', defaultName);
+    const defaultName = this.currentMapName ?? `내 전시회 ${new Date().toLocaleDateString('ko-KR')}`;
+    const name = prompt('전시회 이름을 입력하세요', defaultName);
     if (!name || !name.trim()) return;
 
     const id = this.currentMapId ?? CustomMapStore.newId();
@@ -586,7 +621,10 @@ class MapEditor {
     this.currentMapName = saved.name;
     this.updateCurrentMapLabel();
 
-    alert(`저장되었습니다: ${saved.name}`);
+    const goToGallery = confirm(`저장되었습니다: ${saved.name}\n\n갤러리에서 보시겠습니까?`);
+    if (goToGallery) {
+      window.location.href = `/#/exhibition/custom-${saved.id}`;
+    }
   }
 
   private loadMapIntoEditor(map: CustomMap): void {
@@ -664,7 +702,7 @@ class MapEditor {
       label.innerHTML = `편집 중: <strong></strong>`;
       label.querySelector('strong')!.textContent = this.currentMapName;
     } else {
-      label.textContent = '새 맵';
+      label.textContent = '새 전시회';
     }
   }
 
@@ -675,7 +713,7 @@ class MapEditor {
 
     body.innerHTML = '';
     if (maps.length === 0) {
-      body.innerHTML = '<div class="modal-empty">저장된 맵이 없습니다.</div>';
+      body.innerHTML = '<div class="modal-empty">저장된 전시회가 없습니다.</div>';
     } else {
       for (const map of maps) {
         body.appendChild(this.renderMapItem(map));
@@ -719,7 +757,7 @@ class MapEditor {
     deleteBtn.className = 'map-btn danger';
     deleteBtn.textContent = '삭제';
     deleteBtn.addEventListener('click', () => {
-      if (confirm(`"${map.name}" 맵을 삭제할까요?`)) {
+      if (confirm(`"${map.name}" 전시회를 삭제할까요?`)) {
         CustomMapStore.delete(map.id);
         if (this.currentMapId === map.id) {
           this.currentMapId = null;

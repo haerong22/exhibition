@@ -107,7 +107,7 @@
       font-size: 1.2rem; font-weight: 300; letter-spacing: 0.3em;
       text-transform: uppercase; color: #888; margin-bottom: 2.5rem;
     }
-    .picker-container { width: 100%; max-width: 720px; }
+    .picker-container { width: 100%; max-width: 800px; }
     .picker-section { margin-bottom: 3rem; }
     .picker-section-header {
       display: flex; align-items: center; justify-content: space-between;
@@ -126,6 +126,35 @@
     .picker-section-header .picker-btn:hover { border-color: #666; color: #fff; background: rgba(255,255,255,0.04); }
     .picker-list { display: flex; flex-direction: column; gap: 0.8rem; }
     .picker-empty { font-size: 0.8rem; color: #555; padding: 1rem; text-align: center; border: 1px dashed #222; border-radius: 3px; }
+    /* Template grid layout */
+    .template-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 1rem; }
+    .template-pagination {
+      display: flex; align-items: center; justify-content: center; gap: 0.6rem;
+      margin-top: 1.2rem;
+    }
+    .template-pagination button {
+      min-width: 32px; height: 32px; padding: 0 0.6rem;
+      background: transparent; border: 1px solid #2e2e2e; border-radius: 3px;
+      color: #888; font-size: 0.75rem; cursor: pointer; transition: all 0.2s ease;
+    }
+    .template-pagination button:hover { border-color: #555; color: #fff; }
+    .template-pagination button.active { border-color: #888; color: #fff; background: rgba(255,255,255,0.08); }
+    .template-pagination button:disabled { opacity: 0.3; cursor: default; }
+    .template-pagination button:disabled:hover { border-color: #2e2e2e; color: #888; }
+    .template-card {
+      display: flex; flex-direction: column;
+      background: #141414; border: 1px solid #242424; border-radius: 4px;
+      cursor: pointer; transition: all 0.25s ease; overflow: hidden;
+    }
+    .template-card:hover { border-color: #555; background: #181818; transform: translateY(-2px); }
+    .template-card .template-preview {
+      width: 100%; height: 140px; display: block; background: #0c0c0c;
+    }
+    .template-card .card-body { padding: 0.9rem 1rem; }
+    .template-card h3 { font-weight: 500; font-size: 0.9rem; margin-bottom: 0.3rem; color: #eee; }
+    .template-card p { font-size: 0.7rem; color: #777; line-height: 1.4; margin-bottom: 0.3rem; }
+    .template-card .card-meta { font-size: 0.65rem; color: #555; }
+    /* Exhibition list cards (내 전시회) */
     .exhibition-card {
       display: flex; align-items: center; gap: 1rem;
       padding: 1.1rem 1.4rem;
@@ -198,8 +227,8 @@
       </div>
       <div class="picker-section">
         <div class="picker-section-header">
-          <h2>내 맵</h2>
-          <a class="picker-btn" href="/editor/" target="_blank">새 맵 만들기 →</a>
+          <h2>내 전시회</h2>
+          <a class="picker-btn" href="/editor/" target="_blank">새 전시회 만들기 →</a>
         </div>
         <div id="picker-custom" class="picker-list"></div>
       </div>
