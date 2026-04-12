@@ -18,6 +18,7 @@ const COLORS: Record<TileType, string> = {
 };
 
 const MOODBOARD_API_BASE = '/api-proxy/proj/v1/mood-boards';
+const MAP_ONLY_TILES: Set<TileType> = new Set(['floor', 'wall', 'door', 'empty']);
 
 interface ProjectItem {
   projectId: string;
@@ -37,6 +38,7 @@ class MapEditor {
   private projects: ProjectItem[] = [];
   private currentMapId: string | null = null;
   private currentMapName: string | null = null;
+  private editorMode: 'map' | 'exhibition' = 'map';
 
   // 3D Preview
   private previewRenderer: THREE.WebGLRenderer;
@@ -99,12 +101,14 @@ class MapEditor {
         return;
       }
       this.loadMapIntoEditor(map);
+      this.setEditorMode('exhibition');
       return;
     }
 
     const templateId = params.get('template');
     if (templateId) {
       this.loadTemplate(templateId);
+      this.setEditorMode('exhibition');
     }
   }
 
@@ -350,6 +354,11 @@ class MapEditor {
       this.closeMapsModal();
     });
 
+    // Mode toggle
+    document.getElementById('btn-mode-toggle')!.addEventListener('click', () => {
+      this.setEditorMode(this.editorMode === 'map' ? 'exhibition' : 'map');
+    });
+
     // Preview in new tab
     document.getElementById('btn-preview')!.addEventListener('click', () => {
       this.previewInNewTab();
@@ -395,6 +404,9 @@ class MapEditor {
     const row = Math.floor((e.clientY - rect.top) / TILE_SIZE);
 
     if (row < 0 || row >= this.height || col < 0 || col >= this.width) return;
+
+    // In exhibition mode, only allow artwork + spawn placement
+    if (this.editorMode === 'exhibition' && MAP_ONLY_TILES.has(this.currentTool)) return;
 
     const cell: TileCell = { type: this.currentTool };
 
@@ -692,6 +704,26 @@ class MapEditor {
       opt.value = p.projectId;
       opt.textContent = `${p.title} (${p.owner.nickname})`;
       select.appendChild(opt);
+    }
+  }
+
+  private setEditorMode(mode: 'map' | 'exhibition'): void {
+    this.editorMode = mode;
+    document.body.classList.toggle('mode-exhibition', mode === 'exhibition');
+
+    const label = document.getElementById('mode-label')!;
+    label.textContent = mode === 'map' ? '맵 편집 모드' : '전시 모드';
+
+    const dot = document.getElementById('mode-dot')!;
+    dot.className = `mode-dot ${mode}`;
+
+    // If current tool is now hidden, auto-switch to artwork
+    if (mode === 'exhibition' && MAP_ONLY_TILES.has(this.currentTool)) {
+      this.currentTool = 'artwork';
+      document.querySelectorAll('.tool-btn').forEach((b) => b.classList.remove('active'));
+      const artBtn = document.querySelector('.tool-btn[data-tool="artwork"]') as HTMLElement;
+      artBtn?.classList.add('active');
+      document.getElementById('artwork-options')!.classList.add('visible');
     }
   }
 

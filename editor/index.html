@@ -61,6 +61,17 @@
     .current-map { font-size: 0.75rem; color: #888; padding: 0.3rem 0.8rem; border: 1px solid #222; border-radius: 3px; }
     .current-map strong { color: #ccc; font-weight: 500; }
 
+    /* Editor mode toggle */
+    .mode-toggle { display: flex; align-items: center; gap: 0.4rem; }
+    .mode-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+    .mode-dot.map { background: #4eff7e; }
+    .mode-dot.exhibition { background: #4a9eff; }
+
+    /* Exhibition mode: hide map-only UI via body class */
+    body.mode-exhibition .tool-btn[data-mode="map"] { display: none; }
+    body.mode-exhibition #section-map-size { display: none; }
+    body.mode-exhibition #section-wall-height { display: none; }
+
     /* Modal */
     .modal { position: fixed; inset: 0; z-index: 100; display: none; align-items: center; justify-content: center; }
     .modal.visible { display: flex; }
@@ -86,6 +97,10 @@
   <div class="header">
     <h1>Gallery Map Editor</h1>
     <div class="header-actions">
+      <button class="btn mode-toggle" id="btn-mode-toggle">
+        <span class="mode-dot map" id="mode-dot"></span>
+        <span id="mode-label">맵 편집 모드</span>
+      </button>
       <span class="current-map" id="current-map-label">새 전시회</span>
       <button class="btn" id="btn-new">새로 만들기</button>
       <button class="btn" id="btn-my-maps">내 전시회</button>
@@ -111,12 +126,12 @@
       <div class="tool-section">
         <h3>도구</h3>
         <div class="tool-grid">
-          <button class="tool-btn active" data-tool="floor"><span class="icon">⬜</span>바닥</button>
-          <button class="tool-btn" data-tool="wall"><span class="icon">⬛</span>벽</button>
-          <button class="tool-btn" data-tool="door"><span class="icon">🚪</span>문</button>
+          <button class="tool-btn active" data-tool="floor" data-mode="map"><span class="icon">⬜</span>바닥</button>
+          <button class="tool-btn" data-tool="wall" data-mode="map"><span class="icon">⬛</span>벽</button>
+          <button class="tool-btn" data-tool="door" data-mode="map"><span class="icon">🚪</span>문</button>
           <button class="tool-btn" data-tool="artwork"><span class="icon">🖼</span>작품</button>
           <button class="tool-btn" data-tool="spawn"><span class="icon">📍</span>시작점</button>
-          <button class="tool-btn" data-tool="empty"><span class="icon">✕</span>지우기</button>
+          <button class="tool-btn" data-tool="empty" data-mode="map"><span class="icon">✕</span>지우기</button>
         </div>
       </div>
 
@@ -146,7 +161,7 @@
         </select>
       </div>
 
-      <div class="tool-section">
+      <div class="tool-section" id="section-map-size">
         <h3>맵 크기</h3>
         <div class="size-row">
           <label>W</label>
@@ -157,7 +172,7 @@
         <button class="btn" id="btn-resize" style="margin-top:0.5rem;width:100%">크기 변경</button>
       </div>
 
-      <div class="tool-section">
+      <div class="tool-section" id="section-wall-height">
         <h3>벽 높이 (m)</h3>
         <input type="number" id="wall-height" value="4" min="2" max="8" step="0.5" style="width:100%;background:#1a1a1a;border:1px solid #333;color:#fff;padding:0.4rem;font-size:0.8rem;" />
       </div>
