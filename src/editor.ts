@@ -4,6 +4,7 @@ import type { TileType, TileCell, GridMap } from './types/tiled';
 import { TiledMapParser } from './gallery/TiledMapParser';
 import { TiledGalleryBuilder, type TextureConfig } from './gallery/TiledGalleryBuilder';
 import { TextureManager } from './systems/TextureManager';
+import { CustomMapStore, type CustomMap } from './systems/CustomMapStore';
 import { disposeObject } from './utils/disposer';
 
 const TILE_SIZE = 32;
@@ -34,6 +35,8 @@ class MapEditor {
   private currentTool: TileType = 'floor';
   private isDrawing = false;
   private projects: ProjectItem[] = [];
+  private currentMapId: string | null = null;
+  private currentMapName: string | null = null;
 
   // 3D Preview
   private previewRenderer: THREE.WebGLRenderer;
@@ -80,6 +83,21 @@ class MapEditor {
     this.startPreviewLoop();
 
     window.addEventListener('resize', () => this.resizePreview());
+
+    // Load a saved map if editor was opened with ?edit={id}
+    this.handleInitialLoad();
+  }
+
+  private handleInitialLoad(): void {
+    const params = new URLSearchParams(window.location.search);
+    const editId = params.get('edit');
+    if (!editId) return;
+    const map = CustomMapStore.get(editId);
+    if (!map) {
+      alert('요청한 맵을 찾을 수 없습니다.');
+      return;
+    }
+    this.loadMapIntoEditor(map);
   }
 
   private resizePreview(): void {
@@ -263,10 +281,14 @@ class MapEditor {
       this.schedulePreviewUpdate();
     });
 
-    // Clear
-    document.getElementById('btn-clear')!.addEventListener('click', () => {
-      if (confirm('맵을 초기화할까요?')) {
+    // New map (reset state and drop current id)
+    document.getElementById('btn-new')!.addEventListener('click', () => {
+      if (confirm('현재 맵을 지우고 새 맵을 시작할까요? 저장되지 않은 변경 사항은 사라집니다.')) {
+        this.currentMapId = null;
+        this.currentMapName = null;
+        this.projects = [];
         this.initGrid();
+        this.updateCurrentMapLabel();
         this.render();
         this.schedulePreviewUpdate();
       }
@@ -275,6 +297,22 @@ class MapEditor {
     // Export
     document.getElementById('btn-export')!.addEventListener('click', () => {
       this.exportJSON();
+    });
+
+    // Save to browser
+    document.getElementById('btn-save')!.addEventListener('click', () => {
+      this.saveCurrentMap();
+    });
+
+    // My maps modal
+    document.getElementById('btn-my-maps')!.addEventListener('click', () => {
+      this.openMapsModal();
+    });
+    document.getElementById('maps-modal-close')!.addEventListener('click', () => {
+      this.closeMapsModal();
+    });
+    document.querySelector('#maps-modal .modal-overlay')!.addEventListener('click', () => {
+      this.closeMapsModal();
     });
 
     // Preview in new tab
@@ -514,6 +552,187 @@ class MapEditor {
     sessionStorage.setItem('editor-artworks', JSON.stringify(artworks));
     sessionStorage.setItem('editor-textures', JSON.stringify(textures));
     window.open('/#/exhibition/editor-preview', '_blank');
+  }
+
+  private saveCurrentMap(): void {
+    // Check that the map has at least something placed
+    const hasContent = this.grid.some((row) => row.some((c) => c.type !== 'empty'));
+    if (!hasContent) {
+      alert('빈 맵은 저장할 수 없습니다.');
+      return;
+    }
+
+    const defaultName = this.currentMapName ?? `내 맵 ${new Date().toLocaleDateString('ko-KR')}`;
+    const name = prompt('맵 이름을 입력하세요', defaultName);
+    if (!name || !name.trim()) return;
+
+    const id = this.currentMapId ?? CustomMapStore.newId();
+    const existing = this.currentMapId ? CustomMapStore.get(this.currentMapId) : null;
+
+    const map: CustomMap = {
+      id,
+      name: name.trim(),
+      createdAt: existing?.createdAt ?? new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      gridMap: this.getGridMap(),
+      textures: this.getTextureConfig(),
+      // buildArtworksConfig returns editor-ready artwork configs with resolved imageUrl
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      artworks: this.buildArtworksConfig() as any,
+    };
+
+    const saved = CustomMapStore.save(map);
+    this.currentMapId = saved.id;
+    this.currentMapName = saved.name;
+    this.updateCurrentMapLabel();
+
+    alert(`저장되었습니다: ${saved.name}`);
+  }
+
+  private loadMapIntoEditor(map: CustomMap): void {
+    // Restore dimensions + grid
+    this.width = map.gridMap.width;
+    this.height = map.gridMap.height;
+    this.grid = map.gridMap.grid.map((row) => row.map((c) => ({ ...c })));
+
+    (document.getElementById('map-width') as HTMLInputElement).value = String(this.width);
+    (document.getElementById('map-height') as HTMLInputElement).value = String(this.height);
+    (document.getElementById('wall-height') as HTMLInputElement).value = String(map.gridMap.wallHeight ?? 4);
+
+    // Restore texture selects
+    this.applyTextureConfig(map.textures);
+
+    // Restore projects from saved artworks so artwork cells resolve to their imageUrl on preview/save
+    this.projects = (map.artworks ?? []).map((art) => ({
+      projectId: art.id,
+      title: art.title,
+      imageUrl: art.imageUrl,
+      owner: { nickname: art.artist },
+    }));
+    this.refreshArtworkSelect();
+
+    // Track identity for subsequent saves
+    this.currentMapId = map.id;
+    this.currentMapName = map.name;
+    this.updateCurrentMapLabel();
+
+    this.resizeCanvas();
+    this.render();
+    this.schedulePreviewUpdate();
+  }
+
+  private applyTextureConfig(tex: TextureConfig): void {
+    const apply = (selectId: string, urlId: string, value: string) => {
+      const sel = document.getElementById(selectId) as HTMLSelectElement;
+      const urlInput = document.getElementById(urlId) as HTMLInputElement;
+      // If the value matches an option, use it; otherwise treat as custom URL
+      const match = Array.from(sel.options).some((o) => o.value === value);
+      if (match) {
+        sel.value = value;
+        urlInput.style.display = value === 'custom' ? 'block' : 'none';
+        urlInput.value = '';
+      } else if (value) {
+        sel.value = 'custom';
+        urlInput.style.display = 'block';
+        urlInput.value = value;
+      } else {
+        sel.value = '';
+        urlInput.style.display = 'none';
+        urlInput.value = '';
+      }
+    };
+    apply('tex-floor', 'tex-floor-url', tex.floor);
+    apply('tex-wall', 'tex-wall-url', tex.wall);
+    apply('tex-ceiling', 'tex-ceiling-url', tex.ceiling);
+  }
+
+  private refreshArtworkSelect(): void {
+    const select = document.getElementById('artwork-select') as HTMLSelectElement;
+    select.innerHTML = '<option value="">-- 작품 선택 --</option>';
+    for (const p of this.projects) {
+      const opt = document.createElement('option');
+      opt.value = p.projectId;
+      opt.textContent = `${p.title} (${p.owner.nickname})`;
+      select.appendChild(opt);
+    }
+  }
+
+  private updateCurrentMapLabel(): void {
+    const label = document.getElementById('current-map-label');
+    if (!label) return;
+    if (this.currentMapName) {
+      label.innerHTML = `편집 중: <strong></strong>`;
+      label.querySelector('strong')!.textContent = this.currentMapName;
+    } else {
+      label.textContent = '새 맵';
+    }
+  }
+
+  private openMapsModal(): void {
+    const modal = document.getElementById('maps-modal')!;
+    const body = document.getElementById('maps-modal-body')!;
+    const maps = CustomMapStore.list();
+
+    body.innerHTML = '';
+    if (maps.length === 0) {
+      body.innerHTML = '<div class="modal-empty">저장된 맵이 없습니다.</div>';
+    } else {
+      for (const map of maps) {
+        body.appendChild(this.renderMapItem(map));
+      }
+    }
+    modal.classList.add('visible');
+  }
+
+  private closeMapsModal(): void {
+    document.getElementById('maps-modal')!.classList.remove('visible');
+  }
+
+  private renderMapItem(map: CustomMap): HTMLElement {
+    const item = document.createElement('div');
+    item.className = 'map-item';
+
+    const main = document.createElement('div');
+    main.className = 'map-main';
+    const size = `${map.gridMap.width}×${map.gridMap.height}`;
+    const updated = new Date(map.updatedAt).toLocaleString('ko-KR', {
+      year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit',
+    });
+    main.innerHTML = `<h4></h4><div class="map-meta"></div>`;
+    main.querySelector('h4')!.textContent = map.name;
+    main.querySelector('.map-meta')!.textContent = `${size} · 작품 ${map.artworks?.length ?? 0}개 · ${updated}`;
+    item.appendChild(main);
+
+    const actions = document.createElement('div');
+    actions.className = 'map-actions';
+
+    const loadBtn = document.createElement('button');
+    loadBtn.className = 'map-btn';
+    loadBtn.textContent = '불러오기';
+    loadBtn.addEventListener('click', () => {
+      this.loadMapIntoEditor(map);
+      this.closeMapsModal();
+    });
+    actions.appendChild(loadBtn);
+
+    const deleteBtn = document.createElement('button');
+    deleteBtn.className = 'map-btn danger';
+    deleteBtn.textContent = '삭제';
+    deleteBtn.addEventListener('click', () => {
+      if (confirm(`"${map.name}" 맵을 삭제할까요?`)) {
+        CustomMapStore.delete(map.id);
+        if (this.currentMapId === map.id) {
+          this.currentMapId = null;
+          this.currentMapName = null;
+          this.updateCurrentMapLabel();
+        }
+        this.openMapsModal();
+      }
+    });
+    actions.appendChild(deleteBtn);
+
+    item.appendChild(actions);
+    return item;
   }
 }
 

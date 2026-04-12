@@ -12,7 +12,8 @@ import { TiledCollision } from './systems/TiledCollision';
 import { TextureManager } from './systems/TextureManager';
 import type { GridMap } from './types/tiled';
 import { ExhibitionLoader } from './systems/ExhibitionLoader';
-import { Router } from './systems/Router';
+import { CustomMapStore, type CustomMap } from './systems/CustomMapStore';
+import { Router, type Route } from './systems/Router';
 import { LoadingScreen } from './ui/LoadingScreen';
 import { ArtworkInfoPanel } from './ui/ArtworkInfoPanel';
 import { HUD } from './ui/HUD';
@@ -87,6 +88,9 @@ class App {
     // Desktop: click interaction
     this.input.onClick(() => {
       if (this.isMobile) return;
+
+      // Don't steal pointer lock while the picker/loading UI is visible
+      if (this.isUiBlockingGallery()) return;
 
       // Re-lock pointer if unlocked while walking
       if (!this.fpControls.isLocked && this.cameraController.state === 'WALKING') {
@@ -172,25 +176,182 @@ class App {
 
     // Router
     this.router.onRouteChange((route) => {
-      if (route.type === 'exhibition') {
-        this.loadExhibition(route.exhibitionId ?? 'default', route.configUrl);
-      }
+      this.handleRoute(route);
     });
 
     // Start
     this.engine.start();
-    this.handleInitialRoute();
+    this.handleRoute(this.router.currentRoute());
   }
 
-  private async handleInitialRoute(): Promise<void> {
-    const route = this.router.currentRoute();
-    if (route.type === 'exhibition' && route.exhibitionId === 'editor-preview') {
-      await this.loadEditorPreview();
-    } else if (route.type === 'exhibition') {
-      await this.loadExhibition(route.exhibitionId ?? 'default', route.configUrl);
+  private async handleRoute(route: Route): Promise<void> {
+    const picker = document.getElementById('exhibition-picker');
+    if (route.type === 'exhibition') {
+      picker?.classList.add('hidden');
+      const id = route.exhibitionId ?? 'default';
+      if (id === 'editor-preview') {
+        await this.loadEditorPreview();
+      } else if (id.startsWith('custom-')) {
+        await this.loadCustomMap(id.replace(/^custom-/, ''));
+      } else {
+        await this.loadExhibition(id, route.configUrl);
+      }
     } else {
-      await this.loadExhibition('moodboard');
+      // home → show picker
+      await this.showPicker();
     }
+  }
+
+  private async showPicker(): Promise<void> {
+    // Tear down any active scene and UIs so the picker can take over
+    this.loadingScreen.hide();
+    this.hud.hide();
+    this.infoPanel.hide();
+    if (!this.isMobile) this.fpControls.unlock();
+    this.engine.scene.clear();
+    this.engine.scene.fog = null;
+    this.tiledCollision = null;
+
+    const picker = document.getElementById('exhibition-picker');
+    picker?.classList.remove('hidden');
+
+    const templatesEl = document.getElementById('picker-templates')!;
+    const customEl = document.getElementById('picker-custom')!;
+
+    // Templates (from /exhibitions/index.json)
+    templatesEl.innerHTML = '<div class="picker-empty">불러오는 중...</div>';
+    try {
+      const templates = await this.loader.listAvailable();
+      if (templates.length === 0) {
+        templatesEl.innerHTML = '<div class="picker-empty">템플릿이 없습니다</div>';
+      } else {
+        templatesEl.innerHTML = '';
+        for (const t of templates) {
+          templatesEl.appendChild(this.renderTemplateCard(t));
+        }
+      }
+    } catch {
+      templatesEl.innerHTML = '<div class="picker-empty">템플릿을 불러올 수 없습니다</div>';
+    }
+
+    // Custom maps (from localStorage)
+    this.refreshCustomList(customEl);
+  }
+
+  private refreshCustomList(containerEl: HTMLElement): void {
+    const maps = CustomMapStore.list();
+    containerEl.innerHTML = '';
+    if (maps.length === 0) {
+      containerEl.innerHTML = '<div class="picker-empty">저장된 맵이 없습니다. 에디터에서 맵을 만들어 저장하세요.</div>';
+      return;
+    }
+    for (const map of maps) {
+      containerEl.appendChild(this.renderCustomCard(map, containerEl));
+    }
+  }
+
+  private renderTemplateCard(t: { id: string; name: string; description: string }): HTMLElement {
+    const card = document.createElement('div');
+    card.className = 'exhibition-card';
+    const main = document.createElement('div');
+    main.className = 'card-main';
+    main.innerHTML = `<h3></h3><p></p>`;
+    main.querySelector('h3')!.textContent = t.name;
+    main.querySelector('p')!.textContent = t.description;
+    main.addEventListener('click', () => {
+      this.router.navigateTo(t.id);
+    });
+    card.appendChild(main);
+
+    const actions = document.createElement('div');
+    actions.className = 'card-actions';
+    const copyBtn = document.createElement('button');
+    copyBtn.className = 'card-btn';
+    copyBtn.textContent = '링크 복사';
+    copyBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.copyLink(t.id, copyBtn);
+    });
+    actions.appendChild(copyBtn);
+    card.appendChild(actions);
+    return card;
+  }
+
+  private renderCustomCard(map: CustomMap, containerEl: HTMLElement): HTMLElement {
+    const card = document.createElement('div');
+    card.className = 'exhibition-card';
+
+    const main = document.createElement('div');
+    main.className = 'card-main';
+    const artCount = map.artworks?.length ?? 0;
+    const size = `${map.gridMap.width}×${map.gridMap.height}`;
+    const updated = new Date(map.updatedAt).toLocaleString('ko-KR', {
+      year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit',
+    });
+    main.innerHTML = `<h3></h3><p class="card-meta"></p>`;
+    main.querySelector('h3')!.textContent = map.name;
+    main.querySelector('.card-meta')!.textContent = `${size} · 작품 ${artCount}개 · ${updated}`;
+    main.addEventListener('click', () => {
+      this.router.navigateTo(`custom-${map.id}`);
+    });
+    card.appendChild(main);
+
+    const actions = document.createElement('div');
+    actions.className = 'card-actions';
+
+    const copyBtn = document.createElement('button');
+    copyBtn.className = 'card-btn';
+    copyBtn.textContent = '링크 복사';
+    copyBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.copyLink(`custom-${map.id}`, copyBtn);
+    });
+    actions.appendChild(copyBtn);
+
+    const editBtn = document.createElement('a');
+    editBtn.className = 'card-btn';
+    editBtn.textContent = '편집';
+    editBtn.href = `/editor/?edit=${encodeURIComponent(map.id)}`;
+    editBtn.target = '_blank';
+    editBtn.addEventListener('click', (e) => e.stopPropagation());
+    actions.appendChild(editBtn);
+
+    const deleteBtn = document.createElement('button');
+    deleteBtn.className = 'card-btn danger';
+    deleteBtn.textContent = '삭제';
+    deleteBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (confirm(`"${map.name}" 맵을 삭제할까요?`)) {
+        CustomMapStore.delete(map.id);
+        this.refreshCustomList(containerEl);
+      }
+    });
+    actions.appendChild(deleteBtn);
+
+    card.appendChild(actions);
+    return card;
+  }
+
+  // Returns true when a full-screen UI (picker or loading screen) is covering the gallery,
+  // so click handlers should not steal pointer lock.
+  private isUiBlockingGallery(): boolean {
+    const picker = document.getElementById('exhibition-picker');
+    if (picker && !picker.classList.contains('hidden')) return true;
+    const loading = document.getElementById('loading-screen');
+    if (loading && loading.style.display !== 'none' && !loading.classList.contains('hidden')) return true;
+    return false;
+  }
+
+  private copyLink(exhibitionId: string, btn: HTMLElement): void {
+    const url = `${window.location.origin}/#/exhibition/${encodeURIComponent(exhibitionId)}`;
+    navigator.clipboard.writeText(url).then(
+      () => {
+        const original = btn.textContent;
+        btn.textContent = '복사됨';
+        setTimeout(() => { btn.textContent = original; }, 1500);
+      },
+      () => { alert(url); }
+    );
   }
 
   private async loadEditorPreview(): Promise<void> {
@@ -205,29 +366,64 @@ class App {
     }
 
     const gridMap: GridMap = JSON.parse(raw);
+    const artworksRaw = sessionStorage.getItem('editor-artworks');
+    const artworks = artworksRaw ? JSON.parse(artworksRaw) : [];
+    const texRaw = sessionStorage.getItem('editor-textures');
+    const textures = texRaw ? JSON.parse(texRaw) : null;
+
+    await this.buildTiledGallery({
+      gridMap,
+      artworks,
+      textures,
+      configId: 'editor-preview',
+      name: '에디터 미리보기',
+    });
+  }
+
+  private async loadCustomMap(id: string): Promise<void> {
+    const map = CustomMapStore.get(id);
+    if (!map) {
+      this.loadingScreen.show();
+      this.loadingScreen.setTitle('오류');
+      document.getElementById('loading-status')!.textContent = `맵을 찾을 수 없습니다: ${id}`;
+      return;
+    }
+
+    this.loadingScreen.show();
+    this.loadingScreen.setTitle(map.name);
+
+    await this.buildTiledGallery({
+      gridMap: map.gridMap,
+      artworks: map.artworks,
+      textures: map.textures,
+      configId: `custom-${map.id}`,
+      name: map.name,
+    });
+  }
+
+  private async buildTiledGallery(params: {
+    gridMap: GridMap;
+    artworks: unknown[];
+    textures: { floor: string; wall: string; ceiling: string } | null;
+    configId: string;
+    name: string;
+  }): Promise<void> {
+    const { gridMap, artworks, textures, configId, name } = params;
+
     const parser = new TiledMapParser();
     const parsedMap = parser.parse(gridMap);
 
-    // Load artworks from editor if available
-    const artworksRaw = sessionStorage.getItem('editor-artworks');
-    const artworks = artworksRaw ? JSON.parse(artworksRaw) : [];
-
     const previewConfig = {
-      id: 'editor-preview',
-      name: '에디터 미리보기',
+      id: configId,
+      name,
       description: '',
       roomShape: 'rectangular' as const,
-      artworks,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      artworks: artworks as any,
     };
 
-    // Pass original grid so builder knows where walls are for ceiling/floor coverage
     this.tiledBuilder.setOriginalGrid(gridMap.grid);
-
-    // Load texture config
-    const texRaw = sessionStorage.getItem('editor-textures');
-    if (texRaw) {
-      this.tiledBuilder.setTextureConfig(JSON.parse(texRaw));
-    }
+    if (textures) this.tiledBuilder.setTextureConfig(textures);
 
     const result = await this.tiledBuilder.build(parsedMap, previewConfig, (loaded, total) =>
       this.loadingScreen.updateProgress(loaded, total)
@@ -237,7 +433,6 @@ class App {
     this.engine.scene.add(result.group);
     this.engine.scene.fog = new THREE.Fog(0xf5f5f0, 10, 30);
 
-    // Set camera at spawn or center
     const spawn = result.spawnPoint;
     if (spawn) {
       this.engine.camera.position.set(spawn.x, DEFAULTS.EYE_HEIGHT, spawn.z);
@@ -245,7 +440,6 @@ class App {
       this.engine.camera.position.set(result.mapWidth / 2, DEFAULTS.EYE_HEIGHT, -result.mapDepth / 2);
     }
 
-    // Clear old boundary, use tile-based collision instead
     this.fpControls.setBoundary(null);
     this.tiledCollision = new TiledCollision(result.walkableGrid, result.mapWidth, result.mapDepth);
 
