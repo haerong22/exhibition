@@ -31,7 +31,7 @@ class App {
   private tiledBuilder: TiledGalleryBuilder;
   private textureManager: TextureManager;
   private tiledCollision: TiledCollision | null = null;
-  private allTemplates: { id: string; name: string; description: string; size?: string; recommended?: string }[] = [];
+  private allTemplates: { id: string; name: string; description: string; size?: string; recommended?: string; customMapId?: string }[] = [];
   private templatePage = 0;
   private static readonly TEMPLATES_PER_PAGE = 6;
   private loader: ExhibitionLoader;
@@ -221,28 +221,41 @@ class App {
     const templatesEl = document.getElementById('picker-templates')!;
     const customEl = document.getElementById('picker-custom')!;
 
-    // Templates (tile-based room layouts from /templates/index.json)
+    // Templates: built-in (from /templates/index.json) + custom (from localStorage)
     templatesEl.innerHTML = '<div class="picker-empty">불러오는 중...</div>';
     try {
       const res = await fetch('/templates/index.json');
-      const templates: { id: string; name: string; description: string; size?: string; recommended?: string }[] = await res.json();
-      if (templates.length === 0) {
+      const builtIn: { id: string; name: string; description: string; size?: string; recommended?: string }[] = await res.json();
+      // Merge with custom templates from localStorage
+      const customTemplates = CustomMapStore.listByType('template');
+      const customItems = customTemplates.map((m) => ({
+        id: m.id,
+        name: m.name,
+        description: '커스텀 템플릿',
+        size: `${m.gridMap.width}×${m.gridMap.height}`,
+        recommended: undefined as string | undefined,
+        customMapId: m.id,
+      }));
+      this.allTemplates = [
+        ...builtIn.map((t) => ({ ...t, customMapId: undefined as string | undefined })),
+        ...customItems,
+      ];
+      this.templatePage = 0;
+      if (this.allTemplates.length === 0) {
         templatesEl.innerHTML = '<div class="picker-empty">템플릿이 없습니다</div>';
       } else {
-        this.allTemplates = templates;
-        this.templatePage = 0;
         this.renderTemplatePage(templatesEl);
       }
     } catch {
       templatesEl.innerHTML = '<div class="picker-empty">템플릿을 불러올 수 없습니다</div>';
     }
 
-    // Custom maps (from localStorage)
+    // Exhibitions (from localStorage)
     this.refreshCustomList(customEl);
   }
 
   private refreshCustomList(containerEl: HTMLElement): void {
-    const maps = CustomMapStore.list();
+    const maps = CustomMapStore.listByType('exhibition');
     containerEl.innerHTML = '';
     if (maps.length === 0) {
       containerEl.innerHTML = '<div class="picker-empty">저장된 전시회가 없습니다. 템플릿을 선택하여 전시회를 만들어보세요.</div>';
@@ -268,7 +281,15 @@ class App {
     for (const t of slice) {
       const card = this.renderTemplateCard(t);
       grid.appendChild(card);
-      this.drawTemplatePreview(t.id, card.querySelector('.template-preview') as HTMLCanvasElement);
+      const canvas = card.querySelector('.template-preview') as HTMLCanvasElement;
+      if (t.customMapId) {
+        // Custom template: read GridMap from localStorage
+        const map = CustomMapStore.get(t.customMapId);
+        if (map) this.drawGridPreview(map.gridMap, canvas);
+      } else {
+        // Built-in template: fetch from /templates/
+        this.drawTemplatePreview(t.id, canvas);
+      }
     }
     container.appendChild(grid);
 
@@ -309,7 +330,7 @@ class App {
     container.appendChild(nav);
   }
 
-  private renderTemplateCard(t: { id: string; name: string; description: string; size?: string; recommended?: string }): HTMLElement {
+  private renderTemplateCard(t: { id: string; name: string; description: string; size?: string; recommended?: string; customMapId?: string }): HTMLElement {
     const card = document.createElement('div');
     card.className = 'template-card';
 
@@ -328,9 +349,45 @@ class App {
     body.querySelector('.card-meta')!.textContent = meta.join(' · ');
     card.appendChild(body);
 
-    card.addEventListener('click', () => {
-      window.location.href = `/editor/?template=${encodeURIComponent(t.id)}`;
-    });
+    if (t.customMapId) {
+      // Custom template: click opens editor with this map for exhibition
+      card.addEventListener('click', (e) => {
+        if ((e.target as HTMLElement).closest('.card-btn')) return;
+        window.location.href = `/editor/?edit=${encodeURIComponent(t.customMapId!)}`;
+      });
+      // Actions row
+      const actions = document.createElement('div');
+      actions.style.cssText = 'display:flex;gap:0.4rem;padding:0 1rem 0.8rem;';
+      const editBtn = document.createElement('a');
+      editBtn.className = 'card-btn';
+      editBtn.textContent = '맵 편집';
+      editBtn.style.cssText = 'font-size:0.7rem;color:#999;border:1px solid #2e2e2e;padding:0.3rem 0.6rem;cursor:pointer;text-decoration:none;transition:all 0.2s;';
+      editBtn.href = `/editor/?edit=${encodeURIComponent(t.customMapId!)}`;
+      editBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        // Open in map edit mode (no ?template=, just ?edit= — user toggles to map mode)
+      });
+      actions.appendChild(editBtn);
+      const deleteBtn = document.createElement('button');
+      deleteBtn.className = 'card-btn danger';
+      deleteBtn.textContent = '삭제';
+      deleteBtn.style.cssText = 'font-size:0.7rem;color:#999;background:transparent;border:1px solid #2e2e2e;padding:0.3rem 0.6rem;cursor:pointer;transition:all 0.2s;';
+      deleteBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (confirm(`"${t.name}" 템플릿을 삭제할까요?`)) {
+          CustomMapStore.delete(t.customMapId!);
+          // Re-render picker
+          this.showPicker();
+        }
+      });
+      actions.appendChild(deleteBtn);
+      card.appendChild(actions);
+    } else {
+      // Built-in template
+      card.addEventListener('click', () => {
+        window.location.href = `/editor/?template=${encodeURIComponent(t.id)}`;
+      });
+    }
     return card;
   }
 
@@ -347,54 +404,53 @@ class App {
     try {
       const res = await fetch(`/templates/${encodeURIComponent(templateId)}.json`);
       if (!res.ok) return;
-      const gridMap: GridMap = await res.json();
-
-      // Size canvas to its display dimensions
-      const rect = canvas.getBoundingClientRect();
-      const dpr = Math.min(window.devicePixelRatio, 2);
-      canvas.width = rect.width * dpr;
-      canvas.height = rect.height * dpr;
-
-      const ctx = canvas.getContext('2d')!;
-      ctx.scale(dpr, dpr);
-
-      const { width, height, grid } = gridMap;
-      const displayW = rect.width;
-      const displayH = rect.height;
-
-      // Calculate tile size to fit, centered
-      const tileSize = Math.min(
-        (displayW - 16) / width,
-        (displayH - 16) / height,
-      );
-      const totalW = width * tileSize;
-      const totalH = height * tileSize;
-      const offsetX = (displayW - totalW) / 2;
-      const offsetY = (displayH - totalH) / 2;
-
-      // Background
-      ctx.fillStyle = '#0c0c0c';
-      ctx.fillRect(0, 0, displayW, displayH);
-
-      // Draw each tile
-      const gap = Math.max(0.5, tileSize * 0.06);
-      const colors = App.TILE_COLORS;
-      for (let r = 0; r < height; r++) {
-        for (let c = 0; c < width; c++) {
-          const cell = grid[r]?.[c];
-          if (!cell) continue;
-          const color = colors[cell.type] ?? colors.empty;
-          ctx.fillStyle = color;
-          ctx.fillRect(
-            offsetX + c * tileSize + gap / 2,
-            offsetY + r * tileSize + gap / 2,
-            tileSize - gap,
-            tileSize - gap,
-          );
-        }
-      }
+      this.drawGridPreview(await res.json(), canvas);
     } catch {
       // Silently fail — canvas stays dark
+    }
+  }
+
+  private drawGridPreview(gridMap: GridMap, canvas: HTMLCanvasElement): void {
+    const rect = canvas.getBoundingClientRect();
+    if (rect.width === 0 || rect.height === 0) return;
+    const dpr = Math.min(window.devicePixelRatio, 2);
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+
+    const ctx = canvas.getContext('2d')!;
+    ctx.scale(dpr, dpr);
+
+    const { width, height, grid } = gridMap;
+    const displayW = rect.width;
+    const displayH = rect.height;
+
+    const tileSize = Math.min(
+      (displayW - 16) / width,
+      (displayH - 16) / height,
+    );
+    const totalW = width * tileSize;
+    const totalH = height * tileSize;
+    const offsetX = (displayW - totalW) / 2;
+    const offsetY = (displayH - totalH) / 2;
+
+    ctx.fillStyle = '#0c0c0c';
+    ctx.fillRect(0, 0, displayW, displayH);
+
+    const gap = Math.max(0.5, tileSize * 0.06);
+    const colors = App.TILE_COLORS;
+    for (let r = 0; r < height; r++) {
+      for (let c = 0; c < width; c++) {
+        const cell = grid[r]?.[c];
+        if (!cell) continue;
+        const color = colors[cell.type] ?? colors.empty;
+        ctx.fillStyle = color;
+        ctx.fillRect(
+          offsetX + c * tileSize + gap / 2,
+          offsetY + r * tileSize + gap / 2,
+          tileSize - gap,
+          tileSize - gap,
+        );
+      }
     }
   }
 

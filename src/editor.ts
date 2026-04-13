@@ -20,6 +20,140 @@ const COLORS: Record<TileType, string> = {
 const MOODBOARD_API_BASE = '/api-proxy/proj/v1/mood-boards';
 const MAP_ONLY_TILES: Set<TileType> = new Set(['floor', 'wall', 'door', 'empty']);
 
+// ── Promise-based modal utility (replaces alert/confirm/prompt) ──
+class EditorModal {
+  private static modal = document.getElementById('editor-modal')!;
+  private static titleEl = document.getElementById('editor-modal-title')!;
+  private static body = document.getElementById('editor-modal-body')!;
+  private static footer = document.getElementById('editor-modal-footer')!;
+  private static closeBtn = document.getElementById('editor-modal-close')!;
+  private static cleanup: (() => void) | null = null;
+
+  private static show(onDismiss: () => void): void {
+    // Wire overlay + close button to dismiss
+    this.cleanup?.();
+    const dismiss = () => { this.hide(); onDismiss(); };
+    const overlayClick = (e: Event) => { if (e.target === this.modal.querySelector('.modal-overlay')) dismiss(); };
+    const keydown = (e: KeyboardEvent) => { if (e.key === 'Escape') dismiss(); };
+    this.modal.addEventListener('click', overlayClick);
+    window.addEventListener('keydown', keydown);
+    this.closeBtn.addEventListener('click', dismiss);
+    this.cleanup = () => {
+      this.modal.removeEventListener('click', overlayClick);
+      window.removeEventListener('keydown', keydown);
+      this.closeBtn.removeEventListener('click', dismiss);
+    };
+    this.modal.classList.add('visible');
+  }
+
+  private static hide(): void {
+    this.modal.classList.remove('visible');
+    this.cleanup?.();
+    this.cleanup = null;
+  }
+
+  static alert(message: string, title = '알림'): Promise<void> {
+    return new Promise((resolve) => {
+      this.titleEl.textContent = title;
+      this.body.innerHTML = '';
+      const p = document.createElement('p');
+      p.textContent = message;
+      this.body.appendChild(p);
+      this.footer.innerHTML = '';
+      const btn = document.createElement('button');
+      btn.className = 'modal-btn primary';
+      btn.textContent = '확인';
+      btn.addEventListener('click', () => { this.hide(); resolve(); });
+      this.footer.appendChild(btn);
+      this.show(() => resolve());
+      btn.focus();
+    });
+  }
+
+  static confirm(message: string, { title = '확인', confirmText = '확인', cancelText = '취소', danger = false } = {}): Promise<boolean> {
+    return new Promise((resolve) => {
+      this.titleEl.textContent = title;
+      this.body.innerHTML = '';
+      const p = document.createElement('p');
+      p.textContent = message;
+      this.body.appendChild(p);
+      this.footer.innerHTML = '';
+      const cancelBtn = document.createElement('button');
+      cancelBtn.className = 'modal-btn';
+      cancelBtn.textContent = cancelText;
+      cancelBtn.addEventListener('click', () => { this.hide(); resolve(false); });
+      this.footer.appendChild(cancelBtn);
+      const okBtn = document.createElement('button');
+      okBtn.className = danger ? 'modal-btn danger' : 'modal-btn primary';
+      okBtn.textContent = confirmText;
+      okBtn.addEventListener('click', () => { this.hide(); resolve(true); });
+      this.footer.appendChild(okBtn);
+      this.show(() => resolve(false));
+      okBtn.focus();
+    });
+  }
+
+  static prompt(message: string, defaultValue = '', title = '입력'): Promise<string | null> {
+    return new Promise((resolve) => {
+      this.titleEl.textContent = title;
+      this.body.innerHTML = '';
+      const p = document.createElement('p');
+      p.textContent = message;
+      this.body.appendChild(p);
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.className = 'modal-input';
+      input.value = defaultValue;
+      this.body.appendChild(input);
+      this.footer.innerHTML = '';
+      const cancelBtn = document.createElement('button');
+      cancelBtn.className = 'modal-btn';
+      cancelBtn.textContent = '취소';
+      cancelBtn.addEventListener('click', () => { this.hide(); resolve(null); });
+      this.footer.appendChild(cancelBtn);
+      const okBtn = document.createElement('button');
+      okBtn.className = 'modal-btn primary';
+      okBtn.textContent = '확인';
+      okBtn.addEventListener('click', () => { this.hide(); resolve(input.value); });
+      this.footer.appendChild(okBtn);
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') { this.hide(); resolve(input.value); }
+      });
+      this.show(() => resolve(null));
+      input.focus();
+      input.select();
+    });
+  }
+
+  static choose<T extends string>(title: string, options: { value: T; label: string; desc?: string }[]): Promise<T | null> {
+    return new Promise((resolve) => {
+      this.titleEl.textContent = title;
+      this.body.innerHTML = '';
+      for (const opt of options) {
+        const btn = document.createElement('button');
+        btn.className = 'modal-choice';
+        const strong = document.createElement('strong');
+        strong.textContent = opt.label;
+        btn.appendChild(strong);
+        if (opt.desc) {
+          const span = document.createElement('span');
+          span.textContent = opt.desc;
+          btn.appendChild(span);
+        }
+        btn.addEventListener('click', () => { this.hide(); resolve(opt.value); });
+        this.body.appendChild(btn);
+      }
+      this.footer.innerHTML = '';
+      const cancelBtn = document.createElement('button');
+      cancelBtn.className = 'modal-btn';
+      cancelBtn.textContent = '취소';
+      cancelBtn.addEventListener('click', () => { this.hide(); resolve(null); });
+      this.footer.appendChild(cancelBtn);
+      this.show(() => resolve(null));
+    });
+  }
+}
+
 interface ProjectItem {
   projectId: string;
   title: string;
@@ -97,7 +231,7 @@ class MapEditor {
     if (editId) {
       const map = CustomMapStore.get(editId);
       if (!map) {
-        alert('요청한 전시회를 찾을 수 없습니다.');
+        EditorModal.alert('요청한 전시회를 찾을 수 없습니다.');
         return;
       }
       this.loadMapIntoEditor(map);
@@ -135,7 +269,7 @@ class MapEditor {
       this.render();
       this.schedulePreviewUpdate();
     } catch {
-      alert('템플릿을 불러올 수 없습니다: ' + templateId);
+      EditorModal.alert('템플릿을 불러올 수 없습니다: ' + templateId);
     }
   }
 
@@ -321,8 +455,9 @@ class MapEditor {
     });
 
     // New map (reset state and drop current id)
-    document.getElementById('btn-new')!.addEventListener('click', () => {
-      if (confirm('현재 상태를 초기화할까요? 저장되지 않은 변경 사항은 사라집니다.')) {
+    document.getElementById('btn-new')!.addEventListener('click', async () => {
+      const ok = await EditorModal.confirm('현재 상태를 초기화할까요?\n저장되지 않은 변경 사항은 사라집니다.');
+      if (ok) {
         this.currentMapId = null;
         this.currentMapName = null;
         this.projects = [];
@@ -413,7 +548,7 @@ class MapEditor {
     if (this.currentTool === 'artwork') {
       const artId = this.getSelectedArtworkId();
       if (!artId) {
-        alert('작품을 선택하거나 ID를 입력해주세요');
+        EditorModal.alert('작품을 선택하거나 ID를 입력해주세요');
         this.isDrawing = false;
         return;
       }
@@ -601,16 +736,23 @@ class MapEditor {
     window.open('/#/exhibition/editor-preview', '_blank');
   }
 
-  private saveCurrentMap(): void {
-    // Check that the map has at least something placed
+  private async saveCurrentMap(): Promise<void> {
     const hasContent = this.grid.some((row) => row.some((c) => c.type !== 'empty'));
     if (!hasContent) {
-      alert('빈 전시회는 저장할 수 없습니다.');
+      await EditorModal.alert('빈 맵은 저장할 수 없습니다.');
       return;
     }
 
-    const defaultName = this.currentMapName ?? `내 전시회 ${new Date().toLocaleDateString('ko-KR')}`;
-    const name = prompt('전시회 이름을 입력하세요', defaultName);
+    const choice = await EditorModal.choose('저장 유형 선택', [
+      { value: 'template' as const, label: '템플릿으로 저장', desc: '맵 레이아웃만 저장합니다' },
+      { value: 'exhibition' as const, label: '전시회로 저장', desc: '맵 + 작품을 함께 저장합니다' },
+    ]);
+    if (!choice) return;
+
+    const isTemplate = choice === 'template';
+    const typeLabel = isTemplate ? '템플릿' : '전시회';
+    const defaultName = this.currentMapName ?? `내 ${typeLabel} ${new Date().toLocaleDateString('ko-KR')}`;
+    const name = await EditorModal.prompt(`${typeLabel} 이름을 입력하세요`, defaultName, '이름 입력');
     if (!name || !name.trim()) return;
 
     const id = this.currentMapId ?? CustomMapStore.newId();
@@ -619,13 +761,13 @@ class MapEditor {
     const map: CustomMap = {
       id,
       name: name.trim(),
+      type: isTemplate ? 'template' : 'exhibition',
       createdAt: existing?.createdAt ?? new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       gridMap: this.getGridMap(),
       textures: this.getTextureConfig(),
-      // buildArtworksConfig returns editor-ready artwork configs with resolved imageUrl
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      artworks: this.buildArtworksConfig() as any,
+      artworks: isTemplate ? [] : (this.buildArtworksConfig() as any),
     };
 
     const saved = CustomMapStore.save(map);
@@ -633,9 +775,16 @@ class MapEditor {
     this.currentMapName = saved.name;
     this.updateCurrentMapLabel();
 
-    const goToGallery = confirm(`저장되었습니다: ${saved.name}\n\n갤러리에서 보시겠습니까?`);
-    if (goToGallery) {
-      window.location.href = `/#/exhibition/custom-${saved.id}`;
+    if (isTemplate) {
+      await EditorModal.alert(`템플릿이 저장되었습니다: ${saved.name}`, '저장 완료');
+    } else {
+      const goToGallery = await EditorModal.confirm(
+        `전시회가 저장되었습니다: ${saved.name}\n\n갤러리에서 보시겠습니까?`,
+        { title: '저장 완료', confirmText: '갤러리로 이동', cancelText: '계속 편집' },
+      );
+      if (goToGallery) {
+        window.location.href = `/#/exhibition/custom-${saved.id}`;
+      }
     }
   }
 
@@ -788,8 +937,12 @@ class MapEditor {
     const deleteBtn = document.createElement('button');
     deleteBtn.className = 'map-btn danger';
     deleteBtn.textContent = '삭제';
-    deleteBtn.addEventListener('click', () => {
-      if (confirm(`"${map.name}" 전시회를 삭제할까요?`)) {
+    deleteBtn.addEventListener('click', async () => {
+      const ok = await EditorModal.confirm(
+        `"${map.name}"을(를) 삭제할까요?`,
+        { title: '삭제 확인', confirmText: '삭제', danger: true },
+      );
+      if (ok) {
         CustomMapStore.delete(map.id);
         if (this.currentMapId === map.id) {
           this.currentMapId = null;

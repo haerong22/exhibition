@@ -2,9 +2,12 @@ import type { GridMap } from '../types/tiled';
 import type { TextureConfig } from '../gallery/TiledGalleryBuilder';
 import type { ArtworkConfig } from '../types/exhibition';
 
+export type CustomMapType = 'template' | 'exhibition';
+
 export interface CustomMap {
   id: string;
   name: string;
+  type: CustomMapType;
   createdAt: string;
   updatedAt: string;
   gridMap: GridMap;
@@ -32,6 +35,10 @@ export const CustomMapStore = {
     return Object.values(readStore()).sort(
       (a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt)
     );
+  },
+
+  listByType(type: CustomMapType): CustomMap[] {
+    return this.list().filter((m) => (m.type ?? 'exhibition') === type);
   },
 
   get(id: string): CustomMap | null {

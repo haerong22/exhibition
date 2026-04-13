@@ -91,6 +91,35 @@
     .map-item .map-btn:hover { border-color: #666; color: #fff; }
     .map-item .map-btn.danger:hover { border-color: #a44; color: #ff8a8a; }
     .modal-empty { text-align: center; color: #555; font-size: 0.85rem; padding: 2rem 0; }
+
+    /* Generic editor modal */
+    .modal-footer { display: flex; justify-content: flex-end; gap: 0.5rem; padding: 0.8rem 1.4rem; border-top: 1px solid #222; }
+    .modal-btn {
+      padding: 0.5rem 1.2rem; border: 1px solid #444; background: transparent;
+      color: #ccc; font-size: 0.8rem; cursor: pointer; border-radius: 3px;
+      transition: all 0.2s; letter-spacing: 0.03em;
+    }
+    .modal-btn:hover { border-color: #666; color: #fff; }
+    .modal-btn.primary { background: #fff; color: #000; border-color: #fff; }
+    .modal-btn.primary:hover { background: #ddd; }
+    .modal-btn.danger { border-color: #a44; color: #ff8a8a; }
+    .modal-btn.danger:hover { background: rgba(170,68,68,0.15); }
+    .modal-input {
+      width: 100%; margin-top: 0.8rem; padding: 0.6rem 0.8rem;
+      background: #1a1a1a; border: 1px solid #333; color: #fff;
+      font-size: 0.85rem; border-radius: 3px; outline: none;
+    }
+    .modal-input:focus { border-color: #666; }
+    .modal-body p { font-size: 0.85rem; color: #bbb; line-height: 1.6; }
+    .modal-choice {
+      display: block; width: 100%; text-align: left;
+      padding: 0.8rem 1rem; margin-bottom: 0.5rem;
+      background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 4px;
+      color: #ccc; cursor: pointer; transition: all 0.2s;
+    }
+    .modal-choice:hover { border-color: #555; background: #222; }
+    .modal-choice strong { display: block; font-size: 0.85rem; color: #eee; margin-bottom: 0.15rem; }
+    .modal-choice span { font-size: 0.7rem; color: #777; }
   </style>
 </head>
 <body>
@@ -118,6 +147,18 @@
         <button class="modal-close" id="maps-modal-close">&times;</button>
       </div>
       <div class="modal-body" id="maps-modal-body"></div>
+    </div>
+  </div>
+
+  <div class="modal" id="editor-modal">
+    <div class="modal-overlay"></div>
+    <div class="modal-content" style="width:420px">
+      <div class="modal-header">
+        <h2 id="editor-modal-title"></h2>
+        <button class="modal-close" id="editor-modal-close">&times;</button>
+      </div>
+      <div class="modal-body" id="editor-modal-body"></div>
+      <div class="modal-footer" id="editor-modal-footer"></div>
     </div>
   </div>
 
