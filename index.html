@@ -117,15 +117,32 @@
       font-size: 0.85rem; font-weight: 400; letter-spacing: 0.15em;
       text-transform: uppercase; color: #aaa;
     }
-    .picker-section-header .picker-btn {
+    .picker-btn {
       font-size: 0.75rem; color: #ccc; background: transparent;
       border: 1px solid #3a3a3a; padding: 0.4rem 0.9rem; cursor: pointer;
-      text-decoration: none; letter-spacing: 0.05em;
+      text-decoration: none; letter-spacing: 0.05em; border-radius: 3px;
       transition: all 0.2s ease;
     }
-    .picker-section-header .picker-btn:hover { border-color: #666; color: #fff; background: rgba(255,255,255,0.04); }
+    .picker-btn:hover { border-color: #666; color: #fff; background: rgba(255,255,255,0.04); }
     .picker-list { display: flex; flex-direction: column; gap: 0.8rem; }
     .picker-empty { font-size: 0.8rem; color: #555; padding: 1rem; text-align: center; border: 1px dashed #222; border-radius: 3px; }
+    /* Template tabs */
+    .template-tabs {
+      display: flex; align-items: center; gap: 0; margin-bottom: 1rem;
+      border-bottom: 1px solid #222;
+    }
+    .template-tab {
+      padding: 0.6rem 1.2rem; font-size: 0.8rem; color: #777;
+      background: transparent; border: none; border-bottom: 2px solid transparent;
+      cursor: pointer; transition: all 0.2s ease; letter-spacing: 0.05em;
+    }
+    .template-tab:hover { color: #ccc; }
+    .template-tab.active { color: #fff; border-bottom-color: #fff; }
+    .template-tab .tab-count {
+      font-size: 0.65rem; color: #555; margin-left: 0.3rem;
+    }
+    .template-tab.active .tab-count { color: #888; }
+    .template-tabs .tab-spacer { flex: 1; }
     /* Template grid layout */
     .template-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 1rem; }
     .template-pagination {
@@ -220,15 +237,18 @@
     <div id="picker-title">전시 선택</div>
     <div class="picker-container">
       <div class="picker-section">
-        <div class="picker-section-header">
-          <h2>템플릿</h2>
+        <div class="template-tabs">
+          <button class="template-tab active" id="tab-builtin">기본 템플릿</button>
+          <button class="template-tab" id="tab-custom">내 템플릿 <span class="tab-count" id="tab-custom-count"></span></button>
+          <span class="tab-spacer"></span>
+          <a class="picker-btn" href="/editor/">새 템플릿 만들기</a>
         </div>
         <div id="picker-templates" class="picker-list"></div>
       </div>
       <div class="picker-section">
         <div class="picker-section-header">
           <h2>내 전시회</h2>
-          <a class="picker-btn" href="/editor/" target="_blank">새 전시회 만들기 →</a>
+          <a class="picker-btn" href="/editor/">새 전시회 만들기</a>
         </div>
         <div id="picker-custom" class="picker-list"></div>
       </div>

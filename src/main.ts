@@ -31,8 +31,10 @@ class App {
   private tiledBuilder: TiledGalleryBuilder;
   private textureManager: TextureManager;
   private tiledCollision: TiledCollision | null = null;
+  private builtInTemplates: { id: string; name: string; description: string; size?: string; recommended?: string }[] = [];
   private allTemplates: { id: string; name: string; description: string; size?: string; recommended?: string; customMapId?: string }[] = [];
   private templatePage = 0;
+  private templateTab: 'builtin' | 'custom' = 'builtin';
   private static readonly TEMPLATES_PER_PAGE = 6;
   private loader: ExhibitionLoader;
   private router: Router;
@@ -221,34 +223,43 @@ class App {
     const templatesEl = document.getElementById('picker-templates')!;
     const customEl = document.getElementById('picker-custom')!;
 
-    // Templates: built-in (from /templates/index.json) + custom (from localStorage)
+    // Fetch built-in templates once
     templatesEl.innerHTML = '<div class="picker-empty">불러오는 중...</div>';
     try {
       const res = await fetch('/templates/index.json');
-      const builtIn: { id: string; name: string; description: string; size?: string; recommended?: string }[] = await res.json();
-      // Merge with custom templates from localStorage
-      const customTemplates = CustomMapStore.listByType('template');
-      const customItems = customTemplates.map((m) => ({
-        id: m.id,
-        name: m.name,
-        description: '커스텀 템플릿',
-        size: `${m.gridMap.width}×${m.gridMap.height}`,
-        recommended: undefined as string | undefined,
-        customMapId: m.id,
-      }));
-      this.allTemplates = [
-        ...builtIn.map((t) => ({ ...t, customMapId: undefined as string | undefined })),
-        ...customItems,
-      ];
-      this.templatePage = 0;
-      if (this.allTemplates.length === 0) {
-        templatesEl.innerHTML = '<div class="picker-empty">템플릿이 없습니다</div>';
-      } else {
-        this.renderTemplatePage(templatesEl);
-      }
+      this.builtInTemplates = await res.json();
     } catch {
-      templatesEl.innerHTML = '<div class="picker-empty">템플릿을 불러올 수 없습니다</div>';
+      this.builtInTemplates = [];
     }
+
+    // Wire tab buttons
+    const tabBuiltin = document.getElementById('tab-builtin')!;
+    const tabCustom = document.getElementById('tab-custom')!;
+    const countEl = document.getElementById('tab-custom-count')!;
+
+    // Clone to remove old listeners
+    const newTabBuiltin = tabBuiltin.cloneNode(true) as HTMLElement;
+    const newTabCustom = tabCustom.cloneNode(true) as HTMLElement;
+    tabBuiltin.replaceWith(newTabBuiltin);
+    tabCustom.replaceWith(newTabCustom);
+
+    newTabBuiltin.addEventListener('click', () => {
+      this.templateTab = 'builtin';
+      this.templatePage = 0;
+      this.renderActiveTab(templatesEl, newTabBuiltin, newTabCustom);
+    });
+    newTabCustom.addEventListener('click', () => {
+      this.templateTab = 'custom';
+      this.templatePage = 0;
+      this.renderActiveTab(templatesEl, newTabBuiltin, newTabCustom);
+    });
+
+    // Update custom count
+    const customCount = CustomMapStore.listByType('template').length;
+    countEl.textContent = `(${customCount})`;
+
+    // Render active tab
+    this.renderActiveTab(templatesEl, newTabBuiltin, newTabCustom);
 
     // Exhibitions (from localStorage)
     this.refreshCustomList(customEl);
@@ -264,6 +275,39 @@ class App {
     for (const map of maps) {
       containerEl.appendChild(this.renderCustomCard(map, containerEl));
     }
+  }
+
+  private renderActiveTab(container: HTMLElement, tabBuiltin: HTMLElement, tabCustom: HTMLElement): void {
+    // Update tab active state
+    tabBuiltin.classList.toggle('active', this.templateTab === 'builtin');
+    tabCustom.classList.toggle('active', this.templateTab === 'custom');
+
+    // Update custom count
+    const customCount = CustomMapStore.listByType('template').length;
+    const countEl = tabCustom.querySelector('.tab-count') ?? document.getElementById('tab-custom-count');
+    if (countEl) countEl.textContent = `(${customCount})`;
+
+    if (this.templateTab === 'builtin') {
+      this.allTemplates = this.builtInTemplates.map((t) => ({ ...t, customMapId: undefined as string | undefined }));
+    } else {
+      const customTemplates = CustomMapStore.listByType('template');
+      this.allTemplates = customTemplates.map((m) => ({
+        id: m.id,
+        name: m.name,
+        description: '커스텀 템플릿',
+        size: `${m.gridMap.width}×${m.gridMap.height}`,
+        recommended: undefined as string | undefined,
+        customMapId: m.id,
+      }));
+    }
+
+    if (this.allTemplates.length === 0) {
+      container.innerHTML = this.templateTab === 'builtin'
+        ? '<div class="picker-empty">템플릿이 없습니다</div>'
+        : '<div class="picker-empty">저장된 템플릿이 없습니다. 에디터에서 맵을 만들고 템플릿으로 저장하세요.</div>';
+      return;
+    }
+    this.renderTemplatePage(container);
   }
 
   private renderTemplatePage(container: HTMLElement): void {
