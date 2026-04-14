@@ -81,7 +81,8 @@ export class ArtworkFrame {
       }
     }
 
-    // Spotlight
+    // SpotLight per artwork — castShadow disabled so it doesn't consume
+    // GPU shadow-map texture units (the bottleneck that caused MAX_TEXTURE_IMAGE_UNITS errors).
     const spot = new THREE.SpotLight(
       COLORS.SPOT_LIGHT,
       2.0,
@@ -92,9 +93,6 @@ export class ArtworkFrame {
     );
     spot.position.set(0, height / 2 + 1.0, 0.8);
     spot.target = canvas;
-    spot.castShadow = true;
-    spot.shadow.mapSize.set(DEFAULTS.SHADOW_MAP_SIZE, DEFAULTS.SHADOW_MAP_SIZE);
-    spot.shadow.bias = -0.001;
     this.group.add(spot);
     this.group.add(spot.target);
 

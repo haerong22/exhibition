@@ -183,6 +183,7 @@ class MapEditor {
   private textureManager: TextureManager;
   private previewTimer: ReturnType<typeof setTimeout> | null = null;
   private currentPreviewGroup: THREE.Group | null = null;
+  private previewInitialized = false;
 
   constructor() {
     this.canvas = document.getElementById('grid-canvas') as HTMLCanvasElement;
@@ -247,6 +248,7 @@ class MapEditor {
   }
 
   private async loadTemplate(templateId: string): Promise<void> {
+    this.previewInitialized = false;
     try {
       const res = await fetch(`/templates/${encodeURIComponent(templateId)}.json`);
       if (!res.ok) throw new Error('not found');
@@ -354,11 +356,15 @@ class MapEditor {
       this.currentPreviewGroup = result.group;
       this.previewScene.add(result.group);
 
-      // Update camera target to center of map
-      const cx = parsedMap.widthMeters / 2;
-      const cz = -parsedMap.depthMeters / 2;
-      this.previewControls.target.set(cx, 1.5, cz);
-      this.previewCamera.position.set(cx + parsedMap.widthMeters * 0.6, parsedMap.wallHeight * 1.5, cz + parsedMap.depthMeters * 0.6);
+      if (!this.previewInitialized) {
+        const cx = parsedMap.widthMeters / 2;
+        const cz = -parsedMap.depthMeters / 2;
+        const mapSize = Math.max(parsedMap.widthMeters, parsedMap.depthMeters);
+        this.previewControls.target.set(cx, 1.5, cz);
+        this.previewCamera.position.set(cx + mapSize * 0.6, parsedMap.wallHeight * 1.5, cz + mapSize * 0.6);
+        this.previewControls.update();
+        this.previewInitialized = true;
+      }
 
       statusEl.textContent = '최신';
       statusEl.style.color = '#4eff7e';
@@ -393,11 +399,14 @@ class MapEditor {
 
       statusEl.textContent = `${this.projects.length}개 작품 로드 완료`;
       statusEl.style.color = '#4eff7e';
+      const autoBtn = document.getElementById('btn-auto-exhibit')!;
+      autoBtn.style.display = this.projects.length > 0 ? 'block' : 'none';
     } catch {
       this.projects = [];
       select.innerHTML = '<option value="">로드 실패</option>';
       statusEl.textContent = '무드보드를 찾을 수 없습니다';
       statusEl.style.color = '#ff6b6b';
+      document.getElementById('btn-auto-exhibit')!.style.display = 'none';
     }
   }
 
@@ -461,6 +470,7 @@ class MapEditor {
         this.currentMapId = null;
         this.currentMapName = null;
         this.projects = [];
+        this.previewInitialized = false;
         this.initGrid();
         this.updateCurrentMapLabel();
         this.render();
@@ -492,6 +502,11 @@ class MapEditor {
     // Mode toggle
     document.getElementById('btn-mode-toggle')!.addEventListener('click', () => {
       this.setEditorMode(this.editorMode === 'map' ? 'exhibition' : 'map');
+    });
+
+    // Auto exhibit
+    document.getElementById('btn-auto-exhibit')!.addEventListener('click', async () => {
+      await this.autoExhibit();
     });
 
     // Preview in new tab
@@ -546,15 +561,66 @@ class MapEditor {
     const cell: TileCell = { type: this.currentTool };
 
     if (this.currentTool === 'artwork') {
+      // Toggle: if already artwork, revert the whole 2-tile pair to floor
+      if (this.grid[row][col].type === 'artwork') {
+        const removeId = this.grid[row][col].instanceId;
+        for (let r = 0; r < this.height; r++) {
+          for (let c = 0; c < this.width; c++) {
+            if (this.grid[r][c].instanceId === removeId) {
+              this.grid[r][c] = { type: 'floor' };
+            }
+          }
+        }
+        this.render();
+        this.schedulePreviewUpdate();
+        return;
+      }
+
+      // Artwork can only be placed on floor tiles adjacent to a wall
+      if (this.grid[row][col].type !== 'floor') return;
+
+      // Detect wall direction
+      type Facing = 'north' | 'south' | 'east' | 'west';
+      let facing: Facing | null = null;
+      const facingSel = (document.getElementById('artwork-facing') as HTMLSelectElement).value;
+      if (facingSel !== 'auto') {
+        facing = facingSel as Facing;
+      } else {
+        if (row > 0 && this.grid[row - 1][col].type === 'wall') facing = 'south';
+        else if (row < this.height - 1 && this.grid[row + 1][col].type === 'wall') facing = 'north';
+        else if (col > 0 && this.grid[row][col - 1].type === 'wall') facing = 'east';
+        else if (col < this.width - 1 && this.grid[row][col + 1].type === 'wall') facing = 'west';
+      }
+      if (!facing) return;
+
+      // Find second tile along the wall to make a 2-tile pair
+      let r2 = row, c2 = col;
+      const isHorizontalWall = facing === 'north' || facing === 'south';
+      if (isHorizontalWall) {
+        // Extend along X (col axis)
+        if (col + 1 < this.width && this.grid[row][col + 1].type === 'floor') c2 = col + 1;
+        else if (col - 1 >= 0 && this.grid[row][col - 1].type === 'floor') c2 = col - 1;
+        else return; // no room for 2nd tile
+      } else {
+        // Extend along Z (row axis)
+        if (row + 1 < this.height && this.grid[row + 1][col].type === 'floor') r2 = row + 1;
+        else if (row - 1 >= 0 && this.grid[row - 1][col].type === 'floor') r2 = row - 1;
+        else return;
+      }
+
       const artId = this.getSelectedArtworkId();
       if (!artId) {
         EditorModal.alert('작품을 선택하거나 ID를 입력해주세요');
         this.isDrawing = false;
         return;
       }
-      cell.artworkId = artId;
-      const facing = (document.getElementById('artwork-facing') as HTMLSelectElement).value;
-      if (facing !== 'auto') cell.wallFacing = facing as TileCell['wallFacing'];
+
+      const instanceId = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 5)}`;
+      this.grid[row][col] = { type: 'artwork', artworkId: artId, instanceId, wallFacing: facing };
+      this.grid[r2][c2] = { type: 'artwork', artworkId: artId, instanceId, wallFacing: facing };
+      this.render();
+      this.schedulePreviewUpdate();
+      return;
     }
 
     // Only one spawn point
@@ -687,23 +753,12 @@ class MapEditor {
       if (proj) {
         const imgUrl = proj.imageUrl.replace(/https:\/\/(dev-)?files\.grafolio\.ogq\.me\//, '/img-proxy/').replace('?type=THUMBNAIL', '');
         artworks.push({
-          id: proj.projectId,
+          id,
           imageUrl: imgUrl,
           title: proj.title,
           artist: proj.owner.nickname,
-          width: 1.4,
-          height: 1.0,
-          frameStyle: 'modern' as const,
-          frameColor: '#2a2a2a',
-        });
-      } else {
-        artworks.push({
-          id,
-          imageUrl: '',
-          title: id,
-          artist: 'Unknown',
-          width: 1.4,
-          height: 1.0,
+          width: 1.8,
+          height: 1.2,
           frameStyle: 'modern' as const,
           frameColor: '#2a2a2a',
         });
@@ -734,6 +789,196 @@ class MapEditor {
     sessionStorage.setItem('editor-artworks', JSON.stringify(artworks));
     sessionStorage.setItem('editor-textures', JSON.stringify(textures));
     window.open('/#/exhibition/editor-preview', '_blank');
+  }
+
+  private async autoExhibit(): Promise<void> {
+    if (this.projects.length === 0) {
+      await EditorModal.alert('무드보드를 먼저 불러와주세요.');
+      return;
+    }
+
+    // Find floor tiles adjacent to walls — potential artwork slots
+    type Slot = { row: number; col: number; facing: 'north' | 'south' | 'east' | 'west' };
+    const allSlots: Slot[] = [];
+    for (let row = 0; row < this.height; row++) {
+      for (let col = 0; col < this.width; col++) {
+        const t = this.grid[row][col].type;
+        if (t !== 'floor' && t !== 'spawn') continue;
+        if (row > 0 && this.grid[row - 1][col].type === 'wall')
+          allSlots.push({ row, col, facing: 'south' });
+        if (row < this.height - 1 && this.grid[row + 1][col].type === 'wall')
+          allSlots.push({ row, col, facing: 'north' });
+        if (col > 0 && this.grid[row][col - 1].type === 'wall')
+          allSlots.push({ row, col, facing: 'east' });
+        if (col < this.width - 1 && this.grid[row][col + 1].type === 'wall')
+          allSlots.push({ row, col, facing: 'west' });
+      }
+    }
+
+    if (allSlots.length === 0) {
+      await EditorModal.alert('벽에 인접한 빈 바닥 타일이 없습니다.\n먼저 맵을 구성해주세요.');
+      return;
+    }
+
+    // Remove slots already occupied
+    const available = allSlots.filter((s) => {
+      const ct = this.grid[s.row][s.col].type;
+      return ct === 'floor' || ct === 'spawn';
+    });
+    if (available.length === 0) {
+      await EditorModal.alert('배치 가능한 슬롯이 없습니다.\n이미 모든 벽면에 작품이 배치되어 있습니다.');
+      return;
+    }
+
+    // Build 2-tile pairs along each wall for centered artwork placement.
+    // Each artwork occupies 2 adjacent tiles; pairs are spaced ≥1 tile apart.
+    type Pair = { slots: [Slot, Slot] };
+    const artworks = [...this.projects];
+    const selected: Pair[] = [];
+    const used = new Set<string>();
+
+    // Group slots by wall line (same facing + same row or col)
+    const wallKey = (s: Slot) =>
+      (s.facing === 'north' || s.facing === 'south') ? `${s.facing}-r${s.row}` : `${s.facing}-c${s.col}`;
+    const wallGroups = new Map<string, Slot[]>();
+    for (const s of available) {
+      const key = wallKey(s);
+      if (!wallGroups.has(key)) wallGroups.set(key, []);
+      wallGroups.get(key)!.push(s);
+    }
+
+    // Sort each wall group by position along the wall
+    for (const [, group] of wallGroups) {
+      group.sort((a, b) =>
+        a.facing === 'north' || a.facing === 'south' ? a.col - b.col : a.row - b.row
+      );
+    }
+
+    const wallPairs = new Map<string, Pair[]>();
+    for (const [key, group] of wallGroups) {
+      // Skip corner slots: tiles adjacent to 2+ walls (e.g. where north wall meets west wall)
+      const isCorner = (s: Slot): boolean => {
+        let wc = 0;
+        if (s.row > 0 && this.grid[s.row - 1][s.col].type === 'wall') wc++;
+        if (s.row < this.height - 1 && this.grid[s.row + 1][s.col].type === 'wall') wc++;
+        if (s.col > 0 && this.grid[s.row][s.col - 1].type === 'wall') wc++;
+        if (s.col < this.width - 1 && this.grid[s.row][s.col + 1].type === 'wall') wc++;
+        return wc >= 2;
+      };
+      const safe = group.filter((s) => !isCorner(s));
+      const pairs: Pair[] = [];
+      for (let i = 0; i < safe.length - 1; i++) {
+        const a = safe[i], b = safe[i + 1];
+        const dist = Math.abs(a.row - b.row) + Math.abs(a.col - b.col);
+        if (dist === 1) pairs.push({ slots: [a, b] });
+      }
+      if (pairs.length > 0) wallPairs.set(key, pairs);
+    }
+
+    // Calculate how many pairs each wall can hold, then compute even spacing.
+    // First pass: count max pairs per wall (excluding corners, with minimum gap of 1).
+    const wallKeys = [...wallPairs.keys()];
+
+    // Determine how many artworks to place on each wall via round-robin assignment
+    const wallAssignments = new Map<string, number>();
+    for (const key of wallKeys) wallAssignments.set(key, 0);
+    for (let i = 0; i < artworks.length && wallKeys.length > 0; i++) {
+      const key = wallKeys[i % wallKeys.length];
+      const pairs = wallPairs.get(key)!;
+      const maxCapacity = Math.floor((pairs.length + 1) / 3) || (pairs.length > 0 ? 1 : 0);
+      const current = wallAssignments.get(key)!;
+      if (current < maxCapacity) {
+        wallAssignments.set(key, current + 1);
+      }
+    }
+
+    // Second pass: for each wall, fill from both ends toward center (outside-in).
+    // 1 artwork → left end. 2 → left + right. 3 → left + right + center. etc.
+    for (const [key, count] of wallAssignments) {
+      if (count === 0) continue;
+      const pairs = wallPairs.get(key)!;
+      if (pairs.length === 0) continue;
+
+      const isH = pairs[0].slots[0].facing === 'north' || pairs[0].slots[0].facing === 'south';
+      const posOf = (p: Pair) => isH ? Math.min(p.slots[0].col, p.slots[1].col) : Math.min(p.slots[0].row, p.slots[1].row);
+      const firstPos = posOf(pairs[0]);
+      const lastPos = posOf(pairs[pairs.length - 1]);
+      const wallLen = lastPos - firstPos;
+
+      // Generate target positions: alternate left→right→left→right... toward center
+      const targets: number[] = [];
+      if (count === 1) {
+        targets.push(Math.round((firstPos + lastPos) / 2));
+      } else {
+        const step = wallLen / (count - 1);
+        const positions: number[] = [];
+        for (let i = 0; i < count; i++) {
+          positions.push(Math.round(firstPos + i * step));
+        }
+        // Interleave from outside in: left, right, left+1, right-1, ...
+        let lo = 0, hi = positions.length - 1;
+        let fromLeft = true;
+        while (lo <= hi) {
+          if (fromLeft) { targets.push(positions[lo]); lo++; }
+          else { targets.push(positions[hi]); hi--; }
+          fromLeft = !fromLeft;
+        }
+      }
+
+      for (let i = 0; i < targets.length && selected.length < artworks.length; i++) {
+        let bestPair: Pair | null = null;
+        let bestDist = Infinity;
+        for (const pair of pairs) {
+          const [a, b] = pair.slots;
+          if (used.has(`${a.row},${a.col}`) || used.has(`${b.row},${b.col}`)) continue;
+          const dist = Math.abs(posOf(pair) - targets[i]);
+          if (dist < bestDist) { bestDist = dist; bestPair = pair; }
+        }
+        if (!bestPair) continue;
+        const [a, b] = bestPair.slots;
+        selected.push(bestPair);
+        used.add(`${a.row},${a.col}`);
+        used.add(`${b.row},${b.col}`);
+      }
+    }
+
+    // Clear existing artwork tiles first?
+    const existingCount = this.grid.flat().filter((c) => c.type === 'artwork').length;
+    if (existingCount > 0) {
+      const clearOld = await EditorModal.confirm(
+        `기존 배치된 작품 ${existingCount}개가 있습니다.\n기존 배치를 제거하고 새로 배치할까요?`,
+        { title: '자동 전시', confirmText: '새로 배치', cancelText: '기존 유지하고 추가' },
+      );
+      if (clearOld) {
+        for (let r = 0; r < this.height; r++) {
+          for (let c = 0; c < this.width; c++) {
+            if (this.grid[r][c].type === 'artwork') {
+              this.grid[r][c] = { type: 'floor' };
+            }
+          }
+        }
+      }
+    }
+
+    // Place artworks — mark both tiles of each pair with the same artworkId
+    let placed = 0;
+    for (let i = 0; i < selected.length; i++) {
+      const [a, b] = selected[i].slots;
+      const tA = this.grid[a.row][a.col].type, tB = this.grid[b.row][b.col].type;
+      if ((tA !== 'floor' && tA !== 'spawn') || (tB !== 'floor' && tB !== 'spawn')) continue;
+      const instanceId = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 5)}${i}`;
+      this.grid[a.row][a.col] = { type: 'artwork', artworkId: artworks[i].projectId, instanceId, wallFacing: a.facing };
+      this.grid[b.row][b.col] = { type: 'artwork', artworkId: artworks[i].projectId, instanceId, wallFacing: b.facing };
+      placed++;
+    }
+
+    this.render();
+    this.schedulePreviewUpdate();
+    await EditorModal.alert(
+      `${placed}개 작품을 자동 배치했습니다.` +
+      (artworks.length > placed ? `\n(${artworks.length - placed}개 작품은 공간 부족으로 배치되지 않았습니다.)` : ''),
+      '자동 전시 완료',
+    );
   }
 
   private async saveCurrentMap(): Promise<void> {
@@ -789,6 +1034,7 @@ class MapEditor {
   }
 
   private loadMapIntoEditor(map: CustomMap): void {
+    this.previewInitialized = false;
     // Restore dimensions + grid
     this.width = map.gridMap.width;
     this.height = map.gridMap.height;

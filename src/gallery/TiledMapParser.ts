@@ -9,6 +9,7 @@ export class TiledMapParser {
     const wallSegments: ParsedWallSegment[] = [];
     const artworkSlots: ParsedArtworkSlot[] = [];
     const doorways: ParsedDoorway[] = [];
+    const artworkTiles = new Map<string, { artworkId: string; col: number; row: number; wallFacing?: 'north' | 'south' | 'east' | 'west' }[]>();
     let spawnPoint: { x: number; z: number } | null = null;
 
     // Build walkable grid and collect special tiles
@@ -45,31 +46,43 @@ export class TiledMapParser {
         }
 
         if (cell.type === 'artwork' && cell.artworkId) {
-          const facing = cell.wallFacing ?? this.detectWallFacing(grid, col, row, width, height);
-          const rotation = this.facingToRotation(facing);
-          const normal = this.facingToNormal(facing);
-
-          // Push artwork against the wall (offset toward the wall direction)
-          const wallOffset = 0.48;
-          let ax = col + 0.5;
-          let az = -(row + 0.5);
-          if (facing === 'south') az += wallOffset;  // wall is north, push toward north
-          if (facing === 'north') az -= wallOffset;   // wall is south, push toward south
-          if (facing === 'west') ax += wallOffset;    // wall is east, push toward east
-          if (facing === 'east') ax -= wallOffset;    // wall is west, push toward west
-
-          artworkSlots.push({
-            artworkId: cell.artworkId,
-            worldX: ax,
-            worldZ: az,
-            wallFacing: facing,
-            rotation,
-            normalX: normal.x,
-            normalY: 0,
-            normalZ: normal.z,
-          });
+          // Group by instanceId (for 2-tile pairs). Fall back to artworkId if no instanceId.
+          const groupKey = cell.instanceId ?? cell.artworkId;
+          if (!artworkTiles.has(groupKey)) {
+            artworkTiles.set(groupKey, []);
+          }
+          artworkTiles.get(groupKey)!.push({ artworkId: cell.artworkId, col, row, wallFacing: cell.wallFacing });
         }
       }
+    }
+
+    // Build artwork slots from grouped tiles (centroid positioning)
+    for (const [, tiles] of artworkTiles) {
+      const centerCol = tiles.reduce((s, t) => s + t.col, 0) / tiles.length;
+      const centerRow = tiles.reduce((s, t) => s + t.row, 0) / tiles.length;
+      const firstTile = tiles[0];
+      const facing = firstTile.wallFacing ?? this.detectWallFacing(grid, firstTile.col, firstTile.row, width, height);
+      const rotation = this.facingToRotation(facing);
+      const normal = this.facingToNormal(facing);
+
+      const wallOffset = 0.48;
+      let ax = centerCol + 0.5;
+      let az = -(centerRow + 0.5);
+      if (facing === 'south') az += wallOffset;
+      if (facing === 'north') az -= wallOffset;
+      if (facing === 'west') ax += wallOffset;
+      if (facing === 'east') ax -= wallOffset;
+
+      artworkSlots.push({
+        artworkId: firstTile.artworkId,
+        worldX: ax,
+        worldZ: az,
+        wallFacing: facing,
+        rotation,
+        normalX: normal.x,
+        normalY: 0,
+        normalZ: normal.z,
+      });
     }
 
     // Extract walls from explicit wall tiles

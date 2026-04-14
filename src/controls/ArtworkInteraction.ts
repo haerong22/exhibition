@@ -55,7 +55,15 @@ export class ArtworkInteraction {
     if (hit.distance > 6) return false;
 
     const config = hit.object.userData.config as ArtworkConfig;
-    const frame = this.artworkFrames.find((f) => f.config.id === config.id);
+    // Find the frame whose group contains the hit mesh (not by id — duplicates share the same id)
+    const frame = this.artworkFrames.find((f) => {
+      let obj: THREE.Object3D | null = hit.object;
+      while (obj) {
+        if (obj === f.group) return true;
+        obj = obj.parent;
+      }
+      return false;
+    });
     if (!frame) return false;
 
     const wallNormal = frame.group.userData.wallNormal as THREE.Vector3;

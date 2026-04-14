@@ -250,13 +250,15 @@ export class TiledGalleryBuilder {
     // Lighting
     this.buildLighting(group, parsedMap, h);
 
-    // Load textures
-    const urls = config.artworks.map((a) => a.imageUrl);
+    // Load textures (skip empty URLs)
+    const urls = config.artworks.map((a) => a.imageUrl).filter((u) => u);
     if (urls.length > 0) {
       await this.textureManager.loadAll(urls, onProgress);
     }
 
     // Place artworks
+    // GPU has ~16 texture units; PointLights use some, material textures use ~3-5.
+    // Each SpotLight adds 1-2 more. Limit spotlights so total stays under budget.
     for (const slot of parsedMap.artworkSlots) {
       const artConfig = config.artworks.find((a) => a.id === slot.artworkId);
       if (!artConfig) continue;
@@ -493,16 +495,17 @@ export class TiledGalleryBuilder {
   }
 
   private buildLighting(group: THREE.Group, map: ParsedMap, h: number): void {
-    const ambient = new THREE.AmbientLight(COLORS.AMBIENT_LIGHT, 0.6);
+    const ambient = new THREE.AmbientLight(COLORS.AMBIENT_LIGHT, 0.7);
     group.add(ambient);
 
-    const hemi = new THREE.HemisphereLight(COLORS.HEMISPHERE_SKY, COLORS.HEMISPHERE_GROUND, 0.4);
+    const hemi = new THREE.HemisphereLight(COLORS.HEMISPHERE_SKY, COLORS.HEMISPHERE_GROUND, 0.5);
     group.add(hemi);
 
     // Dynamically adjust light spacing based on map area to keep total count reasonable.
-    // Target ~12 lights max; wider spacing + larger radius for big maps.
+    // WebGL MeshStandardMaterial uses ~3-5 texture units for materials; each PointLight
+    // adds more. GPU limit is typically MAX_TEXTURE_IMAGE_UNITS=16, so cap at 8 lights.
     const area = map.widthMeters * map.depthMeters;
-    const maxLights = 12;
+    const maxLights = 8;
     const step = Math.max(3, Math.ceil(Math.sqrt(area / maxLights)));
     const radius = Math.max(10, step * 2.5);
 
