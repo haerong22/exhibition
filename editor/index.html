@@ -16,6 +16,8 @@
     .btn:hover { background: #fff; color: #000; border-color: #fff; }
     .btn.primary { background: #fff; color: #000; border-color: #fff; }
     .btn.primary:hover { background: #ccc; }
+    .btn:disabled { opacity: 0.3; cursor: default; }
+    .btn:disabled:hover { background: transparent; color: #ccc; border-color: #444; }
 
     /* Main layout */
     .main { display: flex; flex: 1; overflow: hidden; }
@@ -45,6 +47,18 @@
     .content { flex: 1; display: flex; overflow: hidden; }
     .canvas-area { flex: 1; display: flex; align-items: center; justify-content: center; overflow: auto; background: #080808; position: relative; min-width: 0; }
     #grid-canvas { cursor: crosshair; image-rendering: pixelated; }
+    .shortcut-hint {
+      position: absolute; top: 1rem; right: 1rem;
+      background: rgba(0,0,0,0.6); border: 1px solid #2a2a2a; border-radius: 4px;
+      padding: 0.6rem 0.9rem; font-size: 0.7rem; color: #888;
+      pointer-events: none; user-select: none;
+      display: flex; flex-direction: column; gap: 0.5rem;
+    }
+    .shortcut-hint kbd {
+      display: inline-block; padding: 0.1rem 0.35rem; margin: 0 0.1rem;
+      background: #1a1a1a; border: 1px solid #333; border-radius: 3px;
+      font-family: inherit; font-size: 0.65rem; color: #ccc;
+    }
 
     /* 3D Preview panel */
     .preview-panel { width: 45%; min-width: 300px; background: #0a0a0a; border-left: 1px solid #222; position: relative; display: flex; flex-direction: column; }
@@ -273,6 +287,10 @@
     <div class="content">
       <div class="canvas-area">
         <canvas id="grid-canvas"></canvas>
+        <div class="shortcut-hint">
+          <div><kbd>Ctrl</kbd>+<kbd>Z</kbd> 실행 취소</div>
+          <div><kbd>Ctrl</kbd>+<kbd>⇧</kbd>+<kbd>Z</kbd> 다시 실행</div>
+        </div>
       </div>
       <div class="preview-panel">
         <div class="preview-header">

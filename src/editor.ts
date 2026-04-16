@@ -174,6 +174,11 @@ class MapEditor {
   private currentMapName: string | null = null;
   private editorMode: 'map' | 'exhibition' = 'map';
 
+  // Undo/redo history: snapshots of { grid, width, height, wallHeight }
+  private history: { grid: TileCell[][]; width: number; height: number; wallHeight: number }[] = [];
+  private redoStack: typeof this.history = [];
+  private static readonly MAX_HISTORY = 50;
+
   // 3D Preview
   private previewRenderer: THREE.WebGLRenderer;
   private previewScene: THREE.Scene;
@@ -249,6 +254,7 @@ class MapEditor {
 
   private async loadTemplate(templateId: string): Promise<void> {
     this.previewInitialized = false;
+    this.clearHistory();
     try {
       const res = await fetch(`/templates/${encodeURIComponent(templateId)}.json`);
       if (!res.ok) throw new Error('not found');
@@ -442,6 +448,8 @@ class MapEditor {
     // Canvas drawing
     this.canvas.addEventListener('mousedown', (e) => {
       this.isDrawing = true;
+      // Snapshot once at drag start so a continuous drag = 1 history entry
+      this.pushHistory();
       this.handleDraw(e);
     });
     this.canvas.addEventListener('mousemove', (e) => {
@@ -455,10 +463,27 @@ class MapEditor {
       }
     });
 
+    // Undo / Redo (keyboard only — shortcut hint shown in canvas area)
+    window.addEventListener('keydown', (e) => {
+      // Ignore when typing in inputs
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+      const mod = e.ctrlKey || e.metaKey;
+      if (mod && !e.shiftKey && e.key.toLowerCase() === 'z') {
+        e.preventDefault();
+        this.undo();
+      } else if (mod && (e.shiftKey && e.key.toLowerCase() === 'z' || e.key.toLowerCase() === 'y')) {
+        e.preventDefault();
+        this.redo();
+      }
+    });
+
     // Resize
     document.getElementById('btn-resize')!.addEventListener('click', () => {
       const w = parseInt((document.getElementById('map-width') as HTMLInputElement).value);
       const h = parseInt((document.getElementById('map-height') as HTMLInputElement).value);
+      if (w === this.width && h === this.height) return;
+      this.pushHistory();
       this.resize(w, h);
       this.schedulePreviewUpdate();
     });
@@ -475,6 +500,7 @@ class MapEditor {
         this.updateCurrentMapLabel();
         this.render();
         this.schedulePreviewUpdate();
+        this.clearHistory();
       }
     });
 
@@ -960,6 +986,9 @@ class MapEditor {
       }
     }
 
+    // Snapshot before bulk mutation so user can undo the whole auto-exhibit
+    this.pushHistory();
+
     // Place artworks — mark both tiles of each pair with the same artworkId
     let placed = 0;
     for (let i = 0; i < selected.length; i++) {
@@ -979,6 +1008,63 @@ class MapEditor {
       (artworks.length > placed ? `\n(${artworks.length - placed}개 작품은 공간 부족으로 배치되지 않았습니다.)` : ''),
       '자동 전시 완료',
     );
+  }
+
+  // Capture a deep snapshot of the current editable state
+  private snapshotState(): { grid: TileCell[][]; width: number; height: number; wallHeight: number } {
+    return {
+      width: this.width,
+      height: this.height,
+      wallHeight: parseFloat((document.getElementById('wall-height') as HTMLInputElement).value) || 4,
+      grid: this.grid.map((row) => row.map((c) => ({ ...c }))),
+    };
+  }
+
+  // Push current state onto history before a mutation. Clears redo stack.
+  private pushHistory(): void {
+    this.history.push(this.snapshotState());
+    if (this.history.length > MapEditor.MAX_HISTORY) this.history.shift();
+    this.redoStack = [];
+    this.updateUndoRedoButtons();
+  }
+
+  private applySnapshot(snap: { grid: TileCell[][]; width: number; height: number; wallHeight: number }): void {
+    this.width = snap.width;
+    this.height = snap.height;
+    this.grid = snap.grid.map((row) => row.map((c) => ({ ...c })));
+    (document.getElementById('map-width') as HTMLInputElement).value = String(this.width);
+    (document.getElementById('map-height') as HTMLInputElement).value = String(this.height);
+    (document.getElementById('wall-height') as HTMLInputElement).value = String(snap.wallHeight);
+    this.resizeCanvas();
+    this.render();
+    this.schedulePreviewUpdate();
+  }
+
+  private undo(): void {
+    if (this.history.length === 0) return;
+    this.redoStack.push(this.snapshotState());
+    const prev = this.history.pop()!;
+    this.applySnapshot(prev);
+    this.updateUndoRedoButtons();
+  }
+
+  private redo(): void {
+    if (this.redoStack.length === 0) return;
+    this.history.push(this.snapshotState());
+    const next = this.redoStack.pop()!;
+    this.applySnapshot(next);
+    this.updateUndoRedoButtons();
+  }
+
+  private updateUndoRedoButtons(): void {
+    // No-op: keyboard-only UI. Kept as a hook in case buttons return later.
+  }
+
+  // Clear history (called on fresh load/new map)
+  private clearHistory(): void {
+    this.history = [];
+    this.redoStack = [];
+    this.updateUndoRedoButtons();
   }
 
   private async saveCurrentMap(): Promise<void> {
@@ -1035,6 +1121,7 @@ class MapEditor {
 
   private loadMapIntoEditor(map: CustomMap): void {
     this.previewInitialized = false;
+    this.clearHistory();
     // Restore dimensions + grid
     this.width = map.gridMap.width;
     this.height = map.gridMap.height;
