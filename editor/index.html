@@ -288,10 +288,16 @@
       <div class="canvas-area">
         <canvas id="grid-canvas"></canvas>
         <div class="shortcut-hint">
-          <div><kbd>Ctrl</kbd>+<kbd>Z</kbd> 실행 취소</div>
-          <div><kbd>Ctrl</kbd>+<kbd>⇧</kbd>+<kbd>Z</kbd> 다시 실행</div>
+          <div><kbd class="mod-key">Ctrl</kbd>+<kbd>Z</kbd> 실행 취소</div>
+          <div><kbd class="mod-key">Ctrl</kbd>+<kbd>⇧</kbd>+<kbd>Z</kbd> 다시 실행</div>
         </div>
       </div>
+      <script>
+        // Show ⌘ on Mac, Ctrl elsewhere
+        if (/Mac|iPod|iPhone|iPad/.test(navigator.platform)) {
+          document.querySelectorAll('.mod-key').forEach((el) => { el.textContent = '⌘'; });
+        }
+      </script>
       <div class="preview-panel">
         <div class="preview-header">
           <span>3D 미리보기</span>

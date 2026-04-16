@@ -469,12 +469,10 @@ class MapEditor {
       const tag = (e.target as HTMLElement)?.tagName;
       if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
       const mod = e.ctrlKey || e.metaKey;
-      if (mod && !e.shiftKey && e.key.toLowerCase() === 'z') {
+      if (mod && e.key.toLowerCase() === 'z') {
         e.preventDefault();
-        this.undo();
-      } else if (mod && (e.shiftKey && e.key.toLowerCase() === 'z' || e.key.toLowerCase() === 'y')) {
-        e.preventDefault();
-        this.redo();
+        if (e.shiftKey) this.redo();
+        else this.undo();
       }
     });
 
