@@ -198,9 +198,20 @@
     .exhibition-card .card-btn:hover { border-color: #555; color: #fff; }
     .exhibition-card .card-btn.danger:hover { border-color: #a44; color: #ff8a8a; }
 
+    /* Minimap */
+    #minimap {
+      position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 15;
+      border: 1px solid rgba(255,255,255,0.15); border-radius: 4px;
+      background: rgba(0,0,0,0.6); backdrop-filter: blur(4px);
+      pointer-events: none; display: none;
+      /* no CSS transform — X flip handled in draw code */
+    }
+    #minimap.visible { display: block; }
+
     @media (max-width: 768px) {
       #artwork-panel { width: 100%; }
       #loading-title { font-size: 1.3rem; }
+      #minimap { bottom: 0.8rem; right: 0.8rem; }
     }
   </style>
 </head>
@@ -217,6 +228,7 @@
   <div id="crosshair"></div>
 
   <div id="hud">WASD 이동 · 마우스 시선 · 클릭 작품 감상 · ESC 나가기</div>
+  <canvas id="minimap" width="160" height="160"></canvas>
 
   <div id="artwork-panel">
     <button class="close-btn">&times;</button>

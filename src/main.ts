@@ -17,6 +17,7 @@ import { Router, type Route } from './systems/Router';
 import { LoadingScreen } from './ui/LoadingScreen';
 import { ArtworkInfoPanel } from './ui/ArtworkInfoPanel';
 import { HUD } from './ui/HUD';
+import { Minimap } from './ui/Minimap';
 import { DEFAULTS } from './utils/constants';
 
 class App {
@@ -41,6 +42,7 @@ class App {
   private loadingScreen: LoadingScreen;
   private infoPanel: ArtworkInfoPanel;
   private hud: HUD;
+  private minimap: Minimap;
 
   constructor() {
     const canvas = document.getElementById('canvas') as HTMLCanvasElement;
@@ -59,6 +61,7 @@ class App {
     this.loadingScreen = new LoadingScreen();
     this.infoPanel = new ArtworkInfoPanel();
     this.hud = new HUD(this.isMobile);
+    this.minimap = new Minimap();
     this.artworkInteraction = new ArtworkInteraction(this.engine.camera, this.cameraController);
 
     // Reduce quality on mobile
@@ -88,6 +91,7 @@ class App {
           cam.position.z = clamped.z;
         }
       }
+      this.minimap.update(this.engine.camera);
     });
 
     // Desktop: click interaction
@@ -128,11 +132,13 @@ class App {
     // Artwork focus/unfocus
     this.artworkInteraction.onArtworkFocus((config) => {
       this.infoPanel.show(config);
+      this.minimap.hide();
       if (!this.isMobile) this.fpControls.unlock();
     });
 
     this.artworkInteraction.onArtworkUnfocus(() => {
       this.infoPanel.hide();
+      this.minimap.show();
     });
 
     // Info panel close
@@ -212,6 +218,7 @@ class App {
     this.loadingScreen.hide();
     this.hud.hide();
     this.infoPanel.hide();
+    this.minimap.hide();
     if (!this.isMobile) this.fpControls.unlock();
     this.engine.scene.clear();
     this.engine.scene.fog = null;
@@ -666,6 +673,9 @@ class App {
 
     this.artworkInteraction.setArtworks(this.tiledBuilder.artworkFrames);
 
+    // Setup minimap with grid + artwork positions
+    this.minimap.setup(gridMap, parsedMap.artworkSlots);
+
     this.loadingScreen.showEnterButton(() => {
       if (this.isMobile) {
         this.touchControls.enable();
@@ -673,6 +683,7 @@ class App {
       } else {
         this.fpControls.lock();
       }
+      this.minimap.show();
     });
   }
 

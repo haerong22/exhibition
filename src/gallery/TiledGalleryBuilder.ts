@@ -164,6 +164,8 @@ export class TiledGalleryBuilder {
     this.texConfig = config;
   }
 
+
+
   private async createMaterial(
     presetOrUrl: string,
     fallbackColor: number,
@@ -501,9 +503,6 @@ export class TiledGalleryBuilder {
     const hemi = new THREE.HemisphereLight(COLORS.HEMISPHERE_SKY, COLORS.HEMISPHERE_GROUND, 0.5);
     group.add(hemi);
 
-    // Dynamically adjust light spacing based on map area to keep total count reasonable.
-    // WebGL MeshStandardMaterial uses ~3-5 texture units for materials; each PointLight
-    // adds more. GPU limit is typically MAX_TEXTURE_IMAGE_UNITS=16, so cap at 8 lights.
     const area = map.widthMeters * map.depthMeters;
     const maxLights = 8;
     const step = Math.max(3, Math.ceil(Math.sqrt(area / maxLights)));
