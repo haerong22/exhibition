@@ -217,6 +217,7 @@ class MapEditor {
 
     this.textureManager = new TextureManager();
     this.previewBuilder = new TiledGalleryBuilder(this.textureManager);
+    this.previewBuilder.skipCeiling = true;
 
     this.initGrid();
     this.bindEvents();
@@ -359,15 +360,28 @@ class MapEditor {
 
     try {
       const result = await this.previewBuilder.build(parsedMap, config);
+
+      // Mirror X axis so 2D editor left = 3D preview left.
+      // THREE.js right-handed coords make X appear mirrored in top-down view.
+      result.group.scale.x = -1;
+      result.group.traverse((child) => {
+        const mesh = child as THREE.Mesh;
+        if (mesh.isMesh) {
+          const list = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+          for (const m of list) (m as THREE.MeshStandardMaterial).side = THREE.DoubleSide;
+        }
+      });
+
       this.currentPreviewGroup = result.group;
       this.previewScene.add(result.group);
 
       if (!this.previewInitialized) {
+        // After scale.x=-1: local x=cx appears at world x=-cx
         const cx = parsedMap.widthMeters / 2;
         const cz = -parsedMap.depthMeters / 2;
         const mapSize = Math.max(parsedMap.widthMeters, parsedMap.depthMeters);
-        this.previewControls.target.set(cx, 1.5, cz);
-        this.previewCamera.position.set(cx + mapSize * 0.6, parsedMap.wallHeight * 1.5, cz + mapSize * 0.6);
+        this.previewControls.target.set(-cx, 1.5, cz);
+        this.previewCamera.position.set(-cx - mapSize * 0.6, parsedMap.wallHeight * 1.5, cz - mapSize * 0.6);
         this.previewControls.update();
         this.previewInitialized = true;
       }

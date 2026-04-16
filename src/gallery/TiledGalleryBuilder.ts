@@ -149,6 +149,7 @@ export class TiledGalleryBuilder {
   private textureManager: TextureManager;
   private currentGroup: THREE.Group | null = null;
   artworkFrames: ArtworkFrame[] = [];
+  skipCeiling = false;
   private originalGrid: string[][] = [];
   private texConfig: TextureConfig = { floor: '', wall: '', ceiling: '' };
 
@@ -240,8 +241,8 @@ export class TiledGalleryBuilder {
     // Floor
     this.buildFloor(group, parsedMap, floorMat);
 
-    // Ceiling
-    this.buildCeiling(group, parsedMap, h, ceilingMat);
+    // Ceiling (skipped in editor preview for top-down visibility)
+    if (!this.skipCeiling) this.buildCeiling(group, parsedMap, h, ceilingMat);
 
     // Walls (solid boxes for each wall tile)
     this.buildWalls(group, parsedMap, h, wallMat);
