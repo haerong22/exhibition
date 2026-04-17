@@ -917,16 +917,33 @@ class MapEditor {
     // First pass: count max pairs per wall (excluding corners, with minimum gap of 1).
     const wallKeys = [...wallPairs.keys()];
 
-    // Determine how many artworks to place on each wall via round-robin assignment
+    // Determine how many artworks to place on each wall via round-robin assignment.
+    // If a wall is full, skip it and try the next wall.
     const wallAssignments = new Map<string, number>();
-    for (const key of wallKeys) wallAssignments.set(key, 0);
-    for (let i = 0; i < artworks.length && wallKeys.length > 0; i++) {
-      const key = wallKeys[i % wallKeys.length];
+    const wallCapacity = new Map<string, number>();
+    const activeWalls = [...wallKeys];
+    for (const key of wallKeys) {
+      wallAssignments.set(key, 0);
       const pairs = wallPairs.get(key)!;
-      const maxCapacity = Math.floor((pairs.length + 1) / 3) || (pairs.length > 0 ? 1 : 0);
+      // Capacity with minimum 1-tile gap: each artwork needs ~3 positions (2-tile pair + 1 gap)
+      const isH = pairs[0].slots[0].facing === 'north' || pairs[0].slots[0].facing === 'south';
+      const posOf = (p: Pair) => isH ? Math.min(p.slots[0].col, p.slots[1].col) : Math.min(p.slots[0].row, p.slots[1].row);
+      const wLen = pairs.length > 0 ? posOf(pairs[pairs.length - 1]) - posOf(pairs[0]) : 0;
+      wallCapacity.set(key, Math.max(1, Math.floor(wLen / 3) + 1));
+    }
+    let assigned = 0;
+    let wallIdx = 0;
+    while (assigned < artworks.length && activeWalls.length > 0) {
+      const key = activeWalls[wallIdx % activeWalls.length];
       const current = wallAssignments.get(key)!;
-      if (current < maxCapacity) {
+      if (current < wallCapacity.get(key)!) {
         wallAssignments.set(key, current + 1);
+        assigned++;
+        wallIdx++;
+      } else {
+        // Wall full — remove from rotation
+        activeWalls.splice(wallIdx % activeWalls.length, 1);
+        if (activeWalls.length > 0) wallIdx = wallIdx % activeWalls.length;
       }
     }
 
