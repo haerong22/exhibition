@@ -17,16 +17,6 @@ export class ExhibitionLoader {
     return this.validate(data);
   }
 
-  async listAvailable(): Promise<{ id: string; name: string; description: string }[]> {
-    try {
-      const res = await fetch('/exhibitions/index.json');
-      if (!res.ok) return [{ id: 'default', name: '기본 전시', description: '샘플 전시' }];
-      return await res.json();
-    } catch {
-      return [{ id: 'default', name: '기본 전시', description: '샘플 전시' }];
-    }
-  }
-
   private validate(data: ExhibitionConfig): ExhibitionConfig {
     if (!data.id) data.id = 'custom';
     if (!data.name) data.name = 'Untitled Exhibition';

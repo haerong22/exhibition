@@ -2,7 +2,6 @@ export interface Route {
   type: 'home' | 'exhibition';
   exhibitionId?: string;
   configUrl?: string;
-  artworkId?: string;
 }
 
 export class Router {
@@ -29,7 +28,6 @@ export class Router {
         type: 'exhibition',
         exhibitionId: decodeURIComponent(id),
         configUrl: params.get('config') ?? undefined,
-        artworkId: params.get('artwork') ?? undefined,
       };
     }
 
