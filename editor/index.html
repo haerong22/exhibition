@@ -230,7 +230,7 @@
 
       <div class="tool-section" id="section-wall-height">
         <h3>벽 높이 (m)</h3>
-        <input type="number" id="wall-height" value="4" min="2" max="8" step="0.5" style="width:100%;background:#1a1a1a;border:1px solid #333;color:#fff;padding:0.4rem;font-size:0.8rem;" />
+        <input type="number" id="wall-height" value="6" min="2" max="8" step="0.5" style="width:100%;background:#1a1a1a;border:1px solid #333;color:#fff;padding:0.4rem;font-size:0.8rem;" />
       </div>
 
       <div class="tool-section">
@@ -240,9 +240,11 @@
             <label style="font-size:0.7rem;color:#888;display:block;margin-bottom:0.2rem">바닥</label>
             <select id="tex-floor" style="width:100%;background:#1a1a1a;border:1px solid #333;color:#fff;padding:0.3rem;font-size:0.75rem;">
               <option value="">기본 색상</option>
+              <option value="/textures/gallery-floor.jpg">갤러리 마루</option>
               <option value="wood-light">밝은 나무 마루</option>
               <option value="wood-dark">어두운 나무 마루</option>
-              <option value="marble">대리석</option>
+              <option value="/textures/gallery-marble.jpg">대리석 (HD)</option>
+              <option value="marble" selected>대리석</option>
               <option value="concrete">콘크리트</option>
               <option value="custom">직접 입력</option>
             </select>
@@ -252,7 +254,10 @@
             <label style="font-size:0.7rem;color:#888;display:block;margin-bottom:0.2rem">벽</label>
             <select id="tex-wall" style="width:100%;background:#1a1a1a;border:1px solid #333;color:#fff;padding:0.3rem;font-size:0.75rem;">
               <option value="">기본 색상</option>
+              <option value="/textures/gallery-wall.jpg">갤러리 벽</option>
               <option value="plaster">흰 플라스터</option>
+              <option value="/textures/gallery-marble.jpg">대리석 (HD)</option>
+              <option value="marble" selected>대리석</option>
               <option value="brick">벽돌</option>
               <option value="concrete">콘크리트</option>
               <option value="custom">직접 입력</option>
@@ -265,9 +270,25 @@
               <option value="">기본 색상</option>
               <option value="white-tile">흰 타일</option>
               <option value="plaster">플라스터</option>
+              <option value="/textures/gallery-marble.jpg">대리석 (HD)</option>
+              <option value="marble" selected>대리석</option>
+              <option value="concrete">콘크리트</option>
               <option value="custom">직접 입력</option>
             </select>
             <input type="text" id="tex-ceiling-url" placeholder="이미지 URL" style="display:none;width:100%;background:#1a1a1a;border:1px solid #333;color:#fff;padding:0.3rem;font-size:0.75rem;margin-top:0.2rem;" />
+          </div>
+          <div>
+            <label style="font-size:0.7rem;color:#888;display:block;margin-bottom:0.2rem">문틀</label>
+            <select id="tex-doorframe" style="width:100%;background:#1a1a1a;border:1px solid #333;color:#fff;padding:0.3rem;font-size:0.75rem;">
+              <option value="">기본 색상</option>
+              <option value="wood-light">밝은 나무</option>
+              <option value="/textures/gallery-doorframe.jpg">갤러리 문틀</option>
+              <option value="wood-dark" selected>어두운 나무</option>
+              <option value="marble">대리석</option>
+              <option value="concrete">콘크리트</option>
+              <option value="custom">직접 입력</option>
+            </select>
+            <input type="text" id="tex-doorframe-url" placeholder="이미지 URL" style="display:none;width:100%;background:#1a1a1a;border:1px solid #333;color:#fff;padding:0.3rem;font-size:0.75rem;margin-top:0.2rem;" />
           </div>
         </div>
       </div>

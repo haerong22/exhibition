@@ -553,14 +553,14 @@ class MapEditor {
     });
 
     // Texture select: show/hide custom URL input + trigger preview update
-    for (const id of ['tex-floor', 'tex-wall', 'tex-ceiling']) {
+    for (const id of ['tex-floor', 'tex-wall', 'tex-ceiling', 'tex-doorframe']) {
       document.getElementById(id)!.addEventListener('change', (e) => {
         const urlInput = document.getElementById(id + '-url') as HTMLInputElement;
         urlInput.style.display = (e.target as HTMLSelectElement).value === 'custom' ? 'block' : 'none';
         this.schedulePreviewUpdate();
       });
     }
-    for (const id of ['tex-floor-url', 'tex-wall-url', 'tex-ceiling-url']) {
+    for (const id of ['tex-floor-url', 'tex-wall-url', 'tex-ceiling-url', 'tex-doorframe-url']) {
       document.getElementById(id)!.addEventListener('change', () => this.schedulePreviewUpdate());
     }
 
@@ -771,6 +771,7 @@ class MapEditor {
       floor: resolve('tex-floor', 'tex-floor-url'),
       wall: resolve('tex-wall', 'tex-wall-url'),
       ceiling: resolve('tex-ceiling', 'tex-ceiling-url'),
+      doorFrame: resolve('tex-doorframe', 'tex-doorframe-url'),
     };
   }
 
@@ -1205,6 +1206,7 @@ class MapEditor {
     apply('tex-floor', 'tex-floor-url', tex.floor);
     apply('tex-wall', 'tex-wall-url', tex.wall);
     apply('tex-ceiling', 'tex-ceiling-url', tex.ceiling);
+    apply('tex-doorframe', 'tex-doorframe-url', tex.doorFrame ?? '');
   }
 
   private refreshArtworkSelect(): void {

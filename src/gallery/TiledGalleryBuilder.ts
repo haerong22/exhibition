@@ -11,70 +11,133 @@ export interface TextureConfig {
   floor: string;
   wall: string;
   ceiling: string;
+  doorFrame?: string;
 }
 
-// Built-in procedural texture presets
+// Built-in procedural texture presets (1024×1024 for quality)
+const S = 1024; // texture resolution
 const TEXTURE_PRESETS: Record<string, { color: number; generate?: (canvas: HTMLCanvasElement) => void }> = {
   'wood-light': {
     color: 0xd4b896,
     generate: (c) => {
       const ctx = c.getContext('2d')!;
-      c.width = 512; c.height = 512;
-      ctx.fillStyle = '#d4b896';
-      ctx.fillRect(0, 0, 512, 512);
-      for (let i = 0; i < 60; i++) {
-        ctx.strokeStyle = `rgba(160,120,70,${0.05 + Math.random() * 0.1})`;
-        ctx.lineWidth = 1 + Math.random() * 2;
-        const y = Math.random() * 512;
-        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(512, y + (Math.random() - 0.5) * 20); ctx.stroke();
+      c.width = S; c.height = S;
+      // Base color with subtle gradient
+      const grad = ctx.createLinearGradient(0, 0, 0, S);
+      grad.addColorStop(0, '#dac4a0');
+      grad.addColorStop(0.5, '#d0b88e');
+      grad.addColorStop(1, '#d8c098');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, S, S);
+      // Wood grain — many fine lines with varying opacity and curve
+      for (let i = 0; i < 200; i++) {
+        const r = 140 + Math.random() * 40, g = 100 + Math.random() * 30, b = 50 + Math.random() * 30;
+        ctx.strokeStyle = `rgba(${r},${g},${b},${0.03 + Math.random() * 0.08})`;
+        ctx.lineWidth = 0.5 + Math.random() * 2;
+        const y = Math.random() * S;
+        ctx.beginPath(); ctx.moveTo(0, y);
+        for (let x = 0; x < S; x += 40) {
+          ctx.lineTo(x, y + (Math.random() - 0.5) * 8 + Math.sin(x * 0.01) * 3);
+        }
+        ctx.stroke();
       }
-      // Plank lines
-      for (let x = 0; x < 512; x += 64) {
-        ctx.strokeStyle = 'rgba(100,70,40,0.15)';
+      // Knot holes (subtle)
+      for (let i = 0; i < 3; i++) {
+        const kx = Math.random() * S, ky = Math.random() * S;
+        const kr = 8 + Math.random() * 12;
+        ctx.fillStyle = `rgba(120,80,40,0.08)`;
+        ctx.beginPath(); ctx.ellipse(kx, ky, kr, kr * 1.5, Math.random(), 0, Math.PI * 2); ctx.fill();
+      }
+      // Plank separators with shadow
+      const pw = S / 8;
+      for (let x = pw; x < S; x += pw) {
+        ctx.strokeStyle = 'rgba(80,55,30,0.2)';
         ctx.lineWidth = 2;
-        ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, 512); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, S); ctx.stroke();
+        ctx.strokeStyle = 'rgba(255,240,210,0.1)';
+        ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(x + 2, 0); ctx.lineTo(x + 2, S); ctx.stroke();
       }
+      // Pixel noise for texture feel
+      const imgData = ctx.getImageData(0, 0, S, S);
+      for (let i = 0; i < imgData.data.length; i += 4) {
+        const n = (Math.random() - 0.5) * 6;
+        imgData.data[i] += n; imgData.data[i + 1] += n; imgData.data[i + 2] += n;
+      }
+      ctx.putImageData(imgData, 0, 0);
     },
   },
   'wood-dark': {
     color: 0x8b6f47,
     generate: (c) => {
       const ctx = c.getContext('2d')!;
-      c.width = 512; c.height = 512;
-      ctx.fillStyle = '#8b6f47';
-      ctx.fillRect(0, 0, 512, 512);
-      for (let i = 0; i < 80; i++) {
-        ctx.strokeStyle = `rgba(60,40,20,${0.05 + Math.random() * 0.12})`;
-        ctx.lineWidth = 1 + Math.random() * 3;
-        const y = Math.random() * 512;
-        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(512, y + (Math.random() - 0.5) * 15); ctx.stroke();
+      c.width = S; c.height = S;
+      const grad = ctx.createLinearGradient(0, 0, 0, S);
+      grad.addColorStop(0, '#7a6340');
+      grad.addColorStop(0.5, '#8b7048');
+      grad.addColorStop(1, '#7e6742');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, S, S);
+      for (let i = 0; i < 250; i++) {
+        const r = 50 + Math.random() * 40, g = 30 + Math.random() * 25, b = 10 + Math.random() * 20;
+        ctx.strokeStyle = `rgba(${r},${g},${b},${0.04 + Math.random() * 0.1})`;
+        ctx.lineWidth = 0.5 + Math.random() * 2.5;
+        const y = Math.random() * S;
+        ctx.beginPath(); ctx.moveTo(0, y);
+        for (let x = 0; x < S; x += 30) {
+          ctx.lineTo(x, y + (Math.random() - 0.5) * 6 + Math.sin(x * 0.015) * 2);
+        }
+        ctx.stroke();
       }
-      for (let x = 0; x < 512; x += 72) {
-        ctx.strokeStyle = 'rgba(40,25,10,0.2)';
+      const pw = S / 7;
+      for (let x = pw; x < S; x += pw) {
+        ctx.strokeStyle = 'rgba(30,18,8,0.25)';
         ctx.lineWidth = 2;
-        ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, 512); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, S); ctx.stroke();
+        ctx.strokeStyle = 'rgba(140,110,70,0.08)';
+        ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(x + 2, 0); ctx.lineTo(x + 2, S); ctx.stroke();
       }
+      const imgData = ctx.getImageData(0, 0, S, S);
+      for (let i = 0; i < imgData.data.length; i += 4) {
+        const n = (Math.random() - 0.5) * 8;
+        imgData.data[i] += n; imgData.data[i + 1] += n; imgData.data[i + 2] += n;
+      }
+      ctx.putImageData(imgData, 0, 0);
     },
   },
   'marble': {
     color: 0xf0ece4,
     generate: (c) => {
       const ctx = c.getContext('2d')!;
-      c.width = 512; c.height = 512;
+      c.width = S; c.height = S;
+      // Warm off-white base
       ctx.fillStyle = '#f0ece4';
-      ctx.fillRect(0, 0, 512, 512);
-      for (let i = 0; i < 30; i++) {
-        ctx.strokeStyle = `rgba(180,170,160,${0.08 + Math.random() * 0.12})`;
-        ctx.lineWidth = 1 + Math.random() * 4;
-        ctx.beginPath();
-        let x = Math.random() * 512, y = Math.random() * 512;
-        ctx.moveTo(x, y);
-        for (let s = 0; s < 8; s++) {
-          x += (Math.random() - 0.5) * 120;
-          y += (Math.random() - 0.5) * 120;
-          ctx.lineTo(x, y);
+      ctx.fillRect(0, 0, S, S);
+      // Subtle base noise
+      const imgData = ctx.getImageData(0, 0, S, S);
+      for (let i = 0; i < imgData.data.length; i += 4) {
+        const n = (Math.random() - 0.5) * 8;
+        imgData.data[i] += n; imgData.data[i + 1] += n; imgData.data[i + 2] += n;
+      }
+      ctx.putImageData(imgData, 0, 0);
+      // Veins — multiple layers with varying thickness
+      for (let layer = 0; layer < 4; layer++) {
+        const alpha = 0.04 + layer * 0.03;
+        for (let i = 0; i < 15; i++) {
+          const gr = 150 + Math.random() * 50, gg = 140 + Math.random() * 40, gb = 130 + Math.random() * 40;
+          ctx.strokeStyle = `rgba(${gr},${gg},${gb},${alpha + Math.random() * 0.06})`;
+          ctx.lineWidth = 0.5 + Math.random() * (3 + layer);
+          ctx.beginPath();
+          let x = Math.random() * S, y = Math.random() * S;
+          ctx.moveTo(x, y);
+          for (let s = 0; s < 12; s++) {
+            x += (Math.random() - 0.5) * 100;
+            y += (Math.random() - 0.5) * 100;
+            ctx.quadraticCurveTo(x + (Math.random() - 0.5) * 50, y + (Math.random() - 0.5) * 50, x, y);
+          }
+          ctx.stroke();
         }
-        ctx.stroke();
       }
     },
   },
@@ -82,46 +145,97 @@ const TEXTURE_PRESETS: Record<string, { color: number; generate?: (canvas: HTMLC
     color: 0xb0b0a8,
     generate: (c) => {
       const ctx = c.getContext('2d')!;
-      c.width = 512; c.height = 512;
-      ctx.fillStyle = '#b0b0a8';
-      ctx.fillRect(0, 0, 512, 512);
-      const imgData = ctx.getImageData(0, 0, 512, 512);
+      c.width = S; c.height = S;
+      // Base with subtle variation
+      const grad = ctx.createRadialGradient(S / 2, S / 2, 0, S / 2, S / 2, S * 0.7);
+      grad.addColorStop(0, '#b4b4ac');
+      grad.addColorStop(1, '#a8a8a0');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, S, S);
+      // Multi-pass noise for depth
+      const imgData = ctx.getImageData(0, 0, S, S);
       for (let i = 0; i < imgData.data.length; i += 4) {
-        const n = (Math.random() - 0.5) * 20;
-        imgData.data[i] += n; imgData.data[i + 1] += n; imgData.data[i + 2] += n;
+        const n1 = (Math.random() - 0.5) * 15;
+        const n2 = (Math.random() - 0.5) * 8;
+        imgData.data[i] += n1 + n2; imgData.data[i + 1] += n1 + n2; imgData.data[i + 2] += n1 + n2 - 2;
       }
       ctx.putImageData(imgData, 0, 0);
+      // Pitting — tiny dark spots
+      for (let i = 0; i < 300; i++) {
+        ctx.fillStyle = `rgba(80,80,75,${0.03 + Math.random() * 0.06})`;
+        const r = 1 + Math.random() * 3;
+        ctx.beginPath(); ctx.arc(Math.random() * S, Math.random() * S, r, 0, Math.PI * 2); ctx.fill();
+      }
+      // Hairline cracks
+      for (let i = 0; i < 5; i++) {
+        ctx.strokeStyle = `rgba(90,90,85,${0.06 + Math.random() * 0.08})`;
+        ctx.lineWidth = 0.5 + Math.random();
+        ctx.beginPath();
+        let x = Math.random() * S, y = Math.random() * S;
+        ctx.moveTo(x, y);
+        for (let s = 0; s < 6; s++) { x += (Math.random() - 0.5) * 80; y += (Math.random() - 0.5) * 80; ctx.lineTo(x, y); }
+        ctx.stroke();
+      }
     },
   },
   'plaster': {
     color: 0xf5f0e8,
     generate: (c) => {
       const ctx = c.getContext('2d')!;
-      c.width = 512; c.height = 512;
+      c.width = S; c.height = S;
       ctx.fillStyle = '#f5f0e8';
-      ctx.fillRect(0, 0, 512, 512);
-      const imgData = ctx.getImageData(0, 0, 512, 512);
+      ctx.fillRect(0, 0, S, S);
+      // Multi-layer noise for plaster grain
+      const imgData = ctx.getImageData(0, 0, S, S);
       for (let i = 0; i < imgData.data.length; i += 4) {
-        const n = (Math.random() - 0.5) * 10;
-        imgData.data[i] += n; imgData.data[i + 1] += n; imgData.data[i + 2] += n;
+        const fine = (Math.random() - 0.5) * 6;
+        const coarse = (Math.random() - 0.5) * 3;
+        imgData.data[i] += fine + coarse;
+        imgData.data[i + 1] += fine + coarse - 1;
+        imgData.data[i + 2] += fine + coarse - 2;
       }
       ctx.putImageData(imgData, 0, 0);
+      // Subtle trowel marks
+      for (let i = 0; i < 30; i++) {
+        ctx.strokeStyle = `rgba(220,215,205,${0.05 + Math.random() * 0.08})`;
+        ctx.lineWidth = 10 + Math.random() * 30;
+        ctx.lineCap = 'round';
+        const x1 = Math.random() * S, y1 = Math.random() * S;
+        ctx.beginPath(); ctx.moveTo(x1, y1);
+        ctx.quadraticCurveTo(x1 + (Math.random() - 0.5) * 200, y1 + (Math.random() - 0.5) * 40, x1 + (Math.random() - 0.5) * 300, y1 + (Math.random() - 0.5) * 60);
+        ctx.stroke();
+      }
     },
   },
   'brick': {
     color: 0xb5705a,
     generate: (c) => {
       const ctx = c.getContext('2d')!;
-      c.width = 512; c.height = 512;
-      ctx.fillStyle = '#c8b09a';
-      ctx.fillRect(0, 0, 512, 512);
-      const bw = 64, bh = 32, gap = 3;
-      for (let row = 0; row < 512 / bh; row++) {
+      c.width = S; c.height = S;
+      // Mortar base
+      ctx.fillStyle = '#c0aa92';
+      ctx.fillRect(0, 0, S, S);
+      const bw = 128, bh = 64, gap = 5;
+      for (let row = 0; row < S / bh + 1; row++) {
         const offset = (row % 2) * (bw / 2);
-        for (let col = -1; col < 512 / bw + 1; col++) {
-          const r = 160 + Math.random() * 30, g = 90 + Math.random() * 30, b = 70 + Math.random() * 20;
+        for (let col = -1; col < S / bw + 2; col++) {
+          const r = 155 + Math.random() * 35, g = 80 + Math.random() * 35, b = 60 + Math.random() * 25;
+          const bx = col * bw + offset + gap / 2, by = row * bh + gap / 2;
+          const bWidth = bw - gap, bHeight = bh - gap;
+          // Brick body
           ctx.fillStyle = `rgb(${r},${g},${b})`;
-          ctx.fillRect(col * bw + offset + gap / 2, row * bh + gap / 2, bw - gap, bh - gap);
+          ctx.fillRect(bx, by, bWidth, bHeight);
+          // Subtle gradient on each brick
+          const bg = ctx.createLinearGradient(bx, by, bx, by + bHeight);
+          bg.addColorStop(0, `rgba(255,255,255,0.06)`);
+          bg.addColorStop(1, `rgba(0,0,0,0.06)`);
+          ctx.fillStyle = bg;
+          ctx.fillRect(bx, by, bWidth, bHeight);
+          // Noise on brick surface
+          for (let s = 0; s < 20; s++) {
+            ctx.fillStyle = `rgba(${80 + Math.random() * 60},${40 + Math.random() * 40},${30 + Math.random() * 30},0.04)`;
+            ctx.fillRect(bx + Math.random() * bWidth, by + Math.random() * bHeight, 2 + Math.random() * 6, 2 + Math.random() * 4);
+          }
         }
       }
     },
@@ -130,17 +244,34 @@ const TEXTURE_PRESETS: Record<string, { color: number; generate?: (canvas: HTMLC
     color: 0xf8f8f8,
     generate: (c) => {
       const ctx = c.getContext('2d')!;
-      c.width = 512; c.height = 512;
+      c.width = S; c.height = S;
       ctx.fillStyle = '#f8f8f8';
-      ctx.fillRect(0, 0, 512, 512);
-      ctx.strokeStyle = '#e0e0e0';
-      ctx.lineWidth = 2;
-      for (let x = 0; x <= 512; x += 128) {
-        ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, 512); ctx.stroke();
+      ctx.fillRect(0, 0, S, S);
+      const tileSize = S / 4;
+      // Each tile gets slight color variation
+      for (let ty = 0; ty < 4; ty++) {
+        for (let tx = 0; tx < 4; tx++) {
+          const v = 245 + Math.random() * 10;
+          ctx.fillStyle = `rgb(${v},${v},${v})`;
+          ctx.fillRect(tx * tileSize + 2, ty * tileSize + 2, tileSize - 4, tileSize - 4);
+        }
       }
-      for (let y = 0; y <= 512; y += 128) {
-        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(512, y); ctx.stroke();
+      // Grout lines
+      ctx.strokeStyle = '#d8d8d8';
+      ctx.lineWidth = 3;
+      for (let x = 0; x <= S; x += tileSize) {
+        ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, S); ctx.stroke();
       }
+      for (let y = 0; y <= S; y += tileSize) {
+        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(S, y); ctx.stroke();
+      }
+      // Fine noise
+      const imgData = ctx.getImageData(0, 0, S, S);
+      for (let i = 0; i < imgData.data.length; i += 4) {
+        const n = (Math.random() - 0.5) * 4;
+        imgData.data[i] += n; imgData.data[i + 1] += n; imgData.data[i + 2] += n;
+      }
+      ctx.putImageData(imgData, 0, 0);
     },
   },
 };
@@ -151,7 +282,7 @@ export class TiledGalleryBuilder {
   artworkFrames: ArtworkFrame[] = [];
   skipCeiling = false;
   private originalGrid: string[][] = [];
-  private texConfig: TextureConfig = { floor: '', wall: '', ceiling: '' };
+  private texConfig: TextureConfig = { floor: 'marble', wall: 'marble', ceiling: 'marble', doorFrame: 'wood-dark' };
 
   constructor(textureManager: TextureManager) {
     this.textureManager = textureManager;
@@ -234,8 +365,8 @@ export class TiledGalleryBuilder {
     const h = parsedMap.wallHeight;
 
     // Create materials with textures
-    const floorMat = await this.createMaterial(this.texConfig.floor, COLORS.FLOOR, 0.8, 2, 2);
-    const wallMat = await this.createMaterial(this.texConfig.wall, COLORS.WALL, 0.92, 1, 1, THREE.DoubleSide);
+    const floorMat = await this.createMaterial(this.texConfig.floor, COLORS.FLOOR, 0.85, 2, 2);
+    const wallMat = await this.createMaterial(this.texConfig.wall, COLORS.WALL, 0.85, 2, 2, THREE.DoubleSide);
     const ceilingMat = await this.createMaterial(this.texConfig.ceiling, COLORS.CEILING, 0.9);
 
     // Floor
@@ -248,7 +379,11 @@ export class TiledGalleryBuilder {
     this.buildWalls(group, parsedMap, h, wallMat);
 
     // Door frames
-    this.buildDoorFrames(group, parsedMap, h, wallMat);
+    const doorFrameMat = await this.createMaterial(
+      this.texConfig.doorFrame ?? '', 0x8b7d6b, 0.4, 1, 1, THREE.DoubleSide
+    );
+    if (!this.texConfig.doorFrame) doorFrameMat.metalness = 0.1;
+    this.buildDoorFrames(group, parsedMap, h, wallMat, doorFrameMat);
 
     // Lighting
     this.buildLighting(group, parsedMap, h);
@@ -359,12 +494,9 @@ export class TiledGalleryBuilder {
     for (const g of geos) g.dispose();
   }
 
-  private buildDoorFrames(group: THREE.Group, map: ParsedMap, h: number, wallMat: THREE.MeshStandardMaterial): void {
-    const frameMat = new THREE.MeshStandardMaterial({
-      color: 0x8b7d6b, roughness: 0.4, metalness: 0.1,
-    });
+  private buildDoorFrames(group: THREE.Group, map: ParsedMap, h: number, wallMat: THREE.MeshStandardMaterial, frameMat: THREE.MeshStandardMaterial): void {
 
-    const doorHeight = h * 0.75;
+    const doorHeight = Math.min(3.2, h * 0.75);
     const frameThickness = 0.06;
 
     // Merge adjacent doors into groups
@@ -498,14 +630,17 @@ export class TiledGalleryBuilder {
   }
 
   private buildLighting(group: THREE.Group, map: ParsedMap, h: number): void {
-    const ambient = new THREE.AmbientLight(COLORS.AMBIENT_LIGHT, 0.7);
+    // Each artwork adds a SpotLight, so reduce PointLights when many artworks exist.
+    // Total lights budget ~16 for smooth performance.
+    const artworkCount = map.artworkSlots.length;
+    const ambient = new THREE.AmbientLight(COLORS.AMBIENT_LIGHT, artworkCount > 10 ? 0.9 : 0.7);
     group.add(ambient);
 
-    const hemi = new THREE.HemisphereLight(COLORS.HEMISPHERE_SKY, COLORS.HEMISPHERE_GROUND, 0.5);
+    const hemi = new THREE.HemisphereLight(COLORS.HEMISPHERE_SKY, COLORS.HEMISPHERE_GROUND, artworkCount > 10 ? 0.6 : 0.5);
     group.add(hemi);
 
     const area = map.widthMeters * map.depthMeters;
-    const maxLights = 8;
+    const maxLights = Math.max(2, 8 - Math.floor(artworkCount / 3));
     const step = Math.max(3, Math.ceil(Math.sqrt(area / maxLights)));
     const radius = Math.max(10, step * 2.5);
 
