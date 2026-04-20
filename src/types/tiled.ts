@@ -1,4 +1,4 @@
-export type TileType = 'empty' | 'floor' | 'wall' | 'door' | 'artwork' | 'spawn';
+export type TileType = 'empty' | 'floor' | 'wall' | 'door' | 'artwork' | 'spawn' | 'bench' | 'pillar' | 'pedestal';
 
 export interface TileCell {
   type: TileType;

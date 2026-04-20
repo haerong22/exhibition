@@ -385,6 +385,9 @@ export class TiledGalleryBuilder {
     if (!this.texConfig.doorFrame) doorFrameMat.metalness = 0.1;
     this.buildDoorFrames(group, parsedMap, h, wallMat, doorFrameMat);
 
+    // Props (bench, pillar, pedestal)
+    this.buildProps(group, h);
+
     // Lighting
     this.buildLighting(group, parsedMap, h);
 
@@ -627,6 +630,72 @@ export class TiledGalleryBuilder {
     }
 
     return groups;
+  }
+
+  private buildProps(group: THREE.Group, h: number): void {
+    const woodMat = new THREE.MeshStandardMaterial({ color: 0x8b6f47, roughness: 0.6, metalness: 0.0 });
+    const stoneMat = new THREE.MeshStandardMaterial({ color: 0xc0b8a8, roughness: 0.7, metalness: 0.0 });
+    const pillarMat = new THREE.MeshStandardMaterial({ color: 0xd0ccc0, roughness: 0.5, metalness: 0.05 });
+
+    for (let row = 0; row < this.originalGrid.length; row++) {
+      for (let col = 0; col < this.originalGrid[row].length; col++) {
+        const type = this.originalGrid[row][col];
+        const cx = col + 0.5;
+        const cz = -(row + 0.5);
+
+        if (type === 'bench') {
+          // Bench: seat (wide flat box) + 4 legs
+          const seatW = 0.8, seatD = 0.35, seatH = 0.05, seatY = 0.45;
+          const seat = new THREE.Mesh(new THREE.BoxGeometry(seatW, seatH, seatD), woodMat);
+          seat.position.set(cx, seatY, cz);
+          seat.castShadow = true;
+          group.add(seat);
+          // Legs
+          const legW = 0.04, legH = seatY - seatH / 2, legD = 0.04;
+          const legMat = woodMat;
+          const offsets = [
+            [-seatW / 2 + 0.06, -seatD / 2 + 0.05],
+            [seatW / 2 - 0.06, -seatD / 2 + 0.05],
+            [-seatW / 2 + 0.06, seatD / 2 - 0.05],
+            [seatW / 2 - 0.06, seatD / 2 - 0.05],
+          ];
+          for (const [ox, oz] of offsets) {
+            const leg = new THREE.Mesh(new THREE.BoxGeometry(legW, legH, legD), legMat);
+            leg.position.set(cx + ox, legH / 2, cz + oz);
+            group.add(leg);
+          }
+        } else if (type === 'pillar') {
+          // Pillar: tall cylinder
+          const pillarR = 0.25, pillarH = h;
+          const geo = new THREE.CylinderGeometry(pillarR, pillarR, pillarH, 16);
+          const mesh = new THREE.Mesh(geo, pillarMat);
+          mesh.position.set(cx, pillarH / 2, cz);
+          mesh.castShadow = true;
+          mesh.receiveShadow = true;
+          group.add(mesh);
+          // Base + capital (wider rings)
+          const capGeo = new THREE.CylinderGeometry(pillarR * 1.4, pillarR * 1.4, 0.12, 16);
+          const base = new THREE.Mesh(capGeo, pillarMat);
+          base.position.set(cx, 0.06, cz);
+          group.add(base);
+          const cap = new THREE.Mesh(capGeo, pillarMat);
+          cap.position.set(cx, pillarH - 0.06, cz);
+          group.add(cap);
+        } else if (type === 'pedestal') {
+          // Pedestal: base box + top platform
+          const baseW = 0.5, baseD = 0.5, baseH = 0.9;
+          const baseMesh = new THREE.Mesh(new THREE.BoxGeometry(baseW, baseH, baseD), stoneMat);
+          baseMesh.position.set(cx, baseH / 2, cz);
+          baseMesh.castShadow = true;
+          group.add(baseMesh);
+          // Top platform (slightly wider)
+          const topH = 0.06;
+          const top = new THREE.Mesh(new THREE.BoxGeometry(baseW + 0.08, topH, baseD + 0.08), stoneMat);
+          top.position.set(cx, baseH + topH / 2, cz);
+          group.add(top);
+        }
+      }
+    }
   }
 
   private buildLighting(group: THREE.Group, map: ParsedMap, h: number): void {

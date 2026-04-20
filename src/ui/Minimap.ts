@@ -10,6 +10,9 @@ const TILE_COLORS: Record<string, string> = {
   door: '#6a5a20',
   artwork: '#3a7aff',
   spawn: '#3aff6a',
+  bench: '#6a5030',
+  pillar: '#666666',
+  pedestal: '#5a5548',
 };
 
 export class Minimap {

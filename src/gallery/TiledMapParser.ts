@@ -17,7 +17,7 @@ export class TiledMapParser {
       walkableGrid[row] = [];
       for (let col = 0; col < width; col++) {
         const cell = grid[row][col];
-        const walkable = cell.type === 'floor' || cell.type === 'door' || cell.type === 'spawn' || cell.type === 'artwork';
+        const walkable = cell.type === 'floor' || cell.type === 'door' || cell.type === 'spawn' || cell.type === 'artwork' || cell.type === 'bench' || cell.type === 'pedestal';
         walkableGrid[row][col] = walkable;
 
         if (cell.type === 'spawn') {

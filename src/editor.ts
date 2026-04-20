@@ -15,6 +15,9 @@ const COLORS: Record<TileType, string> = {
   door: '#8B6914',
   artwork: '#4a9eff',
   spawn: '#4eff7e',
+  bench: '#c4873a',
+  pillar: '#8a8a8a',
+  pedestal: '#b0a090',
 };
 
 const MOODBOARD_API_BASE = '/api-proxy/proj/v1/mood-boards';
@@ -314,7 +317,7 @@ class MapEditor {
     let hasFloor = false;
     for (const row of this.grid) {
       for (const cell of row) {
-        if (cell.type === 'floor' || cell.type === 'spawn' || cell.type === 'artwork' || cell.type === 'door') {
+        if (cell.type !== 'empty' && cell.type !== 'wall') {
           hasFloor = true;
           break;
         }
@@ -728,6 +731,24 @@ class MapEditor {
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
           ctx.fillText('⊞', x + TILE_SIZE / 2, y + TILE_SIZE / 2);
+        } else if (cell.type === 'bench') {
+          ctx.fillStyle = '#fff';
+          ctx.font = '10px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText('🪑', x + TILE_SIZE / 2, y + TILE_SIZE / 2);
+        } else if (cell.type === 'pillar') {
+          ctx.fillStyle = '#fff';
+          ctx.font = '10px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText('🏛', x + TILE_SIZE / 2, y + TILE_SIZE / 2);
+        } else if (cell.type === 'pedestal') {
+          ctx.fillStyle = '#fff';
+          ctx.font = '10px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText('🗿', x + TILE_SIZE / 2, y + TILE_SIZE / 2);
         }
       }
     }
