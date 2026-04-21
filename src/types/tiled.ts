@@ -1,10 +1,13 @@
-export type TileType = 'empty' | 'floor' | 'wall' | 'door' | 'artwork' | 'spawn' | 'bench' | 'pillar' | 'pedestal';
+export type TileType = 'empty' | 'floor' | 'wall' | 'door' | 'artwork' | 'spawn' | 'bench' | 'pillar' | 'pedestal' | 'model';
 
 export interface TileCell {
   type: TileType;
   artworkId?: string;
   instanceId?: string;  // unique per placement — groups 2-tile pairs, allows same artwork multiple times
   wallFacing?: 'north' | 'south' | 'east' | 'west';
+  modelUrl?: string;
+  modelScale?: number;
+  modelRotation?: number; // Y-axis rotation in degrees
 }
 
 export interface GridMap {

@@ -18,6 +18,7 @@ const COLORS: Record<TileType, string> = {
   bench: '#c4873a',
   pillar: '#8a8a8a',
   pedestal: '#b0a090',
+  model: '#e040e0',
 };
 
 const MOODBOARD_API_BASE = '/api-proxy/proj/v1/mood-boards';
@@ -459,7 +460,21 @@ class MapEditor {
 
         const artOptions = document.getElementById('artwork-options')!;
         artOptions.classList.toggle('visible', this.currentTool === 'artwork');
+        const modelOptions = document.getElementById('model-options')!;
+        modelOptions.classList.toggle('visible', this.currentTool === 'model');
       });
+    });
+
+    // Model scale/rotation labels
+    const modelScaleInput = document.getElementById('model-scale') as HTMLInputElement;
+    const modelScaleLabel = document.getElementById('model-scale-label')!;
+    modelScaleInput.addEventListener('input', () => {
+      modelScaleLabel.textContent = `${parseFloat(modelScaleInput.value).toFixed(1)}x`;
+    });
+    const modelRotInput = document.getElementById('model-rotation') as HTMLInputElement;
+    const modelRotLabel = document.getElementById('model-rotation-label')!;
+    modelRotInput.addEventListener('input', () => {
+      modelRotLabel.textContent = `${modelRotInput.value}°`;
     });
 
     // Canvas drawing
@@ -675,6 +690,19 @@ class MapEditor {
       }
     }
 
+    // 3D model placement
+    if (this.currentTool === 'model') {
+      const url = (document.getElementById('model-url') as HTMLInputElement).value.trim();
+      if (!url) {
+        EditorModal.alert('모델 URL을 입력해주세요');
+        this.isDrawing = false;
+        return;
+      }
+      cell.modelUrl = url;
+      cell.modelScale = parseFloat((document.getElementById('model-scale') as HTMLInputElement).value) || 1;
+      cell.modelRotation = parseFloat((document.getElementById('model-rotation') as HTMLInputElement).value) || 0;
+    }
+
     this.grid[row][col] = cell;
     this.render();
   }
@@ -749,6 +777,12 @@ class MapEditor {
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
           ctx.fillText('🗿', x + TILE_SIZE / 2, y + TILE_SIZE / 2);
+        } else if (cell.type === 'model') {
+          ctx.fillStyle = '#fff';
+          ctx.font = '10px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText('📦', x + TILE_SIZE / 2, y + TILE_SIZE / 2);
         }
       }
     }

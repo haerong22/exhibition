@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import type { ParsedMap } from '../types/tiled';
 import type { ExhibitionConfig } from '../types/exhibition';
 import { ArtworkFrame } from './ArtworkFrame';
@@ -282,14 +283,16 @@ export class TiledGalleryBuilder {
   artworkFrames: ArtworkFrame[] = [];
   skipCeiling = false;
   private originalGrid: string[][] = [];
+  private _gridRef: { type: string; modelUrl?: string; modelScale?: number; modelRotation?: number }[][] = [];
   private texConfig: TextureConfig = { floor: 'marble', wall: 'marble', ceiling: 'marble', doorFrame: 'wood-dark' };
 
   constructor(textureManager: TextureManager) {
     this.textureManager = textureManager;
   }
 
-  setOriginalGrid(grid: { type: string }[][]): void {
+  setOriginalGrid(grid: { type: string; modelUrl?: string; modelScale?: number; modelRotation?: number }[][]): void {
     this.originalGrid = grid.map(row => row.map(cell => cell.type));
+    this._gridRef = grid;
   }
 
   setTextureConfig(config: TextureConfig): void {
@@ -385,8 +388,8 @@ export class TiledGalleryBuilder {
     if (!this.texConfig.doorFrame) doorFrameMat.metalness = 0.1;
     this.buildDoorFrames(group, parsedMap, h, wallMat, doorFrameMat);
 
-    // Props (bench, pillar, pedestal)
-    this.buildProps(group, h);
+    // Props (bench, pillar, pedestal, 3D models)
+    await this.buildProps(group, h);
 
     // Lighting
     this.buildLighting(group, parsedMap, h);
@@ -632,7 +635,7 @@ export class TiledGalleryBuilder {
     return groups;
   }
 
-  private buildProps(group: THREE.Group, h: number): void {
+  private async buildProps(group: THREE.Group, h: number): Promise<void> {
     const woodMat = new THREE.MeshStandardMaterial({ color: 0x8b6f47, roughness: 0.6, metalness: 0.0 });
     const stoneMat = new THREE.MeshStandardMaterial({ color: 0xc0b8a8, roughness: 0.7, metalness: 0.0 });
     const pillarMat = new THREE.MeshStandardMaterial({ color: 0xd0ccc0, roughness: 0.5, metalness: 0.05 });
@@ -695,6 +698,46 @@ export class TiledGalleryBuilder {
           group.add(top);
         }
       }
+    }
+
+    // Load 3D models (GLTF/GLB)
+    const modelTiles: { cx: number; cz: number; url: string; scale: number; rotation: number }[] = [];
+    for (let row = 0; row < this.originalGrid.length; row++) {
+      for (let col = 0; col < this.originalGrid[row].length; col++) {
+        if (this.originalGrid[row][col] !== 'model') continue;
+        // Read model data from the original gridMap (which preserves TileCell fields)
+        const cell = this._gridRef?.[row]?.[col];
+        if (!cell?.modelUrl) continue;
+        modelTiles.push({
+          cx: col + 0.5,
+          cz: -(row + 0.5),
+          url: cell.modelUrl,
+          scale: cell.modelScale ?? 1,
+          rotation: cell.modelRotation ?? 0,
+        });
+      }
+    }
+
+    if (modelTiles.length > 0) {
+      const loader = new GLTFLoader();
+      await Promise.all(modelTiles.map(async (m) => {
+        try {
+          const gltf = await loader.loadAsync(m.url);
+          const model = gltf.scene;
+          model.scale.setScalar(m.scale);
+          model.rotation.y = (m.rotation * Math.PI) / 180;
+          model.position.set(m.cx, 0, m.cz);
+          model.traverse((child) => {
+            if ((child as THREE.Mesh).isMesh) {
+              child.castShadow = true;
+              child.receiveShadow = true;
+            }
+          });
+          group.add(model);
+        } catch (e) {
+          console.error('Failed to load model:', m.url, e);
+        }
+      }));
     }
   }
 

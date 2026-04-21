@@ -13,6 +13,7 @@ const TILE_COLORS: Record<string, string> = {
   bench: '#6a5030',
   pillar: '#666666',
   pedestal: '#5a5548',
+  model: '#a030a0',
 };
 
 export class Minimap {

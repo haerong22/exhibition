@@ -189,6 +189,7 @@
           <button class="tool-btn" data-tool="bench" data-mode="map"><span class="icon">🪑</span>벤치</button>
           <button class="tool-btn" data-tool="pillar" data-mode="map"><span class="icon">🏛</span>기둥</button>
           <button class="tool-btn" data-tool="pedestal" data-mode="map"><span class="icon">🗿</span>좌대</button>
+          <button class="tool-btn" data-tool="model" data-mode="map"><span class="icon">📦</span>3D모델</button>
           <button class="tool-btn" data-tool="empty" data-mode="map"><span class="icon">✕</span>지우기</button>
         </div>
       </div>
@@ -218,6 +219,17 @@
           <option value="east">동 (오른쪽)</option>
           <option value="west">서 (왼쪽)</option>
         </select>
+      </div>
+
+      <div class="artwork-input" id="model-options">
+        <label>모델 URL (GLB/GLTF)</label>
+        <input type="text" id="model-url" placeholder="https://example.com/model.glb" />
+        <label style="margin-top:0.4rem">크기</label>
+        <input type="range" id="model-scale" min="0.1" max="3" step="0.1" value="1" style="width:100%" />
+        <span id="model-scale-label" style="font-size:0.7rem;color:#888">1.0x</span>
+        <label style="margin-top:0.4rem">회전 (°)</label>
+        <input type="range" id="model-rotation" min="0" max="360" step="15" value="0" style="width:100%" />
+        <span id="model-rotation-label" style="font-size:0.7rem;color:#888">0°</span>
       </div>
 
       <div class="tool-section" id="section-map-size">
@@ -307,6 +319,7 @@
           <div><span style="color:#c4873a">■</span> 벤치</div>
           <div><span style="color:#8a8a8a">■</span> 기둥</div>
           <div><span style="color:#b0a090">■</span> 좌대</div>
+          <div><span style="color:#e040e0">■</span> 3D 모델</div>
         </div>
       </div>
     </div>
