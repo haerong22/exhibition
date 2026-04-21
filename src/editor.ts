@@ -679,6 +679,15 @@ class MapEditor {
       return;
     }
 
+    // Toggle: clicking a prop/model tile with the matching tool removes it
+    const PROP_TOOLS: TileType[] = ['bench', 'pillar', 'pedestal', 'model'];
+    if (PROP_TOOLS.includes(this.currentTool) && this.grid[row][col].type === this.currentTool) {
+      this.grid[row][col] = { type: 'floor' };
+      this.render();
+      this.schedulePreviewUpdate();
+      return;
+    }
+
     // Only one spawn point
     if (this.currentTool === 'spawn') {
       for (let r = 0; r < this.height; r++) {
