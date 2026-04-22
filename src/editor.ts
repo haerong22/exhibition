@@ -465,17 +465,42 @@ class MapEditor {
       });
     });
 
-    // Model scale/rotation labels
+    // Model scale/rotation labels + update existing placed models with same URL
+    const modelUrlInput = document.getElementById('model-url') as HTMLInputElement;
     const modelScaleInput = document.getElementById('model-scale') as HTMLInputElement;
     const modelScaleLabel = document.getElementById('model-scale-label')!;
+    const modelRotInput = document.getElementById('model-rotation') as HTMLInputElement;
+    const modelRotLabel = document.getElementById('model-rotation-label')!;
+
+    const applyModelParams = () => {
+      const url = modelUrlInput.value.trim();
+      if (!url) return;
+      const scale = parseFloat(modelScaleInput.value) || 1;
+      const rotation = parseFloat(modelRotInput.value) || 0;
+      let changed = false;
+      for (let r = 0; r < this.height; r++) {
+        for (let c = 0; c < this.width; c++) {
+          const cell = this.grid[r][c];
+          if (cell.type === 'model' && cell.modelUrl === url) {
+            if (cell.modelScale !== scale || cell.modelRotation !== rotation) {
+              cell.modelScale = scale;
+              cell.modelRotation = rotation;
+              changed = true;
+            }
+          }
+        }
+      }
+      if (changed) this.schedulePreviewUpdate();
+    };
+
     modelScaleInput.addEventListener('input', () => {
       modelScaleLabel.textContent = `${parseFloat(modelScaleInput.value).toFixed(1)}x`;
     });
-    const modelRotInput = document.getElementById('model-rotation') as HTMLInputElement;
-    const modelRotLabel = document.getElementById('model-rotation-label')!;
+    modelScaleInput.addEventListener('change', applyModelParams);
     modelRotInput.addEventListener('input', () => {
       modelRotLabel.textContent = `${modelRotInput.value}°`;
     });
+    modelRotInput.addEventListener('change', applyModelParams);
 
     // Canvas drawing
     this.canvas.addEventListener('mousedown', (e) => {
