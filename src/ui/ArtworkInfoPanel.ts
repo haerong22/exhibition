@@ -30,7 +30,11 @@ export class ArtworkInfoPanel {
   private linkEl: HTMLAnchorElement;
   private bodyEl: HTMLElement;
   private loadingEl: HTMLElement;
+  private prevBtn: HTMLElement;
+  private nextBtn: HTMLElement;
   private onCloseCallback: (() => void) | null = null;
+  private onPrevCallback: (() => void) | null = null;
+  private onNextCallback: (() => void) | null = null;
 
   constructor() {
     this.panel = document.getElementById('artwork-panel')!;
@@ -45,19 +49,37 @@ export class ArtworkInfoPanel {
     this.linkEl = this.panel.querySelector('.art-link')!;
     this.bodyEl = this.panel.querySelector('.art-body')!;
     this.loadingEl = this.panel.querySelector('.art-loading')!;
+    this.prevBtn = this.panel.querySelector('.nav-prev')!;
+    this.nextBtn = this.panel.querySelector('.nav-next')!;
 
     this.closeBtn.addEventListener('click', () => {
       this.hide();
       this.onCloseCallback?.();
     });
 
+    this.prevBtn.addEventListener('click', () => this.onPrevCallback?.());
+    this.nextBtn.addEventListener('click', () => this.onNextCallback?.());
+
     window.addEventListener('keydown', (e) => {
-      if (e.code === 'Escape' && this.panel.classList.contains('visible')) {
+      if (!this.panel.classList.contains('visible')) return;
+      if (e.code === 'Escape') {
         this.hide();
         this.onCloseCallback?.();
+      } else if (e.code === 'ArrowLeft') {
+        this.onPrevCallback?.();
+      } else if (e.code === 'ArrowRight') {
+        this.onNextCallback?.();
       }
     });
   }
+
+  setNavVisible(visible: boolean): void {
+    this.prevBtn.style.display = visible ? '' : 'none';
+    this.nextBtn.style.display = visible ? '' : 'none';
+  }
+
+  onPrev(cb: () => void): void { this.onPrevCallback = cb; }
+  onNext(cb: () => void): void { this.onNextCallback = cb; }
 
   show(config: ArtworkConfig): void {
     // Show basic info immediately

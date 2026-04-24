@@ -10,6 +10,7 @@ export class ArtworkInteraction {
   private artworkFrames: ArtworkFrame[] = [];
   private onFocus: ((config: ArtworkConfig) => void) | null = null;
   private onUnfocus: (() => void) | null = null;
+  private currentFrameIndex = -1;
 
   constructor(camera: THREE.PerspectiveCamera, cameraController: CameraController) {
     this.camera = camera;
@@ -17,7 +18,41 @@ export class ArtworkInteraction {
   }
 
   setArtworks(frames: ArtworkFrame[]): void {
-    this.artworkFrames = frames;
+    // Tour order matches viewer's "next = right visually" perspective.
+    // Due to THREE.js right-handed coords, this works out as counterclockwise (top-down):
+    // north → west → south → east.
+    const wallPriority = { north: 0, west: 1, south: 2, east: 3 } as const;
+    this.artworkFrames = [...frames].sort((a, b) => {
+      const aWall = this.wallOf(a);
+      const bWall = this.wallOf(b);
+      if (aWall !== bWall) return wallPriority[aWall] - wallPriority[bWall];
+      // Within same wall, sort so "next" moves visually right for the viewer:
+      // north wall: x desc (viewer faces +Z, right = -X)
+      // west wall:  z desc (viewer faces -X, right = -Z = more south)
+      // south wall: x asc  (viewer faces -Z, right = +X)
+      // east wall:  z asc  (viewer faces +X, right = +Z = more north)
+      const ax = a.group.position.x, az = a.group.position.z;
+      const bx = b.group.position.x, bz = b.group.position.z;
+      switch (aWall) {
+        case 'north': return bx - ax;
+        case 'west':  return bz - az;
+        case 'south': return ax - bx;
+        case 'east':  return az - bz;
+      }
+    });
+    this.currentFrameIndex = -1;
+  }
+
+  // wallNormal points AWAY from the wall (into the room).
+  // So normal direction → opposite wall.
+  private wallOf(frame: ArtworkFrame): 'north' | 'south' | 'east' | 'west' {
+    const n = (frame.group.userData.wallNormal as THREE.Vector3) ?? new THREE.Vector3();
+    if (Math.abs(n.z) > Math.abs(n.x)) {
+      // Facing +Z (north) → on south wall; facing -Z (south) → on north wall
+      return n.z > 0 ? 'south' : 'north';
+    }
+    // Facing +X (east) → on west wall; facing -X (west) → on east wall
+    return n.x > 0 ? 'west' : 'east';
   }
 
   onArtworkFocus(cb: (config: ArtworkConfig) => void): void {
@@ -54,7 +89,6 @@ export class ArtworkInteraction {
     const hit = intersects[0];
     if (hit.distance > 6) return false;
 
-    const config = hit.object.userData.config as ArtworkConfig;
     // Find the frame whose group contains the hit mesh (not by id — duplicates share the same id)
     const frame = this.artworkFrames.find((f) => {
       let obj: THREE.Object3D | null = hit.object;
@@ -66,14 +100,39 @@ export class ArtworkInteraction {
     });
     if (!frame) return false;
 
+    this.currentFrameIndex = this.artworkFrames.indexOf(frame);
+    this.focusFrame(frame);
+    return true;
+  }
+
+  // Move to next/prev artwork while viewing
+  next(): void {
+    this.navigate(1);
+  }
+
+  prev(): void {
+    this.navigate(-1);
+  }
+
+  hasMultiple(): boolean {
+    return this.artworkFrames.length > 1;
+  }
+
+  private navigate(direction: 1 | -1): void {
+    if (this.artworkFrames.length === 0) return;
+    if (this.cameraController.state !== 'VIEWING_ARTWORK' && this.cameraController.state !== 'TRANSITIONING_TO_ARTWORK') return;
+    const len = this.artworkFrames.length;
+    this.currentFrameIndex = (this.currentFrameIndex + direction + len) % len;
+    const frame = this.artworkFrames[this.currentFrameIndex];
+    this.focusFrame(frame);
+  }
+
+  private focusFrame(frame: ArtworkFrame): void {
     const wallNormal = frame.group.userData.wallNormal as THREE.Vector3;
     const focus = frame.getFocusPosition(wallNormal);
-
     this.cameraController.transitionToArtwork(focus, () => {
-      this.onFocus?.(config);
+      this.onFocus?.(frame.config);
     });
-
-    return true;
   }
 
   unfocus(): void {

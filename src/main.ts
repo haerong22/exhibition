@@ -132,6 +132,7 @@ class App {
     // Artwork focus/unfocus
     this.artworkInteraction.onArtworkFocus((config) => {
       this.infoPanel.show(config);
+      this.infoPanel.setNavVisible(this.artworkInteraction.hasMultiple());
       this.minimap.hide();
       if (!this.isMobile) this.fpControls.unlock();
     });
@@ -154,6 +155,10 @@ class App {
         this.hud.show();
       }
     });
+
+    // Navigate between artworks
+    this.infoPanel.onPrev(() => this.artworkInteraction.prev());
+    this.infoPanel.onNext(() => this.artworkInteraction.next());
 
     // Pointer lock events (desktop only)
     if (!this.isMobile) {

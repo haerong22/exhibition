@@ -25,10 +25,14 @@ export class CameraController {
   }
 
   transitionToArtwork(target: TransitionTarget, onComplete?: () => void): void {
-    if (this.state !== 'WALKING') return;
+    // Allow from WALKING (first focus) or VIEWING_ARTWORK (switching between artworks)
+    if (this.state !== 'WALKING' && this.state !== 'VIEWING_ARTWORK') return;
 
-    this.savedPosition.copy(this.camera.position);
-    this.savedQuaternion.copy(this.camera.quaternion);
+    // Only save position when entering from WALKING — preserves return point when navigating between artworks
+    if (this.state === 'WALKING') {
+      this.savedPosition.copy(this.camera.position);
+      this.savedQuaternion.copy(this.camera.quaternion);
+    }
     this.startPosition.copy(this.camera.position);
     this.startQuaternion.copy(this.camera.quaternion);
 

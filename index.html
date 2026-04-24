@@ -67,6 +67,18 @@
       transition: color 0.2s;
     }
     #artwork-panel .close-btn:hover { color: #fff; }
+    #artwork-panel .art-nav {
+      position: absolute; top: 1rem; left: 1rem;
+      display: flex; gap: 0.3rem;
+    }
+    #artwork-panel .nav-btn {
+      width: 28px; height: 28px; padding: 0;
+      background: transparent; border: 1px solid #3a3a3a; border-radius: 3px;
+      color: #aaa; font-size: 1.1rem; line-height: 1; cursor: pointer;
+      transition: all 0.2s;
+    }
+    #artwork-panel .nav-btn:hover { border-color: #888; color: #fff; background: rgba(255,255,255,0.05); }
+    #artwork-panel .art-title { margin-top: 1.5rem; }
     #artwork-panel .art-title { font-size: 1.5rem; font-weight: 300; margin-bottom: 0.5rem; letter-spacing: 0.05em; }
     #artwork-panel .art-artist { font-size: 1rem; color: #aaa; margin-bottom: 0.3rem; }
     #artwork-panel .art-year { font-size: 0.85rem; color: #666; margin-bottom: 1.5rem; }
@@ -232,6 +244,10 @@
 
   <div id="artwork-panel">
     <button class="close-btn">&times;</button>
+    <div class="art-nav">
+      <button class="nav-btn nav-prev" title="이전 작품">‹</button>
+      <button class="nav-btn nav-next" title="다음 작품">›</button>
+    </div>
     <h2 class="art-title"></h2>
     <p class="art-artist"></p>
     <p class="art-category"></p>
