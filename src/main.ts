@@ -5,6 +5,7 @@ import { InputManager } from './core/InputManager';
 import { FirstPersonControls } from './controls/FirstPersonControls';
 import { TouchControls } from './controls/TouchControls';
 import { ArtworkInteraction } from './controls/ArtworkInteraction';
+import { AutoTour } from './controls/AutoTour';
 import { GalleryBuilder } from './gallery/GalleryBuilder';
 import { TiledGalleryBuilder } from './gallery/TiledGalleryBuilder';
 import { TiledMapParser } from './gallery/TiledMapParser';
@@ -43,6 +44,7 @@ class App {
   private infoPanel: ArtworkInfoPanel;
   private hud: HUD;
   private minimap: Minimap;
+  private autoTour: AutoTour;
 
   constructor() {
     const canvas = document.getElementById('canvas') as HTMLCanvasElement;
@@ -63,6 +65,7 @@ class App {
     this.hud = new HUD(this.isMobile);
     this.minimap = new Minimap();
     this.artworkInteraction = new ArtworkInteraction(this.engine.camera, this.cameraController);
+    this.autoTour = new AutoTour(this.artworkInteraction);
 
     // Reduce quality on mobile
     if (this.isMobile) {
@@ -144,6 +147,7 @@ class App {
 
     // Info panel close
     this.infoPanel.onClose(() => {
+      if (this.autoTour.running) this.autoTour.stop();
       this.artworkInteraction.unfocus();
       if (!this.isMobile) {
         setTimeout(() => {
@@ -159,6 +163,17 @@ class App {
     // Navigate between artworks
     this.infoPanel.onPrev(() => this.artworkInteraction.prev());
     this.infoPanel.onNext(() => this.artworkInteraction.next());
+
+    // Auto tour: stops if user closes info panel during tour
+    this.autoTour.onStart(() => {
+      if (!this.isMobile) this.fpControls.unlock();
+    });
+    this.autoTour.onStop(() => {
+      // After tour ends, return to walking
+      if (this.cameraController.state === 'VIEWING_ARTWORK') {
+        this.artworkInteraction.unfocus();
+      }
+    });
 
     // Pointer lock events (desktop only)
     if (!this.isMobile) {
@@ -224,6 +239,8 @@ class App {
     this.hud.hide();
     this.infoPanel.hide();
     this.minimap.hide();
+    this.autoTour.disable();
+    this.autoTour.stop();
     if (!this.isMobile) this.fpControls.unlock();
     this.engine.scene.clear();
     this.engine.scene.fog = null;
@@ -689,6 +706,7 @@ class App {
         this.fpControls.lock();
       }
       this.minimap.show();
+      this.autoTour.enable();
     });
   }
 

@@ -118,6 +118,16 @@ export class ArtworkInteraction {
     return this.artworkFrames.length > 1;
   }
 
+  count(): number {
+    return this.artworkFrames.length;
+  }
+
+  focusByIndex(index: number): void {
+    if (index < 0 || index >= this.artworkFrames.length) return;
+    this.currentFrameIndex = index;
+    this.focusFrame(this.artworkFrames[index]);
+  }
+
   private navigate(direction: 1 | -1): void {
     if (this.artworkFrames.length === 0) return;
     if (this.cameraController.state !== 'VIEWING_ARTWORK' && this.cameraController.state !== 'TRANSITIONING_TO_ARTWORK') return;

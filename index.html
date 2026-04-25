@@ -52,6 +52,30 @@
     }
     #hud.visible { display: block; }
 
+    /* Tour button */
+    #tour-btn {
+      position: fixed; top: 1.5rem; left: 50%; transform: translateX(-50%); z-index: 16;
+      padding: 0.6rem 1.2rem; background: rgba(0,0,0,0.65); color: #fff;
+      border: 1px solid rgba(255,255,255,0.2); border-radius: 4px;
+      font-size: 0.85rem; cursor: pointer; backdrop-filter: blur(8px);
+      letter-spacing: 0.05em; transition: all 0.2s;
+    }
+    #tour-btn:hover { background: rgba(0,0,0,0.85); border-color: rgba(255,255,255,0.4); }
+    #tour-btn.hidden { display: none; }
+    #tour-status {
+      position: fixed; top: 1.5rem; left: 50%; transform: translateX(-50%); z-index: 16;
+      padding: 0.6rem 1.2rem; background: rgba(0,0,0,0.75); color: #fff;
+      border: 1px solid rgba(255,255,255,0.2); border-radius: 4px;
+      font-size: 0.8rem; backdrop-filter: blur(8px); letter-spacing: 0.05em;
+    }
+    #tour-status.hidden { display: none; }
+    #tour-status #tour-stop {
+      margin-left: 0.5rem; padding: 0.2rem 0.6rem;
+      background: transparent; color: #ff8a8a; border: 1px solid #a44;
+      border-radius: 3px; cursor: pointer; font-size: 0.75rem;
+    }
+    #tour-status #tour-stop:hover { background: rgba(170,68,68,0.2); }
+
     /* Artwork Info Panel */
     #artwork-panel {
       position: fixed; right: 0; top: 0; bottom: 0; width: 380px;
@@ -239,7 +263,9 @@
 
   <div id="crosshair"></div>
 
-  <div id="hud">WASD 이동 · 마우스 시선 · 클릭 작품 감상 · ESC 나가기</div>
+  <div id="hud">WASD 이동 · 마우스 시선 · 클릭 작품 감상 · T 자동 투어 · ESC 나가기</div>
+  <button id="tour-btn" class="hidden">▶ 자동 투어 (T)</button>
+  <div id="tour-status" class="hidden"><span id="tour-progress"></span> · <button id="tour-stop">투어 종료</button></div>
   <canvas id="minimap" width="160" height="160"></canvas>
 
   <div id="artwork-panel">
