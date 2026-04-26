@@ -234,6 +234,27 @@
     .exhibition-card .card-btn:hover { border-color: #555; color: #fff; }
     .exhibition-card .card-btn.danger:hover { border-color: #a44; color: #ff8a8a; }
 
+    /* QR Code Modal */
+    #qr-modal { position: fixed; inset: 0; z-index: 60; display: none; align-items: center; justify-content: center; }
+    #qr-modal.visible { display: flex; }
+    #qr-modal .qr-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(8px); }
+    #qr-modal .qr-content {
+      position: relative; padding: 2rem; background: #141414; border: 1px solid #2a2a2a;
+      border-radius: 6px; max-width: 360px; text-align: center; color: #fff;
+    }
+    #qr-modal .qr-close {
+      position: absolute; top: 0.5rem; right: 0.8rem; background: none; border: none;
+      color: #888; font-size: 1.5rem; cursor: pointer;
+    }
+    #qr-modal .qr-close:hover { color: #fff; }
+    #qr-modal .qr-title { font-size: 1rem; font-weight: 400; margin-bottom: 1rem; color: #eee; }
+    #qr-modal .qr-canvas { display: block; margin: 0 auto 1rem; border-radius: 4px; }
+    #qr-modal .qr-url {
+      font-size: 0.7rem; color: #888; word-break: break-all;
+      padding: 0.5rem; background: #0a0a0a; border-radius: 3px; margin-bottom: 0.6rem;
+    }
+    #qr-modal .qr-hint { font-size: 0.75rem; color: #666; }
+
     /* Minimap */
     #minimap {
       position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 15;

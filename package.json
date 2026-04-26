@@ -9,12 +9,14 @@
     "preview": "vite preview"
   },
   "devDependencies": {
+    "@types/qrcode": "^1.5.6",
     "@types/three": "^0.183.1",
     "@vitejs/plugin-basic-ssl": "^2.2.0",
     "typescript": "~5.9.3",
     "vite": "^8.0.1"
   },
   "dependencies": {
+    "qrcode": "^1.5.4",
     "three": "^0.183.2"
   }
 }

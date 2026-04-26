@@ -6,6 +6,7 @@ import { FirstPersonControls } from './controls/FirstPersonControls';
 import { TouchControls } from './controls/TouchControls';
 import { ArtworkInteraction } from './controls/ArtworkInteraction';
 import { AutoTour } from './controls/AutoTour';
+import QRCode from 'qrcode';
 import { GalleryBuilder } from './gallery/GalleryBuilder';
 import { TiledGalleryBuilder } from './gallery/TiledGalleryBuilder';
 import { TiledMapParser } from './gallery/TiledMapParser';
@@ -558,6 +559,15 @@ class App {
     });
     actions.appendChild(copyBtn);
 
+    const qrBtn = document.createElement('button');
+    qrBtn.className = 'card-btn';
+    qrBtn.textContent = 'QR';
+    qrBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.showQRCode(`custom-${map.id}`, map.name);
+    });
+    actions.appendChild(qrBtn);
+
     const editBtn = document.createElement('a');
     editBtn.className = 'card-btn';
     editBtn.textContent = '편집';
@@ -602,6 +612,33 @@ class App {
       },
       () => { alert(url); }
     );
+  }
+
+  private async showQRCode(exhibitionId: string, name: string): Promise<void> {
+    const url = `${window.location.origin}/#/exhibition/${encodeURIComponent(exhibitionId)}`;
+    let modal = document.getElementById('qr-modal');
+    if (!modal) {
+      modal = document.createElement('div');
+      modal.id = 'qr-modal';
+      modal.innerHTML = `
+        <div class="qr-overlay"></div>
+        <div class="qr-content">
+          <button class="qr-close">&times;</button>
+          <h3 class="qr-title"></h3>
+          <canvas class="qr-canvas"></canvas>
+          <p class="qr-url"></p>
+          <p class="qr-hint">스마트폰 카메라로 스캔하여 접속</p>
+        </div>
+      `;
+      document.body.appendChild(modal);
+      modal.querySelector('.qr-close')!.addEventListener('click', () => modal!.classList.remove('visible'));
+      modal.querySelector('.qr-overlay')!.addEventListener('click', () => modal!.classList.remove('visible'));
+    }
+    (modal.querySelector('.qr-title') as HTMLElement).textContent = name;
+    (modal.querySelector('.qr-url') as HTMLElement).textContent = url;
+    const canvas = modal.querySelector('.qr-canvas') as HTMLCanvasElement;
+    await QRCode.toCanvas(canvas, url, { width: 280, margin: 1, color: { dark: '#fff', light: '#0a0a0a' } });
+    modal.classList.add('visible');
   }
 
   private async loadEditorPreview(): Promise<void> {
