@@ -77,10 +77,20 @@
     }
 
     /* 3D Preview panel */
-    .preview-panel { width: 45%; min-width: 300px; background: #0a0a0a; border-left: 1px solid #222; position: relative; display: flex; flex-direction: column; }
+    .preview-panel { width: 45%; min-width: 300px; background: #0a0a0a; border-left: 1px solid #222; position: relative; display: flex; flex-direction: column; transition: width 0.25s ease, min-width 0.25s ease; }
+    .preview-panel.collapsed { width: 32px; min-width: 32px; }
+    .preview-panel.collapsed .preview-header { padding: 0.5rem 0; justify-content: center; }
+    .preview-panel.collapsed .preview-header > span,
+    .preview-panel.collapsed #preview-canvas,
+    .preview-panel.collapsed #preview-overlay { display: none; }
     .preview-header { display: flex; align-items: center; justify-content: space-between; padding: 0.5rem 1rem; background: #111; border-bottom: 1px solid #222; }
     .preview-header span { font-size: 0.75rem; color: #666; text-transform: uppercase; letter-spacing: 0.1em; }
     .preview-header .preview-status { font-size: 0.7rem; color: #4eff7e; }
+    .preview-toggle {
+      background: transparent; border: none; color: #888; cursor: pointer;
+      font-size: 0.9rem; padding: 0 0.3rem; line-height: 1;
+    }
+    .preview-toggle:hover { color: #fff; }
     #preview-canvas { flex: 1; width: 100%; display: block; }
     .preview-overlay { position: absolute; inset: 0; top: 32px; display: flex; align-items: center; justify-content: center; color: #444; font-size: 0.85rem; pointer-events: none; }
 
@@ -354,8 +364,9 @@
           document.querySelectorAll('.mod-key').forEach((el) => { el.textContent = '⌘'; });
         }
       </script>
-      <div class="preview-panel">
+      <div class="preview-panel" id="preview-panel">
         <div class="preview-header">
+          <button class="preview-toggle" id="preview-toggle" title="미리보기 패널 접기/펼치기">⟩</button>
           <span>3D 미리보기</span>
           <span class="preview-status" id="preview-status">대기 중</span>
         </div>

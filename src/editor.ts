@@ -231,6 +231,16 @@ class MapEditor {
 
     window.addEventListener('resize', () => this.resizePreview());
 
+    // Preview panel toggle (collapse/expand)
+    const previewPanel = document.getElementById('preview-panel')!;
+    const previewToggle = document.getElementById('preview-toggle')!;
+    previewToggle.addEventListener('click', () => {
+      const collapsed = previewPanel.classList.toggle('collapsed');
+      previewToggle.textContent = collapsed ? '⟨' : '⟩';
+      // Wait for CSS transition to complete before resizing renderer
+      setTimeout(() => this.resizePreview(), 280);
+    });
+
     // Load a saved map if editor was opened with ?edit={id}
     this.handleInitialLoad();
   }
