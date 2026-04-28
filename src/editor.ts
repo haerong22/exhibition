@@ -173,6 +173,7 @@ class MapEditor {
   private grid: TileCell[][] = [];
   private currentTool: TileType = 'floor';
   private isDrawing = false;
+  private isErasing = false;
   private projects: ProjectItem[] = [];
   private currentMapId: string | null = null;
   private currentMapName: string | null = null;
@@ -514,21 +515,32 @@ class MapEditor {
 
     // Canvas drawing
     this.canvas.addEventListener('mousedown', (e) => {
-      this.isDrawing = true;
-      // Snapshot once at drag start so a continuous drag = 1 history entry
       this.pushHistory();
-      this.handleDraw(e);
+      if (e.button === 2) {
+        // Right-click: quick erase
+        this.isErasing = true;
+        this.handleErase(e);
+      } else if (e.button === 0) {
+        this.isDrawing = true;
+        this.handleDraw(e);
+      }
     });
     this.canvas.addEventListener('mousemove', (e) => {
       this.updateStatus(e);
-      if (this.isDrawing) this.handleDraw(e);
+      if (this.isErasing) this.handleErase(e);
+      else if (this.isDrawing) this.handleDraw(e);
     });
     window.addEventListener('mouseup', () => {
-      if (this.isDrawing) {
+      if (this.isDrawing || this.isErasing) {
         this.isDrawing = false;
+        this.isErasing = false;
         this.schedulePreviewUpdate();
       }
     });
+    // Suppress browser context menu so right-click can be used for erasing
+    this.canvas.addEventListener('contextmenu', (e) => { e.preventDefault(); e.stopPropagation(); });
+    const canvasArea = this.canvas.parentElement;
+    if (canvasArea) canvasArea.addEventListener('contextmenu', (e) => e.preventDefault());
 
     // Undo / Redo (keyboard only — shortcut hint shown in canvas area)
     window.addEventListener('keydown', (e) => {
@@ -637,6 +649,34 @@ class MapEditor {
     const select = (document.getElementById('artwork-select') as HTMLSelectElement).value;
     const manual = (document.getElementById('artwork-id') as HTMLInputElement).value;
     return select || manual || '';
+  }
+
+  private handleErase(e: MouseEvent): void {
+    const rect = this.canvas.getBoundingClientRect();
+    const col = Math.floor((e.clientX - rect.left) / TILE_SIZE);
+    const row = Math.floor((e.clientY - rect.top) / TILE_SIZE);
+    if (row < 0 || row >= this.height || col < 0 || col >= this.width) return;
+    if (this.editorMode === 'exhibition') {
+      // In exhibition mode only allow erasing artwork/spawn (map structure read-only)
+      const t = this.grid[row][col].type;
+      if (t !== 'artwork' && t !== 'spawn') return;
+    }
+    if (this.grid[row][col].type === 'empty') return;
+    // For artwork pairs, remove all tiles with the same instanceId
+    const cell = this.grid[row][col];
+    if (cell.type === 'artwork' && cell.instanceId) {
+      const id = cell.instanceId;
+      for (let r = 0; r < this.height; r++) {
+        for (let c = 0; c < this.width; c++) {
+          if (this.grid[r][c].instanceId === id) {
+            this.grid[r][c] = { type: 'floor' };
+          }
+        }
+      }
+    } else {
+      this.grid[row][col] = { type: 'empty' };
+    }
+    this.render();
   }
 
   private handleDraw(e: MouseEvent): void {
