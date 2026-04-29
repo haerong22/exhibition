@@ -174,6 +174,9 @@ class MapEditor {
   private currentTool: TileType = 'floor';
   private isDrawing = false;
   private isErasing = false;
+  private rectStart: { col: number; row: number } | null = null;
+  private rectEnd: { col: number; row: number } | null = null;
+  private rectErase = false;
   private projects: ProjectItem[] = [];
   private currentMapId: string | null = null;
   private currentMapName: string | null = null;
@@ -515,9 +518,18 @@ class MapEditor {
 
     // Canvas drawing
     this.canvas.addEventListener('mousedown', (e) => {
+      const cell = this.cellAt(e);
+      if (!cell) return;
       this.pushHistory();
+      if (e.shiftKey) {
+        // Shift + drag: rectangle fill (or rectangle erase with right button)
+        this.rectStart = cell;
+        this.rectEnd = cell;
+        this.rectErase = e.button === 2;
+        this.render();
+        return;
+      }
       if (e.button === 2) {
-        // Right-click: quick erase
         this.isErasing = true;
         this.handleErase(e);
       } else if (e.button === 0) {
@@ -527,10 +539,23 @@ class MapEditor {
     });
     this.canvas.addEventListener('mousemove', (e) => {
       this.updateStatus(e);
+      if (this.rectStart) {
+        const c = this.cellAt(e);
+        if (c) { this.rectEnd = c; this.render(); }
+        return;
+      }
       if (this.isErasing) this.handleErase(e);
       else if (this.isDrawing) this.handleDraw(e);
     });
     window.addEventListener('mouseup', () => {
+      if (this.rectStart && this.rectEnd) {
+        this.applyRectangle();
+        this.rectStart = null;
+        this.rectEnd = null;
+        this.render();
+        this.schedulePreviewUpdate();
+        return;
+      }
       if (this.isDrawing || this.isErasing) {
         this.isDrawing = false;
         this.isErasing = false;
@@ -649,6 +674,45 @@ class MapEditor {
     const select = (document.getElementById('artwork-select') as HTMLSelectElement).value;
     const manual = (document.getElementById('artwork-id') as HTMLInputElement).value;
     return select || manual || '';
+  }
+
+  private cellAt(e: MouseEvent): { col: number; row: number } | null {
+    const rect = this.canvas.getBoundingClientRect();
+    const col = Math.floor((e.clientX - rect.left) / TILE_SIZE);
+    const row = Math.floor((e.clientY - rect.top) / TILE_SIZE);
+    if (row < 0 || row >= this.height || col < 0 || col >= this.width) return null;
+    return { col, row };
+  }
+
+  private applyRectangle(): void {
+    if (!this.rectStart || !this.rectEnd) return;
+    const c1 = Math.min(this.rectStart.col, this.rectEnd.col);
+    const c2 = Math.max(this.rectStart.col, this.rectEnd.col);
+    const r1 = Math.min(this.rectStart.row, this.rectEnd.row);
+    const r2 = Math.max(this.rectStart.row, this.rectEnd.row);
+
+    if (this.rectErase) {
+      // Rectangle erase: only allow in map mode for structure tiles
+      for (let r = r1; r <= r2; r++) {
+        for (let c = c1; c <= c2; c++) {
+          if (this.editorMode === 'exhibition') {
+            const t = this.grid[r][c].type;
+            if (t !== 'artwork' && t !== 'spawn') continue;
+          }
+          this.grid[r][c] = { type: 'empty' };
+        }
+      }
+      return;
+    }
+
+    // Rectangle fill: only structural tiles (floor/wall/door/empty), and only in map mode
+    if (this.editorMode === 'exhibition') return;
+    if (!['floor', 'wall', 'door', 'empty'].includes(this.currentTool)) return;
+    for (let r = r1; r <= r2; r++) {
+      for (let c = c1; c <= c2; c++) {
+        this.grid[r][c] = { type: this.currentTool };
+      }
+    }
   }
 
   private handleErase(e: MouseEvent): void {
@@ -869,6 +933,19 @@ class MapEditor {
           ctx.fillText('📦', x + TILE_SIZE / 2, y + TILE_SIZE / 2);
         }
       }
+    }
+
+    // Rectangle selection preview (Shift+drag)
+    if (this.rectStart && this.rectEnd) {
+      const c1 = Math.min(this.rectStart.col, this.rectEnd.col);
+      const c2 = Math.max(this.rectStart.col, this.rectEnd.col);
+      const r1 = Math.min(this.rectStart.row, this.rectEnd.row);
+      const r2 = Math.max(this.rectStart.row, this.rectEnd.row);
+      ctx.fillStyle = this.rectErase ? 'rgba(255,80,80,0.25)' : 'rgba(80,200,255,0.25)';
+      ctx.fillRect(c1 * TILE_SIZE, r1 * TILE_SIZE, (c2 - c1 + 1) * TILE_SIZE, (r2 - r1 + 1) * TILE_SIZE);
+      ctx.strokeStyle = this.rectErase ? '#ff5050' : '#50c8ff';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(c1 * TILE_SIZE, r1 * TILE_SIZE, (c2 - c1 + 1) * TILE_SIZE, (r2 - r1 + 1) * TILE_SIZE);
     }
   }
 
