@@ -266,9 +266,21 @@
     #minimap.visible { display: block; }
 
     @media (max-width: 768px) {
-      #artwork-panel { width: 100%; }
+      #artwork-panel { width: 100%; padding: 2.5rem 1.2rem; }
       #loading-title { font-size: 1.3rem; }
       #minimap { bottom: 0.8rem; right: 0.8rem; }
+      #exhibition-picker { padding: 2rem 1rem; }
+      #picker-title { font-size: 1rem; margin-bottom: 1.5rem; }
+      .template-grid { grid-template-columns: 1fr 1fr; gap: 0.6rem; }
+      .template-card .template-preview { height: 100px; }
+      .template-card .card-body { padding: 0.6rem 0.7rem; }
+      .template-card h3 { font-size: 0.8rem; }
+      .template-card p { font-size: 0.65rem; }
+      .exhibition-card { flex-wrap: wrap; padding: 0.8rem; }
+      .exhibition-card .card-actions { width: 100%; margin-top: 0.4rem; }
+      #tour-btn, #tour-status { font-size: 0.75rem; padding: 0.7rem 1rem; }
+      #qr-modal .qr-content { max-width: 90vw; padding: 1.5rem; }
+      #qr-modal .qr-canvas { max-width: 100%; height: auto !important; }
     }
   </style>
 </head>
