@@ -712,10 +712,18 @@ class App {
     this.tiledBuilder.setOriginalGrid(gridMap.grid);
     if (textures) this.tiledBuilder.setTextureConfig(textures);
 
+    // Stage 1: 공간 구조 생성 (0-30%)
+    this.loadingScreen.setStage('공간 구조 생성 중...', 0, 0.3);
+    await new Promise((r) => setTimeout(r, 50)); // let UI update
+
+    // Stage 2: 텍스처/작품 로딩 (30-90%)
+    this.loadingScreen.setStage('텍스처 및 작품 로딩 중...', 0.3, 0.9);
     const result = await this.tiledBuilder.build(parsedMap, previewConfig, (loaded, total) =>
       this.loadingScreen.updateProgress(loaded, total)
     );
 
+    // Stage 3: 씬 구성 (90-100%)
+    this.loadingScreen.setStage('씬 구성 중...', 0.9, 1.0);
     this.engine.scene.clear();
     this.engine.scene.add(result.group);
     this.engine.scene.fog = new THREE.Fog(0xf5f5f0, 10, 30);
@@ -753,14 +761,17 @@ class App {
     if (!this.isMobile) this.fpControls.unlock();
 
     try {
+      this.loadingScreen.setStage('전시 정보 불러오는 중...', 0, 0.15);
       const config = await this.loader.load(id, configUrl);
       this.loadingScreen.setTitle(config.nameKo ?? config.name);
 
+      this.loadingScreen.setStage('텍스처 및 작품 로딩 중...', 0.15, 0.9);
       const { group, boundary } = await this.galleryBuilder.build(
         config,
         (loaded, total) => this.loadingScreen.updateProgress(loaded, total)
       );
 
+      this.loadingScreen.setStage('씬 구성 중...', 0.9, 1.0);
       this.engine.scene.clear();
       this.engine.scene.add(group);
       this.engine.scene.fog = new THREE.Fog(0xf5f5f0, 15, 40);
