@@ -285,18 +285,18 @@ class App {
     });
 
     // Update custom count
-    const customCount = CustomMapStore.listByType('template').length;
+    const customCount = (await CustomMapStore.listByType('template')).length;
     countEl.textContent = `(${customCount})`;
 
     // Render active tab
-    this.renderActiveTab(templatesEl, newTabBuiltin, newTabCustom);
+    await this.renderActiveTab(templatesEl, newTabBuiltin, newTabCustom);
 
     // Exhibitions (from localStorage)
-    this.refreshCustomList(customEl);
+    await this.refreshCustomList(customEl);
   }
 
-  private refreshCustomList(containerEl: HTMLElement): void {
-    const maps = CustomMapStore.listByType('exhibition');
+  private async refreshCustomList(containerEl: HTMLElement): Promise<void> {
+    const maps = await CustomMapStore.listByType('exhibition');
     containerEl.innerHTML = '';
     if (maps.length === 0) {
       containerEl.innerHTML = '<div class="picker-empty">저장된 전시회가 없습니다. 템플릿을 선택하여 전시회를 만들어보세요.</div>';
@@ -307,20 +307,20 @@ class App {
     }
   }
 
-  private renderActiveTab(container: HTMLElement, tabBuiltin: HTMLElement, tabCustom: HTMLElement): void {
+  private async renderActiveTab(container: HTMLElement, tabBuiltin: HTMLElement, tabCustom: HTMLElement): Promise<void> {
     // Update tab active state
     tabBuiltin.classList.toggle('active', this.templateTab === 'builtin');
     tabCustom.classList.toggle('active', this.templateTab === 'custom');
 
     // Update custom count
-    const customCount = CustomMapStore.listByType('template').length;
+    const customCount = (await CustomMapStore.listByType('template')).length;
     const countEl = tabCustom.querySelector('.tab-count') ?? document.getElementById('tab-custom-count');
     if (countEl) countEl.textContent = `(${customCount})`;
 
     if (this.templateTab === 'builtin') {
       this.allTemplates = this.builtInTemplates.map((t) => ({ ...t, customMapId: undefined as string | undefined }));
     } else {
-      const customTemplates = CustomMapStore.listByType('template');
+      const customTemplates = await CustomMapStore.listByType('template');
       this.allTemplates = customTemplates.map((m) => ({
         id: m.id,
         name: m.name,
@@ -357,9 +357,10 @@ class App {
       grid.appendChild(card);
       const canvas = card.querySelector('.template-preview') as HTMLCanvasElement;
       if (t.customMapId) {
-        // Custom template: read GridMap from localStorage
-        const map = CustomMapStore.get(t.customMapId);
-        if (map) this.drawGridPreview(map.gridMap, canvas);
+        // Custom template: read GridMap from storage
+        CustomMapStore.get(t.customMapId).then((map) => {
+          if (map) this.drawGridPreview(map.gridMap, canvas);
+        });
       } else {
         // Built-in template: fetch from /templates/
         this.drawTemplatePreview(t.id, canvas);
@@ -446,10 +447,10 @@ class App {
       deleteBtn.className = 'card-btn danger';
       deleteBtn.textContent = '삭제';
       deleteBtn.style.cssText = 'font-size:0.7rem;color:#999;background:transparent;border:1px solid #2e2e2e;padding:0.3rem 0.6rem;cursor:pointer;transition:all 0.2s;';
-      deleteBtn.addEventListener('click', (e) => {
+      deleteBtn.addEventListener('click', async (e) => {
         e.stopPropagation();
         if (confirm(`"${t.name}" 템플릿을 삭제할까요?`)) {
-          CustomMapStore.delete(t.customMapId!);
+          await CustomMapStore.delete(t.customMapId!);
           // Re-render picker
           this.showPicker();
         }
@@ -579,10 +580,10 @@ class App {
     const deleteBtn = document.createElement('button');
     deleteBtn.className = 'card-btn danger';
     deleteBtn.textContent = '삭제';
-    deleteBtn.addEventListener('click', (e) => {
+    deleteBtn.addEventListener('click', async (e) => {
       e.stopPropagation();
       if (confirm(`"${map.name}" 전시회를 삭제할까요?`)) {
-        CustomMapStore.delete(map.id);
+        await CustomMapStore.delete(map.id);
         this.refreshCustomList(containerEl);
       }
     });
@@ -668,7 +669,7 @@ class App {
   }
 
   private async loadCustomMap(id: string): Promise<void> {
-    const map = CustomMapStore.get(id);
+    const map = await CustomMapStore.get(id);
     if (!map) {
       this.loadingScreen.show();
       this.loadingScreen.setTitle('오류');

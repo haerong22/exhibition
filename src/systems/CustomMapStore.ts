@@ -1,70 +1,11 @@
-import type { GridMap } from '../types/tiled';
-import type { TextureConfig } from '../gallery/TiledGalleryBuilder';
-import type { ArtworkConfig } from '../types/exhibition';
+import { LocalStorageAdapter } from './storage/LocalStorageAdapter';
+// import { ApiStorageAdapter } from './storage/ApiStorageAdapter';
+import type { MapStorage } from './storage/types';
 
-export type CustomMapType = 'template' | 'exhibition';
+// Re-export types so existing import paths keep working
+export type { CustomMap, CustomMapType, MapStorage } from './storage/types';
 
-export interface CustomMap {
-  id: string;
-  name: string;
-  type: CustomMapType;
-  createdAt: string;
-  updatedAt: string;
-  gridMap: GridMap;
-  textures: TextureConfig;
-  artworks: ArtworkConfig[];
-}
-
-const STORAGE_KEY = 'custom-maps';
-
-function readStore(): Record<string, CustomMap> {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : {};
-  } catch {
-    return {};
-  }
-}
-
-function writeStore(store: Record<string, CustomMap>): void {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(store));
-}
-
-export const CustomMapStore = {
-  list(): CustomMap[] {
-    return Object.values(readStore()).sort(
-      (a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt)
-    );
-  },
-
-  listByType(type: CustomMapType): CustomMap[] {
-    return this.list().filter((m) => (m.type ?? 'exhibition') === type);
-  },
-
-  get(id: string): CustomMap | null {
-    return readStore()[id] ?? null;
-  },
-
-  save(map: CustomMap): CustomMap {
-    const store = readStore();
-    const now = new Date().toISOString();
-    const updated: CustomMap = {
-      ...map,
-      createdAt: map.createdAt || now,
-      updatedAt: now,
-    };
-    store[updated.id] = updated;
-    writeStore(store);
-    return updated;
-  },
-
-  delete(id: string): void {
-    const store = readStore();
-    delete store[id];
-    writeStore(store);
-  },
-
-  newId(): string {
-    return `cm-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
-  },
-};
+// Adapter selection — swap implementation here when migrating to a server backend.
+// Example for future API mode:
+//   export const CustomMapStore: MapStorage = new ApiStorageAdapter('/api');
+export const CustomMapStore: MapStorage = new LocalStorageAdapter();

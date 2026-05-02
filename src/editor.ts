@@ -249,12 +249,12 @@ class MapEditor {
     this.handleInitialLoad();
   }
 
-  private handleInitialLoad(): void {
+  private async handleInitialLoad(): Promise<void> {
     const params = new URLSearchParams(window.location.search);
 
     const editId = params.get('edit');
     if (editId) {
-      const map = CustomMapStore.get(editId);
+      const map = await CustomMapStore.get(editId);
       if (!map) {
         EditorModal.alert('요청한 전시회를 찾을 수 없습니다.');
         return;
@@ -1333,7 +1333,7 @@ class MapEditor {
     if (!name || !name.trim()) return;
 
     const id = this.currentMapId ?? CustomMapStore.newId();
-    const existing = this.currentMapId ? CustomMapStore.get(this.currentMapId) : null;
+    const existing = this.currentMapId ? await CustomMapStore.get(this.currentMapId) : null;
 
     const map: CustomMap = {
       id,
@@ -1347,7 +1347,7 @@ class MapEditor {
       artworks: isTemplate ? [] : (this.buildArtworksConfig() as any),
     };
 
-    const saved = CustomMapStore.save(map);
+    const saved = await CustomMapStore.save(map);
     this.currentMapId = saved.id;
     this.currentMapName = saved.name;
     this.updateCurrentMapLabel();
@@ -1467,10 +1467,10 @@ class MapEditor {
     }
   }
 
-  private openMapsModal(): void {
+  private async openMapsModal(): Promise<void> {
     const modal = document.getElementById('maps-modal')!;
     const body = document.getElementById('maps-modal-body')!;
-    const maps = CustomMapStore.list();
+    const maps = await CustomMapStore.list();
 
     body.innerHTML = '';
     if (maps.length === 0) {
@@ -1523,7 +1523,7 @@ class MapEditor {
         { title: '삭제 확인', confirmText: '삭제', danger: true },
       );
       if (ok) {
-        CustomMapStore.delete(map.id);
+        await CustomMapStore.delete(map.id);
         if (this.currentMapId === map.id) {
           this.currentMapId = null;
           this.currentMapName = null;
