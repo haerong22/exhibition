@@ -38,6 +38,9 @@ class App {
   private allTemplates: { id: string; name: string; description: string; size?: string; recommended?: string; customMapId?: string }[] = [];
   private templatePage = 0;
   private templateTab: 'builtin' | 'custom' = 'builtin';
+  private templateQuery = '';
+  private exhibitionQuery = '';
+  private exhibitionSort: 'updated' | 'created' | 'name' = 'updated';
   private static readonly TEMPLATES_PER_PAGE = 6;
   private loader: ExhibitionLoader;
   private router: Router;
@@ -288,6 +291,27 @@ class App {
     const customCount = (await CustomMapStore.listByType('template')).length;
     countEl.textContent = `(${customCount})`;
 
+    // Search / sort wiring
+    const tplSearch = document.getElementById('template-search') as HTMLInputElement;
+    const exhSearch = document.getElementById('exhibition-search') as HTMLInputElement;
+    const exhSort = document.getElementById('exhibition-sort') as HTMLSelectElement;
+    tplSearch.value = this.templateQuery;
+    exhSearch.value = this.exhibitionQuery;
+    exhSort.value = this.exhibitionSort;
+    tplSearch.oninput = () => {
+      this.templateQuery = tplSearch.value;
+      this.templatePage = 0;
+      this.renderActiveTab(templatesEl, newTabBuiltin, newTabCustom);
+    };
+    exhSearch.oninput = () => {
+      this.exhibitionQuery = exhSearch.value;
+      this.refreshCustomList(customEl);
+    };
+    exhSort.onchange = () => {
+      this.exhibitionSort = exhSort.value as 'updated' | 'created' | 'name';
+      this.refreshCustomList(customEl);
+    };
+
     // Render active tab
     await this.renderActiveTab(templatesEl, newTabBuiltin, newTabCustom);
 
@@ -296,13 +320,28 @@ class App {
   }
 
   private async refreshCustomList(containerEl: HTMLElement): Promise<void> {
-    const maps = await CustomMapStore.listByType('exhibition');
+    const all = await CustomMapStore.listByType('exhibition');
+    // Apply search filter
+    const q = this.exhibitionQuery.trim().toLowerCase();
+    const filtered = q ? all.filter((m) => m.name.toLowerCase().includes(q)) : all;
+    // Apply sort
+    const sorted = [...filtered].sort((a, b) => {
+      switch (this.exhibitionSort) {
+        case 'created': return Date.parse(b.createdAt) - Date.parse(a.createdAt);
+        case 'name': return a.name.localeCompare(b.name);
+        case 'updated':
+        default: return Date.parse(b.updatedAt) - Date.parse(a.updatedAt);
+      }
+    });
+
     containerEl.innerHTML = '';
-    if (maps.length === 0) {
-      containerEl.innerHTML = '<div class="picker-empty">저장된 전시회가 없습니다. 템플릿을 선택하여 전시회를 만들어보세요.</div>';
+    if (sorted.length === 0) {
+      containerEl.innerHTML = all.length === 0
+        ? '<div class="picker-empty">저장된 전시회가 없습니다. 템플릿을 선택하여 전시회를 만들어보세요.</div>'
+        : '<div class="picker-empty">검색 결과가 없습니다.</div>';
       return;
     }
-    for (const map of maps) {
+    for (const map of sorted) {
       containerEl.appendChild(this.renderCustomCard(map, containerEl));
     }
   }
@@ -331,10 +370,20 @@ class App {
       }));
     }
 
+    // Apply search filter
+    const q = this.templateQuery.trim().toLowerCase();
+    if (q) {
+      this.allTemplates = this.allTemplates.filter((t) =>
+        t.name.toLowerCase().includes(q) || t.description.toLowerCase().includes(q)
+      );
+    }
+
     if (this.allTemplates.length === 0) {
-      container.innerHTML = this.templateTab === 'builtin'
-        ? '<div class="picker-empty">템플릿이 없습니다</div>'
-        : '<div class="picker-empty">저장된 템플릿이 없습니다. 에디터에서 맵을 만들고 템플릿으로 저장하세요.</div>';
+      container.innerHTML = q
+        ? '<div class="picker-empty">검색 결과가 없습니다.</div>'
+        : this.templateTab === 'builtin'
+          ? '<div class="picker-empty">템플릿이 없습니다</div>'
+          : '<div class="picker-empty">저장된 템플릿이 없습니다. 에디터에서 맵을 만들고 템플릿으로 저장하세요.</div>';
       return;
     }
     this.renderTemplatePage(container);
