@@ -181,6 +181,10 @@ class MapEditor {
   private currentMapId: string | null = null;
   private currentMapName: string | null = null;
   private editorMode: 'map' | 'exhibition' = 'map';
+  private isDirty = false;
+  private autoSaveTimer: ReturnType<typeof setInterval> | null = null;
+  private static readonly DRAFT_KEY = 'editor-draft';
+  private static readonly AUTO_SAVE_INTERVAL_MS = 30_000;
 
   // Undo/redo history: snapshots of { grid, width, height, wallHeight }
   private history: { grid: TileCell[][]; width: number; height: number; wallHeight: number }[] = [];
@@ -247,6 +251,10 @@ class MapEditor {
 
     // Load a saved map if editor was opened with ?edit={id}
     this.handleInitialLoad();
+    // Periodically save drafts so refresh/crash doesn't lose work
+    this.startAutoSave();
+    // Save final draft on unload as a safety net
+    window.addEventListener('beforeunload', () => this.saveDraft());
   }
 
   private async handleInitialLoad(): Promise<void> {
@@ -261,6 +269,7 @@ class MapEditor {
       }
       this.loadMapIntoEditor(map);
       this.setEditorMode('exhibition');
+      this.clearDraft();
       return;
     }
 
@@ -268,7 +277,12 @@ class MapEditor {
     if (templateId) {
       this.loadTemplate(templateId);
       this.setEditorMode('exhibition');
+      this.clearDraft();
+      return;
     }
+
+    // No URL param — offer to restore draft if any
+    await this.restoreDraftIfAny();
   }
 
   private async loadTemplate(templateId: string): Promise<void> {
@@ -603,6 +617,8 @@ class MapEditor {
         this.render();
         this.schedulePreviewUpdate();
         this.clearHistory();
+        this.isDirty = false;
+        this.clearDraft();
       }
     });
 
@@ -1272,6 +1288,79 @@ class MapEditor {
     if (this.history.length > MapEditor.MAX_HISTORY) this.history.shift();
     this.redoStack = [];
     this.updateUndoRedoButtons();
+    this.isDirty = true;
+  }
+
+  // ── Draft auto-save ──
+  private startAutoSave(): void {
+    if (this.autoSaveTimer) return;
+    this.autoSaveTimer = setInterval(() => this.saveDraft(), MapEditor.AUTO_SAVE_INTERVAL_MS);
+  }
+
+  private saveDraft(): void {
+    if (!this.isDirty) return;
+    // Skip empty grids
+    const hasContent = this.grid.some((row) => row.some((c) => c.type !== 'empty'));
+    if (!hasContent) return;
+    try {
+      const draft = {
+        savedAt: new Date().toISOString(),
+        currentMapId: this.currentMapId,
+        currentMapName: this.currentMapName,
+        gridMap: this.getGridMap(),
+        textures: this.getTextureConfig(),
+        projects: this.projects,
+        editorMode: this.editorMode,
+      };
+      localStorage.setItem(MapEditor.DRAFT_KEY, JSON.stringify(draft));
+      this.isDirty = false;
+    } catch {
+      // Quota exceeded etc. — silent fail
+    }
+  }
+
+  private clearDraft(): void {
+    localStorage.removeItem(MapEditor.DRAFT_KEY);
+  }
+
+  private async restoreDraftIfAny(): Promise<void> {
+    const raw = localStorage.getItem(MapEditor.DRAFT_KEY);
+    if (!raw) return;
+    let draft;
+    try {
+      draft = JSON.parse(raw);
+    } catch {
+      this.clearDraft();
+      return;
+    }
+    const savedAt = new Date(draft.savedAt).toLocaleString('ko-KR');
+    const ok = await EditorModal.confirm(
+      `저장되지 않은 작업이 있습니다 (${savedAt}).\n복구하시겠습니까?`,
+      { title: '드래프트 복구', confirmText: '복구', cancelText: '버리기' },
+    );
+    if (!ok) {
+      this.clearDraft();
+      return;
+    }
+    // Apply draft
+    const gm = draft.gridMap;
+    this.width = gm.width;
+    this.height = gm.height;
+    this.grid = gm.grid.map((row: TileCell[]) => row.map((c) => ({ ...c })));
+    (document.getElementById('map-width') as HTMLInputElement).value = String(this.width);
+    (document.getElementById('map-height') as HTMLInputElement).value = String(this.height);
+    (document.getElementById('wall-height') as HTMLInputElement).value = String(gm.wallHeight ?? 6);
+    if (draft.textures) this.applyTextureConfig(draft.textures);
+    this.projects = draft.projects ?? [];
+    this.refreshArtworkSelect();
+    this.currentMapId = draft.currentMapId ?? null;
+    this.currentMapName = draft.currentMapName ?? null;
+    if (draft.editorMode) this.setEditorMode(draft.editorMode);
+    this.updateCurrentMapLabel();
+    this.resizeCanvas();
+    this.render();
+    this.schedulePreviewUpdate();
+    this.clearHistory();
   }
 
   private applySnapshot(snap: { grid: TileCell[][]; width: number; height: number; wallHeight: number }): void {
@@ -1351,6 +1440,8 @@ class MapEditor {
     this.currentMapId = saved.id;
     this.currentMapName = saved.name;
     this.updateCurrentMapLabel();
+    this.isDirty = false;
+    this.clearDraft();
 
     if (isTemplate) {
       await EditorModal.alert(`템플릿이 저장되었습니다: ${saved.name}`, '저장 완료');
