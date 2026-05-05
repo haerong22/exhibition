@@ -20,6 +20,7 @@ import { LoadingScreen } from './ui/LoadingScreen';
 import { ArtworkInfoPanel } from './ui/ArtworkInfoPanel';
 import { HUD } from './ui/HUD';
 import { Minimap } from './ui/Minimap';
+import { SoundManager } from './systems/SoundManager';
 import { DEFAULTS } from './utils/constants';
 
 class App {
@@ -49,6 +50,8 @@ class App {
   private hud: HUD;
   private minimap: Minimap;
   private autoTour: AutoTour;
+  private soundManager: SoundManager;
+  private lastFootstepPos = new THREE.Vector3();
 
   constructor() {
     const canvas = document.getElementById('canvas') as HTMLCanvasElement;
@@ -70,6 +73,7 @@ class App {
     this.minimap = new Minimap();
     this.artworkInteraction = new ArtworkInteraction(this.engine.camera, this.cameraController);
     this.autoTour = new AutoTour(this.artworkInteraction);
+    this.soundManager = new SoundManager();
 
     // Reduce quality on mobile
     if (this.isMobile) {
@@ -97,6 +101,15 @@ class App {
           cam.position.x = clamped.x;
           cam.position.z = clamped.z;
         }
+        // Footstep sounds based on horizontal movement
+        const cam = this.engine.camera;
+        const dx = cam.position.x - this.lastFootstepPos.x;
+        const dz = cam.position.z - this.lastFootstepPos.z;
+        const moved = Math.sqrt(dx * dx + dz * dz);
+        if (moved > 0) this.soundManager.onMove(moved);
+        this.lastFootstepPos.set(cam.position.x, 0, cam.position.z);
+      } else {
+        this.soundManager.resetStride();
       }
       this.minimap.update(this.engine.camera);
     });
@@ -209,6 +222,9 @@ class App {
       }
     });
 
+    // Sound toggle button
+    this.setupSoundButton();
+
     // Router
     this.router.onRouteChange((route) => {
       this.handleRoute(route);
@@ -217,6 +233,43 @@ class App {
     // Start
     this.engine.start();
     this.handleRoute(this.router.currentRoute());
+  }
+
+  private setupSoundButton(): void {
+    const btn = document.getElementById('sound-btn') as HTMLButtonElement | null;
+    if (!btn) return;
+    const ICON_ON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 3 9 3 15 6 15 11 19 11 5"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/></svg>';
+    const ICON_OFF = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 3 9 3 15 6 15 11 19 11 5"/><line x1="22" y1="9" x2="16" y2="15"/><line x1="16" y1="9" x2="22" y2="15"/></svg>';
+    const refresh = () => {
+      btn.innerHTML = this.soundManager.isMuted() ? ICON_OFF : ICON_ON;
+    };
+    refresh();
+    const toggle = () => {
+      this.soundManager.ensureContext();
+      this.soundManager.setMuted(!this.soundManager.isMuted());
+      refresh();
+    };
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      toggle();
+    });
+    // M key shortcut — only when in gallery (button visible)
+    window.addEventListener('keydown', (e) => {
+      if (e.code !== 'KeyM') return;
+      if (btn.classList.contains('hidden')) return;
+      const target = e.target as HTMLElement | null;
+      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) return;
+      e.preventDefault();
+      toggle();
+    });
+  }
+
+  private showSoundButton(): void {
+    document.getElementById('sound-btn')?.classList.remove('hidden');
+  }
+
+  private hideSoundButton(): void {
+    document.getElementById('sound-btn')?.classList.add('hidden');
   }
 
   private async handleRoute(route: Route): Promise<void> {
@@ -245,6 +298,8 @@ class App {
     this.minimap.hide();
     this.autoTour.disable();
     this.autoTour.stop();
+    this.soundManager.resetStride();
+    this.hideSoundButton();
     if (!this.isMobile) this.fpControls.unlock();
     this.engine.scene.clear();
     this.engine.scene.fog = null;
@@ -802,6 +857,9 @@ class App {
       }
       this.minimap.show();
       this.autoTour.enable();
+      this.lastFootstepPos.set(this.engine.camera.position.x, 0, this.engine.camera.position.z);
+      this.soundManager.ensureContext();
+      this.showSoundButton();
     });
   }
 
@@ -843,6 +901,9 @@ class App {
         } else {
           this.fpControls.lock();
         }
+        this.lastFootstepPos.set(this.engine.camera.position.x, 0, this.engine.camera.position.z);
+        this.soundManager.ensureContext();
+        this.showSoundButton();
       });
     } catch (err) {
       console.error('Failed to load exhibition:', err);
