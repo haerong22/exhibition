@@ -3,15 +3,48 @@ export class LoadingScreen {
   private bar: HTMLElement;
   private status: HTMLElement;
   private enterBtn: HTMLElement;
+  private controls: HTMLElement;
   // Stage-based progress: each stage occupies a slice of the overall bar
   private stageStart = 0;
   private stageEnd = 1;
 
-  constructor() {
+  constructor(isMobile = false) {
     this.el = document.getElementById('loading-screen')!;
     this.bar = document.getElementById('loading-bar')!;
     this.status = document.getElementById('loading-status')!;
     this.enterBtn = document.getElementById('enter-prompt')!;
+    this.controls = document.getElementById('loading-controls')!;
+    this.populateControls(isMobile);
+  }
+
+  private populateControls(isMobile: boolean): void {
+    const list = this.controls.querySelector('ul');
+    if (!list) return;
+    const items = isMobile
+      ? [
+          { key: '조이스틱', desc: '이동' },
+          { key: '드래그', desc: '시선' },
+          { key: '탭', desc: '감상' },
+        ]
+      : [
+          { key: 'WASD', desc: '이동' },
+          { key: '마우스', desc: '시선' },
+          { key: '클릭', desc: '감상' },
+          { key: 'T', desc: '투어' },
+          { key: 'M', desc: '음소거' },
+          { key: 'ESC', desc: '닫기' },
+        ];
+    list.innerHTML = '';
+    for (const item of items) {
+      const li = document.createElement('li');
+      const kbd = document.createElement('kbd');
+      kbd.textContent = item.key;
+      const span = document.createElement('span');
+      span.textContent = item.desc;
+      li.appendChild(kbd);
+      li.appendChild(span);
+      list.appendChild(li);
+    }
   }
 
   setTitle(name: string): void {
@@ -45,6 +78,7 @@ export class LoadingScreen {
     this.status.textContent = '준비 완료';
     this.bar.style.width = '100%';
     this.enterBtn.classList.add('visible');
+    this.controls.classList.add('visible');
     this.enterBtn.addEventListener('click', () => {
       onClick();
       this.hide();
@@ -64,6 +98,7 @@ export class LoadingScreen {
     this.bar.style.width = '0%';
     this.status.textContent = '준비 중...';
     this.enterBtn.classList.remove('visible');
+    this.controls.classList.remove('visible');
     this.stageStart = 0;
     this.stageEnd = 1;
   }

@@ -67,7 +67,7 @@ class App {
     this.tiledBuilder = new TiledGalleryBuilder(this.textureManager);
     this.loader = new ExhibitionLoader();
     this.router = new Router();
-    this.loadingScreen = new LoadingScreen();
+    this.loadingScreen = new LoadingScreen(this.isMobile);
     this.infoPanel = new ArtworkInfoPanel();
     this.hud = new HUD(this.isMobile);
     this.minimap = new Minimap();
@@ -848,19 +848,21 @@ class App {
     // Setup minimap with grid + artwork positions
     this.minimap.setup(gridMap, parsedMap.artworkSlots);
 
-    this.loadingScreen.showEnterButton(() => {
-      if (this.isMobile) {
-        this.touchControls.enable();
-        this.hud.show();
-      } else {
-        this.fpControls.lock();
-      }
-      this.minimap.show();
-      this.autoTour.enable();
-      this.lastFootstepPos.set(this.engine.camera.position.x, 0, this.engine.camera.position.z);
-      this.soundManager.ensureContext();
-      this.showSoundButton();
-    });
+    this.loadingScreen.showEnterButton(() => this.startGallerySession({ withMinimap: true, withTour: true }));
+  }
+
+  private startGallerySession(opts: { withMinimap: boolean; withTour: boolean }): void {
+    if (this.isMobile) {
+      this.touchControls.enable();
+      this.hud.show();
+    } else {
+      this.fpControls.lock();
+    }
+    if (opts.withMinimap) this.minimap.show();
+    if (opts.withTour) this.autoTour.enable();
+    this.lastFootstepPos.set(this.engine.camera.position.x, 0, this.engine.camera.position.z);
+    this.soundManager.ensureContext();
+    this.showSoundButton();
   }
 
   private async loadExhibition(id: string, configUrl?: string): Promise<void> {
@@ -894,17 +896,7 @@ class App {
       this.artworkInteraction.setArtworks(this.galleryBuilder.artworkFrames);
 
       // Show enter button
-      this.loadingScreen.showEnterButton(() => {
-        if (this.isMobile) {
-          this.touchControls.enable();
-          this.hud.show();
-        } else {
-          this.fpControls.lock();
-        }
-        this.lastFootstepPos.set(this.engine.camera.position.x, 0, this.engine.camera.position.z);
-        this.soundManager.ensureContext();
-        this.showSoundButton();
-      });
+      this.loadingScreen.showEnterButton(() => this.startGallerySession({ withMinimap: false, withTour: false }));
     } catch (err) {
       console.error('Failed to load exhibition:', err);
       this.loadingScreen.setTitle('오류');
