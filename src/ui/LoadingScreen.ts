@@ -4,6 +4,7 @@ export class LoadingScreen {
   private status: HTMLElement;
   private enterBtn: HTMLElement;
   private controls: HTMLElement;
+  private description: HTMLElement;
   // Stage-based progress: each stage occupies a slice of the overall bar
   private stageStart = 0;
   private stageEnd = 1;
@@ -14,7 +15,18 @@ export class LoadingScreen {
     this.status = document.getElementById('loading-status')!;
     this.enterBtn = document.getElementById('enter-prompt')!;
     this.controls = document.getElementById('loading-controls')!;
+    this.description = document.getElementById('loading-description')!;
     this.populateControls(isMobile);
+  }
+
+  setDescription(text: string | undefined | null): void {
+    if (text && text.trim()) {
+      this.description.textContent = text.trim();
+      this.description.classList.add('has-content');
+    } else {
+      this.description.textContent = '';
+      this.description.classList.remove('has-content');
+    }
   }
 
   private populateControls(isMobile: boolean): void {
@@ -79,6 +91,7 @@ export class LoadingScreen {
     this.bar.style.width = '100%';
     this.enterBtn.classList.add('visible');
     this.controls.classList.add('visible');
+    this.description.classList.add('visible');
     this.enterBtn.addEventListener('click', () => {
       onClick();
       this.hide();
@@ -99,6 +112,8 @@ export class LoadingScreen {
     this.status.textContent = '준비 중...';
     this.enterBtn.classList.remove('visible');
     this.controls.classList.remove('visible');
+    this.description.classList.remove('visible');
+    this.setDescription(null);
     this.stageStart = 0;
     this.stageEnd = 1;
   }

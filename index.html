@@ -31,6 +31,23 @@
     #enter-prompt:hover { background: #fff; color: #000; border-color: #fff; }
     #enter-prompt.visible { display: block; }
 
+    /* Curator note / exhibition description shown above enter button */
+    #loading-description {
+      display: none; max-width: 480px; margin-top: 2rem; padding: 0 1.5rem;
+      font-size: 0.92rem; line-height: 1.75; color: #aaa;
+      letter-spacing: 0.02em; text-align: center;
+      white-space: pre-line; font-weight: 300;
+      opacity: 0; transition: opacity 0.6s ease;
+    }
+    #loading-description.has-content { display: block; }
+    #loading-description.has-content.visible { opacity: 1; }
+    #loading-description::before, #loading-description::after {
+      content: ''; display: block; width: 32px; height: 1px;
+      background: #333; margin: 0 auto;
+    }
+    #loading-description::before { margin-bottom: 1.2rem; }
+    #loading-description::after { margin-top: 1.2rem; }
+
     /* Loading screen — single horizontal strip pinned to bottom */
     #loading-controls {
       position: absolute; left: 0; right: 0; bottom: 2.5rem;
@@ -336,6 +353,7 @@
       #loading-controls ul { gap: 0.9rem; }
       #loading-controls kbd { font-size: 0.6rem; padding: 0.18rem 0.4rem; }
       #loading-controls span { font-size: 0.66rem; }
+      #loading-description { font-size: 0.82rem; padding: 0 1rem; max-width: 92vw; }
       #qr-modal .qr-content { max-width: 90vw; padding: 1.5rem; }
       #qr-modal .qr-canvas { max-width: 100%; height: auto !important; }
     }
@@ -348,6 +366,7 @@
     <div id="loading-title">EXHIBITION</div>
     <div id="loading-bar-container"><div id="loading-bar"></div></div>
     <div id="loading-status">준비 중...</div>
+    <div id="loading-description"></div>
     <button id="enter-prompt">입장하기</button>
     <div id="loading-controls"><ul></ul></div>
   </div>

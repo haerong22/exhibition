@@ -13,6 +13,8 @@ export interface CustomMap {
   gridMap: GridMap;
   textures: TextureConfig;
   artworks: ArtworkConfig[];
+  // Optional curator note shown on the loading screen before entering
+  description?: string;
 }
 
 // Storage backend contract. Replace the implementation (localStorage / API / IndexedDB / etc.)

@@ -129,6 +129,35 @@ class EditorModal {
     });
   }
 
+  static promptMultiline(message: string, defaultValue = '', title = '입력', opts: { placeholder?: string; skipLabel?: string } = {}): Promise<string | null> {
+    return new Promise((resolve) => {
+      this.titleEl.textContent = title;
+      this.body.innerHTML = '';
+      const p = document.createElement('p');
+      p.textContent = message;
+      this.body.appendChild(p);
+      const textarea = document.createElement('textarea');
+      textarea.className = 'modal-input modal-textarea';
+      textarea.rows = 5;
+      textarea.value = defaultValue;
+      if (opts.placeholder) textarea.placeholder = opts.placeholder;
+      this.body.appendChild(textarea);
+      this.footer.innerHTML = '';
+      const skipBtn = document.createElement('button');
+      skipBtn.className = 'modal-btn';
+      skipBtn.textContent = opts.skipLabel ?? '건너뛰기';
+      skipBtn.addEventListener('click', () => { this.hide(); resolve(''); });
+      this.footer.appendChild(skipBtn);
+      const okBtn = document.createElement('button');
+      okBtn.className = 'modal-btn primary';
+      okBtn.textContent = '확인';
+      okBtn.addEventListener('click', () => { this.hide(); resolve(textarea.value); });
+      this.footer.appendChild(okBtn);
+      this.show(() => resolve(null));
+      textarea.focus();
+    });
+  }
+
   static choose<T extends string>(title: string, options: { value: T; label: string; desc?: string }[]): Promise<T | null> {
     return new Promise((resolve) => {
       this.titleEl.textContent = title;
@@ -180,6 +209,7 @@ class MapEditor {
   private projects: ProjectItem[] = [];
   private currentMapId: string | null = null;
   private currentMapName: string | null = null;
+  private currentMapDescription: string | null = null;
   private editorMode: 'map' | 'exhibition' = 'map';
   private isDirty = false;
   private autoSaveTimer: ReturnType<typeof setInterval> | null = null;
@@ -304,6 +334,7 @@ class MapEditor {
       // Do NOT set currentMapId — saving will create a brand new exhibition
       this.currentMapId = null;
       this.currentMapName = null;
+      this.currentMapDescription = null;
       this.updateCurrentMapLabel();
 
       this.resizeCanvas();
@@ -610,6 +641,7 @@ class MapEditor {
       if (ok) {
         this.currentMapId = null;
         this.currentMapName = null;
+        this.currentMapDescription = null;
         this.projects = [];
         this.previewInitialized = false;
         this.initGrid();
@@ -1307,6 +1339,7 @@ class MapEditor {
         savedAt: new Date().toISOString(),
         currentMapId: this.currentMapId,
         currentMapName: this.currentMapName,
+        currentMapDescription: this.currentMapDescription,
         gridMap: this.getGridMap(),
         textures: this.getTextureConfig(),
         projects: this.projects,
@@ -1355,6 +1388,7 @@ class MapEditor {
     this.refreshArtworkSelect();
     this.currentMapId = draft.currentMapId ?? null;
     this.currentMapName = draft.currentMapName ?? null;
+    this.currentMapDescription = draft.currentMapDescription ?? null;
     if (draft.editorMode) this.setEditorMode(draft.editorMode);
     this.updateCurrentMapLabel();
     this.resizeCanvas();
@@ -1421,6 +1455,18 @@ class MapEditor {
     const name = await EditorModal.prompt(`${typeLabel} 이름을 입력하세요`, defaultName, '이름 입력');
     if (!name || !name.trim()) return;
 
+    let description: string | null = this.currentMapDescription;
+    if (!isTemplate) {
+      const result = await EditorModal.promptMultiline(
+        '관람객이 입장 전 보게 될 설명입니다.',
+        this.currentMapDescription ?? '',
+        '전시 소개 (선택)',
+        { placeholder: '큐레이터 노트, 작가 소개, 전시 의도 등을 자유롭게 작성하세요.' },
+      );
+      if (result === null) return; // user closed via overlay/escape — abort save
+      description = result.trim() ? result.trim() : null;
+    }
+
     const id = this.currentMapId ?? CustomMapStore.newId();
     const existing = this.currentMapId ? await CustomMapStore.get(this.currentMapId) : null;
 
@@ -1434,11 +1480,13 @@ class MapEditor {
       textures: this.getTextureConfig(),
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       artworks: isTemplate ? [] : (this.buildArtworksConfig() as any),
+      ...(description ? { description } : {}),
     };
 
     const saved = await CustomMapStore.save(map);
     this.currentMapId = saved.id;
     this.currentMapName = saved.name;
+    this.currentMapDescription = description;
     this.updateCurrentMapLabel();
     this.isDirty = false;
     this.clearDraft();
@@ -1483,6 +1531,7 @@ class MapEditor {
     // Track identity for subsequent saves
     this.currentMapId = map.id;
     this.currentMapName = map.name;
+    this.currentMapDescription = map.description ?? null;
     this.updateCurrentMapLabel();
 
     this.resizeCanvas();

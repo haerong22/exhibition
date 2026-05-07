@@ -790,6 +790,7 @@ class App {
       textures: map.textures,
       configId: `custom-${map.id}`,
       name: map.name,
+      description: map.description,
     });
   }
 
@@ -799,8 +800,10 @@ class App {
     textures: { floor: string; wall: string; ceiling: string } | null;
     configId: string;
     name: string;
+    description?: string;
   }): Promise<void> {
-    const { gridMap, artworks, textures, configId, name } = params;
+    const { gridMap, artworks, textures, configId, name, description } = params;
+    this.loadingScreen.setDescription(description);
 
     const parser = new TiledMapParser();
     const parsedMap = parser.parse(gridMap);
@@ -874,6 +877,7 @@ class App {
       this.loadingScreen.setStage('전시 정보 불러오는 중...', 0, 0.15);
       const config = await this.loader.load(id, configUrl);
       this.loadingScreen.setTitle(config.nameKo ?? config.name);
+      this.loadingScreen.setDescription(config.descriptionKo ?? config.description);
 
       this.loadingScreen.setStage('텍스처 및 작품 로딩 중...', 0.15, 0.9);
       const { group, boundary } = await this.galleryBuilder.build(
