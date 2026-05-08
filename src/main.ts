@@ -15,6 +15,7 @@ import { TextureManager } from './systems/TextureManager';
 import type { GridMap } from './types/tiled';
 import { ExhibitionLoader } from './systems/ExhibitionLoader';
 import { CustomMapStore, type CustomMap } from './systems/CustomMapStore';
+import { exportMap, parseImportFile } from './systems/storage/MapExport';
 import { Router, type Route } from './systems/Router';
 import { LoadingScreen } from './ui/LoadingScreen';
 import { ArtworkInfoPanel } from './ui/ArtworkInfoPanel';
@@ -367,11 +368,59 @@ class App {
       this.refreshCustomList(customEl);
     };
 
+    // Import buttons — switch to the matching tab/section after import succeeds
+    this.wireImportButton('template-import', 'template', async () => {
+      this.templateTab = 'custom';
+      this.templatePage = 0;
+      await this.renderActiveTab(templatesEl, newTabBuiltin, newTabCustom);
+    });
+    this.wireImportButton('exhibition-import', 'exhibition', async () => {
+      await this.refreshCustomList(customEl);
+    });
+
     // Render active tab
     await this.renderActiveTab(templatesEl, newTabBuiltin, newTabCustom);
 
     // Exhibitions (from localStorage)
     await this.refreshCustomList(customEl);
+  }
+
+  private wireImportButton(buttonId: string, expectedType: 'template' | 'exhibition', onDone: () => Promise<void>): void {
+    const btn = document.getElementById(buttonId) as HTMLButtonElement | null;
+    const fileInput = document.getElementById('import-file-input') as HTMLInputElement | null;
+    if (!btn || !fileInput) return;
+    // Replace listeners (showPicker may run multiple times)
+    const fresh = btn.cloneNode(true) as HTMLButtonElement;
+    btn.replaceWith(fresh);
+    fresh.addEventListener('click', () => {
+      fileInput.value = '';
+      fileInput.onchange = async () => {
+        const files = fileInput.files;
+        if (!files || files.length === 0) return;
+        let imported = 0;
+        let rejected = 0;
+        const errors: string[] = [];
+        for (const file of Array.from(files)) {
+          try {
+            const result = await parseImportFile(file);
+            rejected += result.rejected;
+            for (const map of result.maps) {
+              const newMap: CustomMap = { ...map, id: CustomMapStore.newId(), type: expectedType };
+              await CustomMapStore.save(newMap);
+              imported++;
+            }
+          } catch (e) {
+            errors.push(`${file.name}: ${(e as Error).message}`);
+          }
+        }
+        await onDone();
+        const msgParts = [`${imported}개 가져왔습니다.`];
+        if (rejected > 0) msgParts.push(`(검증 실패 ${rejected}개)`);
+        if (errors.length > 0) msgParts.push(errors.join('\n'));
+        alert(msgParts.join('\n'));
+      };
+      fileInput.click();
+    });
   }
 
   private async refreshCustomList(containerEl: HTMLElement): Promise<void> {
@@ -547,6 +596,16 @@ class App {
         // Open in map edit mode (no ?template=, just ?edit= — user toggles to map mode)
       });
       actions.appendChild(editBtn);
+      const exportBtn = document.createElement('button');
+      exportBtn.className = 'card-btn';
+      exportBtn.textContent = '내보내기';
+      exportBtn.style.cssText = 'font-size:0.7rem;color:#999;background:transparent;border:1px solid #2e2e2e;padding:0.3rem 0.6rem;cursor:pointer;transition:all 0.2s;';
+      exportBtn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const map = await CustomMapStore.get(t.customMapId!);
+        if (map) exportMap(map);
+      });
+      actions.appendChild(exportBtn);
       const deleteBtn = document.createElement('button');
       deleteBtn.className = 'card-btn danger';
       deleteBtn.textContent = '삭제';
@@ -680,6 +739,15 @@ class App {
     editBtn.target = '_blank';
     editBtn.addEventListener('click', (e) => e.stopPropagation());
     actions.appendChild(editBtn);
+
+    const exportBtn = document.createElement('button');
+    exportBtn.className = 'card-btn';
+    exportBtn.textContent = '내보내기';
+    exportBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      exportMap(map);
+    });
+    actions.appendChild(exportBtn);
 
     const deleteBtn = document.createElement('button');
     deleteBtn.className = 'card-btn danger';

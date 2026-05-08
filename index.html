@@ -214,12 +214,15 @@
       text-transform: uppercase; color: #aaa;
     }
     .picker-btn {
-      font-size: 0.75rem; color: #ccc; background: transparent;
-      border: 1px solid #3a3a3a; padding: 0.4rem 0.9rem; cursor: pointer;
+      display: inline-flex; align-items: center;
+      font-family: inherit; font-size: 0.75rem; line-height: 1;
+      color: #ccc; background: transparent;
+      border: 1px solid #3a3a3a; padding: 0.5rem 0.9rem; cursor: pointer;
       text-decoration: none; letter-spacing: 0.05em; border-radius: 3px;
       transition: all 0.2s ease;
     }
     .picker-btn:hover { border-color: #666; color: #fff; background: rgba(255,255,255,0.04); }
+    .picker-btn-group { display: inline-flex; gap: 0.5rem; }
     .filter-bar { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
     .filter-input, .filter-select {
       padding: 0.5rem 0.8rem; background: #141414; border: 1px solid #2a2a2a; border-radius: 3px;
@@ -406,7 +409,10 @@
           <button class="template-tab active" id="tab-builtin">기본 템플릿</button>
           <button class="template-tab" id="tab-custom">내 템플릿 <span class="tab-count" id="tab-custom-count"></span></button>
           <span class="tab-spacer"></span>
-          <a class="picker-btn" href="/editor/">새 템플릿 만들기</a>
+          <div class="picker-btn-group">
+            <button class="picker-btn" id="template-import">가져오기</button>
+            <a class="picker-btn" href="/editor/">새 템플릿 만들기</a>
+          </div>
         </div>
         <div class="filter-bar">
           <input type="search" id="template-search" class="filter-input" placeholder="이름으로 검색..." />
@@ -416,7 +422,10 @@
       <div class="picker-section">
         <div class="picker-section-header">
           <h2>내 전시회</h2>
-          <a class="picker-btn" href="/editor/">새 전시회 만들기</a>
+          <div class="picker-btn-group">
+            <button class="picker-btn" id="exhibition-import">가져오기</button>
+            <a class="picker-btn" href="/editor/">새 전시회 만들기</a>
+          </div>
         </div>
         <div class="filter-bar">
           <input type="search" id="exhibition-search" class="filter-input" placeholder="이름으로 검색..." />
@@ -430,6 +439,8 @@
       </div>
     </div>
   </div>
+
+  <input type="file" id="import-file-input" accept="application/json,.json" style="display:none" multiple />
 
   <script type="module" src="/src/main.ts"></script>
 </body>
