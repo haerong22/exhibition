@@ -1,4 +1,8 @@
 import type { ArtworkConfig } from '../types/exhibition';
+import { FavoritesStore } from '../systems/FavoritesStore';
+
+const STAR_ICON = '<svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>';
+const STAR_OUTLINE_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>';
 
 interface ContentBlock {
   contentType: string;
@@ -32,9 +36,13 @@ export class ArtworkInfoPanel {
   private loadingEl: HTMLElement;
   private prevBtn: HTMLElement;
   private nextBtn: HTMLElement;
+  private favBtn: HTMLButtonElement;
   private onCloseCallback: (() => void) | null = null;
   private onPrevCallback: (() => void) | null = null;
   private onNextCallback: (() => void) | null = null;
+  private onFavoriteChangeCallback: ((artworkId: string, starred: boolean) => void) | null = null;
+  private exhibitionId: string | null = null;
+  private currentArtworkId: string | null = null;
 
   constructor() {
     this.panel = document.getElementById('artwork-panel')!;
@@ -51,6 +59,7 @@ export class ArtworkInfoPanel {
     this.loadingEl = this.panel.querySelector('.art-loading')!;
     this.prevBtn = this.panel.querySelector('.nav-prev')!;
     this.nextBtn = this.panel.querySelector('.nav-next')!;
+    this.favBtn = this.panel.querySelector('.fav-btn') as HTMLButtonElement;
 
     this.closeBtn.addEventListener('click', () => {
       this.hide();
@@ -59,6 +68,7 @@ export class ArtworkInfoPanel {
 
     this.prevBtn.addEventListener('click', () => this.onPrevCallback?.());
     this.nextBtn.addEventListener('click', () => this.onNextCallback?.());
+    this.favBtn.addEventListener('click', () => this.toggleFavorite());
 
     window.addEventListener('keydown', (e) => {
       if (!this.panel.classList.contains('visible')) return;
@@ -69,8 +79,34 @@ export class ArtworkInfoPanel {
         this.onPrevCallback?.();
       } else if (e.code === 'ArrowRight') {
         this.onNextCallback?.();
+      } else if (e.code === 'KeyF') {
+        const target = e.target as HTMLElement | null;
+        if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) return;
+        e.preventDefault();
+        this.toggleFavorite();
       }
     });
+  }
+
+  setExhibitionId(id: string | null): void {
+    this.exhibitionId = id;
+  }
+
+  onFavoriteChange(cb: (artworkId: string, starred: boolean) => void): void {
+    this.onFavoriteChangeCallback = cb;
+  }
+
+  private toggleFavorite(): void {
+    if (!this.exhibitionId || !this.currentArtworkId) return;
+    const starred = FavoritesStore.toggle(this.exhibitionId, this.currentArtworkId);
+    this.refreshFavButton(starred);
+    this.onFavoriteChangeCallback?.(this.currentArtworkId, starred);
+  }
+
+  private refreshFavButton(starred: boolean): void {
+    this.favBtn.classList.toggle('starred', starred);
+    this.favBtn.innerHTML = starred ? STAR_ICON : STAR_OUTLINE_ICON;
+    this.favBtn.title = starred ? '즐겨찾기 해제 (F)' : '즐겨찾기 (F)';
   }
 
   setNavVisible(visible: boolean): void {
@@ -82,6 +118,7 @@ export class ArtworkInfoPanel {
   onNext(cb: () => void): void { this.onNextCallback = cb; }
 
   show(config: ArtworkConfig): void {
+    this.currentArtworkId = config.id;
     // Show basic info immediately
     this.titleEl.textContent = config.titleKo ?? config.title;
     this.artistEl.textContent = config.artist;
@@ -96,6 +133,10 @@ export class ArtworkInfoPanel {
     this.loadingEl.textContent = '상세 정보 불러오는 중...';
     this.panel.classList.add('visible');
     this.panel.scrollTop = 0;
+
+    // Sync star state with storage
+    const starred = this.exhibitionId ? FavoritesStore.isStarred(this.exhibitionId, config.id) : false;
+    this.refreshFavButton(starred);
 
     // Fetch project detail from API
     this.fetchProjectDetail(config.id);

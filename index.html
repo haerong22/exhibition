@@ -151,6 +151,18 @@
       transition: color 0.2s;
     }
     #artwork-panel .close-btn:hover { color: #fff; }
+    #artwork-panel .fav-btn {
+      position: absolute; top: 1rem; right: 3.2rem;
+      width: 32px; height: 32px; padding: 0;
+      background: transparent; border: 1px solid transparent; border-radius: 4px;
+      color: #888; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: color 0.2s, border-color 0.2s, background 0.2s;
+    }
+    #artwork-panel .fav-btn:hover { color: #fff; border-color: #3a3a3a; background: rgba(255,255,255,0.04); }
+    #artwork-panel .fav-btn.starred { color: #ffd166; }
+    #artwork-panel .fav-btn.starred:hover { color: #ffe69b; }
+    #artwork-panel .fav-btn svg { width: 18px; height: 18px; display: block; }
     #artwork-panel .art-nav {
       position: absolute; top: 1rem; left: 1rem;
       display: flex; gap: 0.3rem;
@@ -384,6 +396,7 @@
 
   <div id="artwork-panel">
     <button class="close-btn">&times;</button>
+    <button class="fav-btn" title="즐겨찾기 (F)" aria-label="즐겨찾기 토글"></button>
     <div class="art-nav">
       <button class="nav-btn nav-prev" title="이전 작품">‹</button>
       <button class="nav-btn nav-next" title="다음 작품">›</button>

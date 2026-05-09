@@ -16,6 +16,7 @@ import type { GridMap } from './types/tiled';
 import { ExhibitionLoader } from './systems/ExhibitionLoader';
 import { CustomMapStore, type CustomMap } from './systems/CustomMapStore';
 import { exportMap, parseImportFile } from './systems/storage/MapExport';
+import { FavoritesStore } from './systems/FavoritesStore';
 import { Router, type Route } from './systems/Router';
 import { LoadingScreen } from './ui/LoadingScreen';
 import { ArtworkInfoPanel } from './ui/ArtworkInfoPanel';
@@ -301,6 +302,7 @@ class App {
     this.autoTour.stop();
     this.soundManager.resetStride();
     this.hideSoundButton();
+    this.infoPanel.setExhibitionId(null);
     if (!this.isMobile) this.fpControls.unlock();
     this.engine.scene.clear();
     this.engine.scene.fog = null;
@@ -705,7 +707,10 @@ class App {
     });
     main.innerHTML = `<h3></h3><p class="card-meta"></p>`;
     main.querySelector('h3')!.textContent = map.name;
-    main.querySelector('.card-meta')!.textContent = `${size} · 작품 ${artCount}개 · ${updated}`;
+    const favCount = FavoritesStore.count(`custom-${map.id}`);
+    const metaParts = [size, `작품 ${artCount}개`, updated];
+    if (favCount > 0) metaParts.push(`★ ${favCount}`);
+    main.querySelector('.card-meta')!.textContent = metaParts.join(' · ');
     main.addEventListener('click', () => {
       this.router.navigateTo(`custom-${map.id}`);
     });
@@ -915,6 +920,7 @@ class App {
     this.tiledCollision = new TiledCollision(result.walkableGrid, result.mapWidth, result.mapDepth);
 
     this.artworkInteraction.setArtworks(this.tiledBuilder.artworkFrames);
+    this.infoPanel.setExhibitionId(configId);
 
     // Setup minimap with grid + artwork positions
     this.minimap.setup(gridMap, parsedMap.artworkSlots);
@@ -966,6 +972,7 @@ class App {
 
       // Set artworks for interaction
       this.artworkInteraction.setArtworks(this.galleryBuilder.artworkFrames);
+      this.infoPanel.setExhibitionId(config.id);
 
       // Show enter button
       this.loadingScreen.showEnterButton(() => this.startGallerySession({ withMinimap: false, withTour: false }));
