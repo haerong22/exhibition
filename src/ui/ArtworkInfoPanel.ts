@@ -96,11 +96,15 @@ export class ArtworkInfoPanel {
     this.onFavoriteChangeCallback = cb;
   }
 
-  private toggleFavorite(): void {
+  private async toggleFavorite(): Promise<void> {
     if (!this.exhibitionId || !this.currentArtworkId) return;
-    const starred = FavoritesStore.toggle(this.exhibitionId, this.currentArtworkId);
+    const exhibitionId = this.exhibitionId;
+    const artworkId = this.currentArtworkId;
+    const starred = await FavoritesStore.toggle(exhibitionId, artworkId);
+    // Guard against stale resolution if user navigated away during the await
+    if (this.currentArtworkId !== artworkId) return;
     this.refreshFavButton(starred);
-    this.onFavoriteChangeCallback?.(this.currentArtworkId, starred);
+    this.onFavoriteChangeCallback?.(artworkId, starred);
   }
 
   private refreshFavButton(starred: boolean): void {
@@ -134,12 +138,20 @@ export class ArtworkInfoPanel {
     this.panel.classList.add('visible');
     this.panel.scrollTop = 0;
 
-    // Sync star state with storage
-    const starred = this.exhibitionId ? FavoritesStore.isStarred(this.exhibitionId, config.id) : false;
-    this.refreshFavButton(starred);
+    // Optimistic default; refresh once async storage resolves
+    this.refreshFavButton(false);
+    this.refreshFavStateAsync(config.id);
 
     // Fetch project detail from API
     this.fetchProjectDetail(config.id);
+  }
+
+  private async refreshFavStateAsync(artworkId: string): Promise<void> {
+    if (!this.exhibitionId) return;
+    const starred = await FavoritesStore.isStarred(this.exhibitionId, artworkId);
+    // Ignore stale result if user already navigated to a different artwork
+    if (this.currentArtworkId !== artworkId) return;
+    this.refreshFavButton(starred);
   }
 
   private async fetchProjectDetail(projectId: string): Promise<void> {

@@ -447,9 +447,9 @@ class App {
         : '<div class="picker-empty">검색 결과가 없습니다.</div>';
       return;
     }
-    for (const map of sorted) {
-      containerEl.appendChild(this.renderCustomCard(map, containerEl));
-    }
+    // Render in parallel — favorite counts are async, so awaiting one-by-one would serialize them
+    const cards = await Promise.all(sorted.map((map) => this.renderCustomCard(map, containerEl)));
+    for (const card of cards) containerEl.appendChild(card);
   }
 
   private async renderActiveTab(container: HTMLElement, tabBuiltin: HTMLElement, tabCustom: HTMLElement): Promise<void> {
@@ -694,7 +694,7 @@ class App {
     }
   }
 
-  private renderCustomCard(map: CustomMap, containerEl: HTMLElement): HTMLElement {
+  private async renderCustomCard(map: CustomMap, containerEl: HTMLElement): Promise<HTMLElement> {
     const card = document.createElement('div');
     card.className = 'exhibition-card';
 
@@ -707,7 +707,7 @@ class App {
     });
     main.innerHTML = `<h3></h3><p class="card-meta"></p>`;
     main.querySelector('h3')!.textContent = map.name;
-    const favCount = FavoritesStore.count(`custom-${map.id}`);
+    const favCount = await FavoritesStore.count(`custom-${map.id}`);
     const metaParts = [size, `작품 ${artCount}개`, updated];
     if (favCount > 0) metaParts.push(`★ ${favCount}`);
     main.querySelector('.card-meta')!.textContent = metaParts.join(' · ');
