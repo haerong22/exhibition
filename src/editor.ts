@@ -207,6 +207,8 @@ class MapEditor {
   private rectEnd: { col: number; row: number } | null = null;
   private rectErase = false;
   private projects: ProjectItem[] = [];
+  private selectedArtworkId: string | null = null;
+  private artworkSearchQuery = '';
   private currentMapId: string | null = null;
   private currentMapName: string | null = null;
   private currentMapDescription: string | null = null;
@@ -460,25 +462,18 @@ class MapEditor {
 
   private async loadMoodboard(moodboardId: string): Promise<void> {
     const statusEl = document.getElementById('moodboard-status')!;
-    const select = document.getElementById('artwork-select') as HTMLSelectElement;
+    const lib = document.getElementById('artwork-library')!;
 
     statusEl.textContent = '불러오는 중...';
     statusEl.style.color = '#888';
-    select.innerHTML = '<option value="">불러오는 중...</option>';
+    lib.innerHTML = '<div class="artwork-empty">불러오는 중...</div>';
 
     try {
       const res = await fetch(`${MOODBOARD_API_BASE}/${moodboardId}/projects`);
       if (!res.ok) throw new Error('not found');
       const data = await res.json();
       this.projects = data.elements ?? [];
-
-      select.innerHTML = '<option value="">-- 작품 선택 --</option>';
-      for (const p of this.projects) {
-        const opt = document.createElement('option');
-        opt.value = p.projectId;
-        opt.textContent = `${p.title} (${p.owner.nickname})`;
-        select.appendChild(opt);
-      }
+      this.refreshArtworkSelect();
 
       statusEl.textContent = `${this.projects.length}개 작품 로드 완료`;
       statusEl.style.color = '#4eff7e';
@@ -486,7 +481,7 @@ class MapEditor {
       autoBtn.style.display = this.projects.length > 0 ? 'block' : 'none';
     } catch {
       this.projects = [];
-      select.innerHTML = '<option value="">로드 실패</option>';
+      this.refreshArtworkSelect();
       statusEl.textContent = '무드보드를 찾을 수 없습니다';
       statusEl.style.color = '#ff6b6b';
       document.getElementById('btn-auto-exhibit')!.style.display = 'none';
@@ -716,12 +711,54 @@ class MapEditor {
         if (id) this.loadMoodboard(id);
       }
     });
+
+    // Artwork library search
+    const searchInput = document.getElementById('artwork-search') as HTMLInputElement | null;
+    searchInput?.addEventListener('input', () => {
+      this.artworkSearchQuery = searchInput.value;
+      this.refreshArtworkSelect();
+    });
+
+    this.bindArtworkDragAndDrop();
+  }
+
+  private bindArtworkDragAndDrop(): void {
+    const canvas = this.canvas;
+    canvas.addEventListener('dragover', (e) => {
+      if (!e.dataTransfer?.types.includes('text/x-artwork-id')) return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'copy';
+      canvas.classList.add('dragging-over');
+    });
+    canvas.addEventListener('dragleave', () => {
+      canvas.classList.remove('dragging-over');
+    });
+    canvas.addEventListener('drop', (e) => {
+      const artworkId = e.dataTransfer?.getData('text/x-artwork-id');
+      canvas.classList.remove('dragging-over');
+      if (!artworkId) return;
+      e.preventDefault();
+      const cell = this.cellAt(e);
+      if (!cell) return;
+      this.selectArtwork(artworkId);
+      // Ensure artwork tool is active so the placement path runs
+      const artBtn = document.querySelector<HTMLElement>('.tool-btn[data-tool="artwork"]');
+      if (artBtn && !artBtn.classList.contains('active')) artBtn.click();
+      this.placeArtworkAt(cell.col, cell.row);
+    });
+  }
+
+  private placeArtworkAt(col: number, row: number): void {
+    const prevTool = this.currentTool;
+    this.currentTool = 'artwork';
+    this.pushHistory();
+    this.handleDrawAt(col, row);
+    this.currentTool = prevTool;
   }
 
   private getSelectedArtworkId(): string {
-    const select = (document.getElementById('artwork-select') as HTMLSelectElement).value;
-    const manual = (document.getElementById('artwork-id') as HTMLInputElement).value;
-    return select || manual || '';
+    const manual = (document.getElementById('artwork-id') as HTMLInputElement | null)?.value ?? '';
+    return this.selectedArtworkId ?? manual ?? '';
   }
 
   private cellAt(e: MouseEvent): { col: number; row: number } | null {
@@ -795,7 +832,10 @@ class MapEditor {
     const rect = this.canvas.getBoundingClientRect();
     const col = Math.floor((e.clientX - rect.left) / TILE_SIZE);
     const row = Math.floor((e.clientY - rect.top) / TILE_SIZE);
+    this.handleDrawAt(col, row);
+  }
 
+  private handleDrawAt(col: number, row: number): void {
     if (row < 0 || row >= this.height || col < 0 || col >= this.width) return;
 
     // In exhibition mode, only allow artwork + spawn placement
@@ -1566,13 +1606,81 @@ class MapEditor {
   }
 
   private refreshArtworkSelect(): void {
-    const select = document.getElementById('artwork-select') as HTMLSelectElement;
-    select.innerHTML = '<option value="">-- 작품 선택 --</option>';
-    for (const p of this.projects) {
-      const opt = document.createElement('option');
-      opt.value = p.projectId;
-      opt.textContent = `${p.title} (${p.owner.nickname})`;
-      select.appendChild(opt);
+    const lib = document.getElementById('artwork-library');
+    if (!lib) return;
+    // Drop selection if its target is no longer available
+    if (this.selectedArtworkId && !this.projects.some((p) => p.projectId === this.selectedArtworkId)) {
+      this.selectedArtworkId = null;
+    }
+    if (this.projects.length === 0) {
+      lib.innerHTML = '<div class="artwork-empty">무드보드를 먼저 불러오세요</div>';
+      return;
+    }
+    const q = this.artworkSearchQuery.trim().toLowerCase();
+    const filtered = q
+      ? this.projects.filter((p) =>
+          p.title.toLowerCase().includes(q) || p.owner.nickname.toLowerCase().includes(q),
+        )
+      : this.projects;
+    if (filtered.length === 0) {
+      lib.innerHTML = '<div class="artwork-empty">검색 결과가 없습니다</div>';
+      return;
+    }
+    lib.innerHTML = '';
+    for (const p of filtered) {
+      const card = document.createElement('div');
+      card.className = 'artwork-card';
+      if (p.projectId === this.selectedArtworkId) card.classList.add('selected');
+      card.dataset.artworkId = p.projectId;
+      card.draggable = true;
+      card.title = `${p.title} · ${p.owner.nickname}`;
+
+      const img = document.createElement('img');
+      img.className = 'thumb';
+      img.alt = '';
+      img.loading = 'lazy';
+      img.src = p.imageUrl;
+      // Hide broken thumbnails gracefully
+      img.onerror = () => { img.style.display = 'none'; };
+      card.appendChild(img);
+
+      const meta = document.createElement('div');
+      meta.className = 'meta';
+      const titleEl = document.createElement('span');
+      titleEl.className = 'title';
+      titleEl.textContent = p.title;
+      const artistEl = document.createElement('span');
+      artistEl.className = 'artist';
+      artistEl.textContent = p.owner.nickname;
+      meta.appendChild(titleEl);
+      meta.appendChild(artistEl);
+      card.appendChild(meta);
+
+      card.addEventListener('click', () => this.selectArtwork(p.projectId));
+      card.addEventListener('dragstart', (e) => {
+        // Selecting on dragstart also primes click-to-place
+        this.selectArtwork(p.projectId);
+        card.classList.add('dragging');
+        e.dataTransfer?.setData('text/x-artwork-id', p.projectId);
+        e.dataTransfer!.effectAllowed = 'copy';
+      });
+      card.addEventListener('dragend', () => {
+        card.classList.remove('dragging');
+      });
+
+      lib.appendChild(card);
+    }
+  }
+
+  private selectArtwork(projectId: string | null): void {
+    this.selectedArtworkId = projectId;
+    document.querySelectorAll<HTMLElement>('.artwork-card').forEach((el) => {
+      el.classList.toggle('selected', el.dataset.artworkId === projectId);
+    });
+    // Auto-switch to artwork tool when a card is picked
+    if (projectId) {
+      const artBtn = document.querySelector<HTMLElement>('.tool-btn[data-tool="artwork"]');
+      if (artBtn && !artBtn.classList.contains('active')) artBtn.click();
     }
   }
 

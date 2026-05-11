@@ -42,6 +42,62 @@
     .artwork-input label { font-size: 0.75rem; color: #888; display: block; margin-bottom: 0.3rem; }
     .artwork-input input { width: 100%; background: #1a1a1a; border: 1px solid #333; color: #fff; padding: 0.4rem; font-size: 0.8rem; }
     .artwork-input select { width: 100%; background: #1a1a1a; border: 1px solid #333; color: #fff; padding: 0.4rem; font-size: 0.8rem; margin-top: 0.3rem; }
+    /* Artwork library (thumbnail grid) */
+    .artwork-search {
+      width: 100%; background: #1a1a1a; border: 1px solid #333; color: #fff;
+      padding: 0.4rem 0.5rem; font-size: 0.75rem; outline: none;
+      margin-bottom: 0.4rem;
+    }
+    .artwork-search:focus { border-color: #555; }
+    .artwork-library {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem;
+      max-height: 260px; overflow-y: auto;
+      padding: 0.3rem; background: #0e0e0e; border: 1px solid #222; border-radius: 3px;
+    }
+    .artwork-library .artwork-empty {
+      grid-column: 1 / -1;
+      font-size: 0.72rem; color: #555; text-align: center; padding: 1.2rem 0.5rem;
+    }
+    .artwork-card {
+      position: relative; display: flex; flex-direction: column;
+      background: #161616; border: 1px solid #2a2a2a; border-radius: 3px;
+      cursor: grab; overflow: hidden;
+      transition: border-color 0.15s, transform 0.1s;
+    }
+    .artwork-card:hover { border-color: #444; }
+    .artwork-card:active { cursor: grabbing; }
+    .artwork-card.selected { border-color: #4eff7e; box-shadow: 0 0 0 1px #4eff7e44 inset; }
+    .artwork-card.dragging { opacity: 0.4; transform: scale(0.96); }
+    .artwork-card .thumb {
+      width: 100%; aspect-ratio: 1; background: #0a0a0a;
+      display: block; object-fit: cover; pointer-events: none;
+    }
+    .artwork-card .meta {
+      padding: 0.3rem 0.4rem; font-size: 0.62rem;
+      line-height: 1.2; pointer-events: none;
+    }
+    .artwork-card .meta .title {
+      color: #ddd; display: block;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .artwork-card .meta .artist {
+      color: #777; display: block; margin-top: 0.1rem;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .artwork-manual {
+      margin-top: 0.4rem; font-size: 0.7rem; color: #888;
+    }
+    .artwork-manual summary {
+      cursor: pointer; padding: 0.2rem 0; user-select: none;
+    }
+    .artwork-manual summary:hover { color: #ccc; }
+    .artwork-manual input { margin-top: 0.3rem; }
+    .artwork-hint {
+      font-size: 0.66rem; color: #555; text-align: center;
+      margin-top: 0.4rem; padding: 0 0.2rem;
+    }
+    /* Canvas drag-over feedback */
+    #grid-canvas.dragging-over { outline: 2px dashed #4eff7e; outline-offset: -4px; }
 
     /* Content area (2D + 3D split) */
     .content { flex: 1; display: flex; overflow: hidden; }
@@ -256,12 +312,11 @@
       </div>
 
       <div class="artwork-input" id="artwork-options">
-        <label>작품 선택</label>
-        <select id="artwork-select">
-          <option value="">무드보드를 먼저 불러오세요</option>
-        </select>
-        <label style="margin-top:0.4rem">또는 직접 입력</label>
-        <input type="text" id="artwork-id" placeholder="작품 ID 직접 입력" />
+        <label>작품 라이브러리</label>
+        <input type="search" id="artwork-search" class="artwork-search" placeholder="제목/작가 검색..." />
+        <div id="artwork-library" class="artwork-library">
+          <div class="artwork-empty">무드보드를 먼저 불러오세요</div>
+        </div>
         <label style="margin-top:0.4rem">방향</label>
         <select id="artwork-facing">
           <option value="auto">자동 감지</option>
@@ -270,6 +325,11 @@
           <option value="east">동 (오른쪽)</option>
           <option value="west">서 (왼쪽)</option>
         </select>
+        <details class="artwork-manual">
+          <summary>ID로 직접 입력</summary>
+          <input type="text" id="artwork-id" placeholder="작품 ID" />
+        </details>
+        <div class="artwork-hint">선택 후 클릭 또는 카드를 드래그하여 배치</div>
       </div>
 
       <div class="artwork-input" id="model-options">
