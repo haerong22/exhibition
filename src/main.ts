@@ -76,6 +76,7 @@ class App {
     this.artworkInteraction = new ArtworkInteraction(this.engine.camera, this.cameraController);
     this.autoTour = new AutoTour(this.artworkInteraction);
     this.soundManager = new SoundManager();
+    this.minimap.onTeleport((wx, wz) => this.teleportTo(wx, wz));
 
     // Reduce quality on mobile
     if (this.isMobile) {
@@ -926,6 +927,20 @@ class App {
     this.minimap.setup(gridMap, parsedMap.artworkSlots);
 
     this.loadingScreen.showEnterButton(() => this.startGallerySession({ withMinimap: true, withTour: true }));
+  }
+
+  private teleportTo(worldX: number, worldZ: number): boolean {
+    // Only allow while walking (not during artwork transitions / viewing)
+    if (this.cameraController.state !== 'WALKING') return false;
+    if (!this.tiledCollision) return false;
+    if (!this.tiledCollision.isWalkable(worldX, worldZ)) return false;
+    const cam = this.engine.camera;
+    cam.position.x = worldX;
+    cam.position.z = worldZ;
+    // Re-snap footstep tracking origin so we don't emit a giant fake step
+    this.lastFootstepPos.set(cam.position.x, 0, cam.position.z);
+    this.soundManager.resetStride();
+    return true;
   }
 
   private startGallerySession(opts: { withMinimap: boolean; withTour: boolean }): void {

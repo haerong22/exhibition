@@ -344,10 +344,12 @@
       position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 15;
       border: 1px solid rgba(255,255,255,0.15); border-radius: 4px;
       background: rgba(0,0,0,0.6); backdrop-filter: blur(4px);
-      pointer-events: none; display: none;
+      pointer-events: auto; display: none; cursor: crosshair;
+      transition: border-color 0.15s;
       /* no CSS transform — X flip handled in draw code */
     }
     #minimap.visible { display: block; }
+    #minimap:hover { border-color: rgba(255,255,255,0.35); }
 
     @media (max-width: 768px) {
       #artwork-panel { width: 100%; padding: 2.5rem 1.2rem; }

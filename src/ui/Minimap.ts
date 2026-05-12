@@ -26,10 +26,33 @@ export class Minimap {
   private tileSize = 1;
   private offsetX = 0;
   private offsetY = 0;
+  private onTeleportCallback: ((worldX: number, worldZ: number) => boolean) | null = null;
+  private teleportMarker: { x: number; y: number; t: number; ok: boolean } | null = null;
 
   constructor() {
     this.canvas = document.getElementById('minimap') as HTMLCanvasElement;
     this.ctx = this.canvas.getContext('2d')!;
+    this.canvas.addEventListener('click', (e) => this.handleClick(e));
+  }
+
+  // Returning true means teleport succeeded (will show green marker); false = blocked (red)
+  onTeleport(cb: (worldX: number, worldZ: number) => boolean): void {
+    this.onTeleportCallback = cb;
+  }
+
+  private handleClick(e: MouseEvent): void {
+    if (!this.canvas.classList.contains('visible')) return;
+    if (!this.onTeleportCallback || this.mapWidth === 0) return;
+    const rect = this.canvas.getBoundingClientRect();
+    // CSS px → canvas px (DPR-aware)
+    const sx = ((e.clientX - rect.left) * this.canvas.width) / rect.width;
+    const sy = ((e.clientY - rect.top) * this.canvas.height) / rect.height;
+    // Invert fx/fy from update(). fx(worldX) = offsetX + (mapWidth - worldX) * tileSize
+    const worldX = this.mapWidth - (sx - this.offsetX) / this.tileSize;
+    const rowVal = (sy - this.offsetY) / this.tileSize;
+    const worldZ = -rowVal;
+    const ok = this.onTeleportCallback(worldX, worldZ);
+    this.teleportMarker = { x: sx, y: sy, t: performance.now(), ok };
   }
 
   setup(gridMap: GridMap, artworkSlots: ParsedArtworkSlot[]): void {
@@ -130,5 +153,26 @@ export class Minimap {
     ctx.lineWidth = 1;
     ctx.stroke();
     ctx.restore();
+
+    // Teleport feedback marker (fades over 500ms)
+    if (this.teleportMarker) {
+      const age = performance.now() - this.teleportMarker.t;
+      const duration = 500;
+      if (age >= duration) {
+        this.teleportMarker = null;
+      } else {
+        const progress = age / duration;
+        const alpha = 1 - progress;
+        const ringR = Math.max(6, ts * 0.7) * (1 + progress * 1.2);
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        ctx.strokeStyle = this.teleportMarker.ok ? '#4eff7e' : '#ff4444';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(this.teleportMarker.x, this.teleportMarker.y, ringR, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
   }
 }
