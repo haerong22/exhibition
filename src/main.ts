@@ -17,6 +17,7 @@ import { ExhibitionLoader } from './systems/ExhibitionLoader';
 import { CustomMapStore, type CustomMap } from './systems/CustomMapStore';
 import { exportMap, parseImportFile } from './systems/storage/MapExport';
 import { FavoritesStore } from './systems/FavoritesStore';
+import { I18n } from './systems/I18n';
 import { Router, type Route } from './systems/Router';
 import { LoadingScreen } from './ui/LoadingScreen';
 import { ArtworkInfoPanel } from './ui/ArtworkInfoPanel';
@@ -227,6 +228,7 @@ class App {
 
     // Sound toggle button
     this.setupSoundButton();
+    this.setupLanguageToggle();
 
     // Router
     this.router.onRouteChange((route) => {
@@ -236,6 +238,28 @@ class App {
     // Start
     this.engine.start();
     this.handleRoute(this.router.currentRoute());
+  }
+
+  private setupLanguageToggle(): void {
+    document.documentElement.lang = I18n.current;
+    I18n.applyToDom();
+    const btn = document.getElementById('lang-toggle') as HTMLButtonElement | null;
+    const refresh = () => {
+      if (btn) btn.textContent = I18n.current === 'ko' ? 'EN' : '한';
+    };
+    refresh();
+    btn?.addEventListener('click', () => {
+      I18n.toggle();
+      refresh();
+    });
+    I18n.onChange(() => {
+      refresh();
+      // Re-render picker contents (dynamic strings) if visible
+      const picker = document.getElementById('exhibition-picker');
+      if (picker && !picker.classList.contains('hidden')) {
+        this.showPicker();
+      }
+    });
   }
 
   private setupSoundButton(): void {
@@ -316,7 +340,7 @@ class App {
     const customEl = document.getElementById('picker-custom')!;
 
     // Fetch built-in templates once
-    templatesEl.innerHTML = '<div class="picker-empty">불러오는 중...</div>';
+    templatesEl.innerHTML = `<div class="picker-empty">${I18n.t('picker.empty.loading')}</div>`;
     try {
       const res = await fetch('/templates/index.json');
       this.builtInTemplates = await res.json();
@@ -417,8 +441,8 @@ class App {
           }
         }
         await onDone();
-        const msgParts = [`${imported}개 가져왔습니다.`];
-        if (rejected > 0) msgParts.push(`(검증 실패 ${rejected}개)`);
+        const msgParts = [I18n.t('import.success', { n: imported })];
+        if (rejected > 0) msgParts.push(I18n.t('import.rejected', { n: rejected }));
         if (errors.length > 0) msgParts.push(errors.join('\n'));
         alert(msgParts.join('\n'));
       };
@@ -443,9 +467,8 @@ class App {
 
     containerEl.innerHTML = '';
     if (sorted.length === 0) {
-      containerEl.innerHTML = all.length === 0
-        ? '<div class="picker-empty">저장된 전시회가 없습니다. 템플릿을 선택하여 전시회를 만들어보세요.</div>'
-        : '<div class="picker-empty">검색 결과가 없습니다.</div>';
+      const key = all.length === 0 ? 'picker.empty.noExhibitions' : 'picker.empty.noResults';
+      containerEl.innerHTML = `<div class="picker-empty">${I18n.t(key)}</div>`;
       return;
     }
     // Render in parallel — favorite counts are async, so awaiting one-by-one would serialize them
@@ -470,7 +493,7 @@ class App {
       this.allTemplates = customTemplates.map((m) => ({
         id: m.id,
         name: m.name,
-        description: '커스텀 템플릿',
+        description: I18n.t('card.meta.customTemplate'),
         size: `${m.gridMap.width}×${m.gridMap.height}`,
         recommended: undefined as string | undefined,
         customMapId: m.id,
@@ -486,11 +509,10 @@ class App {
     }
 
     if (this.allTemplates.length === 0) {
-      container.innerHTML = q
-        ? '<div class="picker-empty">검색 결과가 없습니다.</div>'
-        : this.templateTab === 'builtin'
-          ? '<div class="picker-empty">템플릿이 없습니다</div>'
-          : '<div class="picker-empty">저장된 템플릿이 없습니다. 에디터에서 맵을 만들고 템플릿으로 저장하세요.</div>';
+      const key = q
+        ? 'picker.empty.noResults'
+        : this.templateTab === 'builtin' ? 'picker.empty.noTemplates' : 'picker.empty.noCustomTemplates';
+      container.innerHTML = `<div class="picker-empty">${I18n.t(key)}</div>`;
       return;
     }
     this.renderTemplatePage(container);
@@ -576,7 +598,7 @@ class App {
     body.querySelector('p')!.textContent = t.description;
     const meta: string[] = [];
     if (t.size) meta.push(t.size);
-    if (t.recommended) meta.push(`추천 ${t.recommended}`);
+    if (t.recommended) meta.push(I18n.t('card.meta.recommended', { label: t.recommended }));
     body.querySelector('.card-meta')!.textContent = meta.join(' · ');
     card.appendChild(body);
 
@@ -591,7 +613,7 @@ class App {
       actions.style.cssText = 'display:flex;gap:0.4rem;padding:0 1rem 0.8rem;';
       const editBtn = document.createElement('a');
       editBtn.className = 'card-btn';
-      editBtn.textContent = '맵 편집';
+      editBtn.textContent = I18n.t('card.btn.editMap');
       editBtn.style.cssText = 'font-size:0.7rem;color:#999;border:1px solid #2e2e2e;padding:0.3rem 0.6rem;cursor:pointer;text-decoration:none;transition:all 0.2s;';
       editBtn.href = `/editor/?edit=${encodeURIComponent(t.customMapId!)}`;
       editBtn.addEventListener('click', (e) => {
@@ -601,7 +623,7 @@ class App {
       actions.appendChild(editBtn);
       const exportBtn = document.createElement('button');
       exportBtn.className = 'card-btn';
-      exportBtn.textContent = '내보내기';
+      exportBtn.textContent = I18n.t('card.btn.export');
       exportBtn.style.cssText = 'font-size:0.7rem;color:#999;background:transparent;border:1px solid #2e2e2e;padding:0.3rem 0.6rem;cursor:pointer;transition:all 0.2s;';
       exportBtn.addEventListener('click', async (e) => {
         e.stopPropagation();
@@ -611,11 +633,11 @@ class App {
       actions.appendChild(exportBtn);
       const deleteBtn = document.createElement('button');
       deleteBtn.className = 'card-btn danger';
-      deleteBtn.textContent = '삭제';
+      deleteBtn.textContent = I18n.t('card.btn.delete');
       deleteBtn.style.cssText = 'font-size:0.7rem;color:#999;background:transparent;border:1px solid #2e2e2e;padding:0.3rem 0.6rem;cursor:pointer;transition:all 0.2s;';
       deleteBtn.addEventListener('click', async (e) => {
         e.stopPropagation();
-        if (confirm(`"${t.name}" 템플릿을 삭제할까요?`)) {
+        if (confirm(I18n.t('confirm.deleteTemplate', { name: t.name }))) {
           await CustomMapStore.delete(t.customMapId!);
           // Re-render picker
           this.showPicker();
@@ -709,8 +731,8 @@ class App {
     main.innerHTML = `<h3></h3><p class="card-meta"></p>`;
     main.querySelector('h3')!.textContent = map.name;
     const favCount = await FavoritesStore.count(`custom-${map.id}`);
-    const metaParts = [size, `작품 ${artCount}개`, updated];
-    if (favCount > 0) metaParts.push(`★ ${favCount}`);
+    const metaParts = [size, I18n.t('card.meta.artworkCount', { n: artCount }), updated];
+    if (favCount > 0) metaParts.push(I18n.t('card.meta.favorites', { n: favCount }));
     main.querySelector('.card-meta')!.textContent = metaParts.join(' · ');
     main.addEventListener('click', () => {
       this.router.navigateTo(`custom-${map.id}`);
@@ -722,7 +744,7 @@ class App {
 
     const copyBtn = document.createElement('button');
     copyBtn.className = 'card-btn';
-    copyBtn.textContent = '링크 복사';
+    copyBtn.textContent = I18n.t('card.btn.copyLink');
     copyBtn.addEventListener('click', (e) => {
       e.stopPropagation();
       this.copyLink(`custom-${map.id}`, copyBtn);
@@ -731,7 +753,7 @@ class App {
 
     const qrBtn = document.createElement('button');
     qrBtn.className = 'card-btn';
-    qrBtn.textContent = 'QR';
+    qrBtn.textContent = I18n.t('card.btn.qr');
     qrBtn.addEventListener('click', (e) => {
       e.stopPropagation();
       this.showQRCode(`custom-${map.id}`, map.name);
@@ -740,7 +762,7 @@ class App {
 
     const editBtn = document.createElement('a');
     editBtn.className = 'card-btn';
-    editBtn.textContent = '편집';
+    editBtn.textContent = I18n.t('card.btn.edit');
     editBtn.href = `/editor/?edit=${encodeURIComponent(map.id)}`;
     editBtn.target = '_blank';
     editBtn.addEventListener('click', (e) => e.stopPropagation());
@@ -748,7 +770,7 @@ class App {
 
     const exportBtn = document.createElement('button');
     exportBtn.className = 'card-btn';
-    exportBtn.textContent = '내보내기';
+    exportBtn.textContent = I18n.t('card.btn.export');
     exportBtn.addEventListener('click', (e) => {
       e.stopPropagation();
       exportMap(map);
@@ -757,10 +779,10 @@ class App {
 
     const deleteBtn = document.createElement('button');
     deleteBtn.className = 'card-btn danger';
-    deleteBtn.textContent = '삭제';
+    deleteBtn.textContent = I18n.t('card.btn.delete');
     deleteBtn.addEventListener('click', async (e) => {
       e.stopPropagation();
-      if (confirm(`"${map.name}" 전시회를 삭제할까요?`)) {
+      if (confirm(I18n.t('confirm.deleteExhibition', { name: map.name }))) {
         await CustomMapStore.delete(map.id);
         this.refreshCustomList(containerEl);
       }
@@ -786,7 +808,7 @@ class App {
     navigator.clipboard.writeText(url).then(
       () => {
         const original = btn.textContent;
-        btn.textContent = '복사됨';
+        btn.textContent = I18n.t('card.btn.copied');
         setTimeout(() => { btn.textContent = original; }, 1500);
       },
       () => { alert(url); }
@@ -806,7 +828,7 @@ class App {
           <h3 class="qr-title"></h3>
           <canvas class="qr-canvas"></canvas>
           <p class="qr-url"></p>
-          <p class="qr-hint">스마트폰 카메라로 스캔하여 접속</p>
+          <p class="qr-hint">${I18n.t('qr.hint')}</p>
         </div>
       `;
       document.body.appendChild(modal);
@@ -822,12 +844,12 @@ class App {
 
   private async loadEditorPreview(): Promise<void> {
     this.loadingScreen.show();
-    this.loadingScreen.setTitle('에디터 미리보기');
+    this.loadingScreen.setTitle(I18n.t('loading.title.editorPreview'));
 
     const raw = sessionStorage.getItem('editor-map');
     if (!raw) {
-      this.loadingScreen.setTitle('오류');
-      document.getElementById('loading-status')!.textContent = '맵 데이터가 없습니다. 에디터에서 미리보기를 눌러주세요.';
+      this.loadingScreen.setTitle(I18n.t('loading.error.title'));
+      document.getElementById('loading-status')!.textContent = I18n.t('loading.error.noMapData');
       return;
     }
 
@@ -850,8 +872,8 @@ class App {
     const map = await CustomMapStore.get(id);
     if (!map) {
       this.loadingScreen.show();
-      this.loadingScreen.setTitle('오류');
-      document.getElementById('loading-status')!.textContent = `맵을 찾을 수 없습니다: ${id}`;
+      this.loadingScreen.setTitle(I18n.t('loading.error.title'));
+      document.getElementById('loading-status')!.textContent = I18n.t('loading.error.mapNotFound', { id });
       return;
     }
 
@@ -895,17 +917,17 @@ class App {
     if (textures) this.tiledBuilder.setTextureConfig(textures);
 
     // Stage 1: 공간 구조 생성 (0-30%)
-    this.loadingScreen.setStage('공간 구조 생성 중...', 0, 0.3);
+    this.loadingScreen.setStage(I18n.t('loading.stage.spaceStructure'), 0, 0.3);
     await new Promise((r) => setTimeout(r, 50)); // let UI update
 
     // Stage 2: 텍스처/작품 로딩 (30-90%)
-    this.loadingScreen.setStage('텍스처 및 작품 로딩 중...', 0.3, 0.9);
+    this.loadingScreen.setStage(I18n.t('loading.stage.texturesArtworks'), 0.3, 0.9);
     const result = await this.tiledBuilder.build(parsedMap, previewConfig, (loaded, total) =>
       this.loadingScreen.updateProgress(loaded, total)
     );
 
     // Stage 3: 씬 구성 (90-100%)
-    this.loadingScreen.setStage('씬 구성 중...', 0.9, 1.0);
+    this.loadingScreen.setStage(I18n.t('loading.stage.composing'), 0.9, 1.0);
     this.engine.scene.clear();
     this.engine.scene.add(result.group);
     this.engine.scene.fog = new THREE.Fog(0xf5f5f0, 10, 30);
@@ -963,18 +985,18 @@ class App {
     if (!this.isMobile) this.fpControls.unlock();
 
     try {
-      this.loadingScreen.setStage('전시 정보 불러오는 중...', 0, 0.15);
+      this.loadingScreen.setStage(I18n.t('loading.stage.fetchingInfo'), 0, 0.15);
       const config = await this.loader.load(id, configUrl);
-      this.loadingScreen.setTitle(config.nameKo ?? config.name);
-      this.loadingScreen.setDescription(config.descriptionKo ?? config.description);
+      this.loadingScreen.setTitle(I18n.pick(config.name, config.nameKo));
+      this.loadingScreen.setDescription(I18n.pick(config.description, config.descriptionKo));
 
-      this.loadingScreen.setStage('텍스처 및 작품 로딩 중...', 0.15, 0.9);
+      this.loadingScreen.setStage(I18n.t('loading.stage.texturesArtworks'), 0.15, 0.9);
       const { group, boundary } = await this.galleryBuilder.build(
         config,
         (loaded, total) => this.loadingScreen.updateProgress(loaded, total)
       );
 
-      this.loadingScreen.setStage('씬 구성 중...', 0.9, 1.0);
+      this.loadingScreen.setStage(I18n.t('loading.stage.composing'), 0.9, 1.0);
       this.engine.scene.clear();
       this.engine.scene.add(group);
       this.engine.scene.fog = new THREE.Fog(0xf5f5f0, 15, 40);
@@ -993,9 +1015,9 @@ class App {
       this.loadingScreen.showEnterButton(() => this.startGallerySession({ withMinimap: false, withTour: false }));
     } catch (err) {
       console.error('Failed to load exhibition:', err);
-      this.loadingScreen.setTitle('오류');
+      this.loadingScreen.setTitle(I18n.t('loading.error.title'));
       const status = document.getElementById('loading-status')!;
-      status.textContent = `전시를 불러올 수 없습니다: ${id}`;
+      status.textContent = I18n.t('loading.error.notFound', { id });
     }
   }
 }

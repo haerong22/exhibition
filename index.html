@@ -215,6 +215,15 @@
       font-size: 1.2rem; font-weight: 300; letter-spacing: 0.3em;
       text-transform: uppercase; color: #888; margin-bottom: 2.5rem;
     }
+    .lang-toggle {
+      position: absolute; top: 1.5rem; right: 1.5rem;
+      padding: 0.4rem 0.9rem;
+      background: transparent; color: #ccc;
+      border: 1px solid #2e2e2e; border-radius: 3px;
+      font-family: inherit; font-size: 0.7rem; letter-spacing: 0.15em;
+      cursor: pointer; transition: all 0.2s ease;
+    }
+    .lang-toggle:hover { border-color: #666; color: #fff; background: rgba(255,255,255,0.04); }
     .picker-container { width: 100%; max-width: 800px; }
     .picker-section { margin-bottom: 3rem; }
     .picker-section-header {
@@ -380,28 +389,28 @@
   <canvas id="canvas"></canvas>
 
   <div id="loading-screen">
-    <div id="loading-title">EXHIBITION</div>
+    <div id="loading-title" data-i18n="loading.title">EXHIBITION</div>
     <div id="loading-bar-container"><div id="loading-bar"></div></div>
-    <div id="loading-status">준비 중...</div>
+    <div id="loading-status" data-i18n="loading.preparing">준비 중...</div>
     <div id="loading-description"></div>
-    <button id="enter-prompt">입장하기</button>
+    <button id="enter-prompt" data-i18n="loading.enter">입장하기</button>
     <div id="loading-controls"><ul></ul></div>
   </div>
 
   <div id="crosshair"></div>
 
-  <div id="hud">WASD 이동 · 마우스 시선 · 클릭 작품 감상 · T 자동 투어 · M 음소거 · ESC 나가기</div>
-  <button id="tour-btn" class="hidden">▶ 자동 투어 (T)</button>
-  <div id="tour-status" class="hidden"><span id="tour-progress"></span> · <button id="tour-stop">투어 종료</button></div>
-  <button id="sound-btn" class="hidden" title="사운드 켜기/끄기 (M)" aria-label="사운드 토글"></button>
+  <div id="hud" data-i18n="hud.desktop">WASD 이동 · 마우스 시선 · 클릭 작품 감상 · T 자동 투어 · M 음소거 · ESC 나가기</div>
+  <button id="tour-btn" class="hidden" data-i18n="tour.start">▶ 자동 투어 (T)</button>
+  <div id="tour-status" class="hidden"><span id="tour-progress"></span> · <button id="tour-stop" data-i18n="tour.stop">투어 종료</button></div>
+  <button id="sound-btn" class="hidden" data-i18n-title="btn.sound.title" title="사운드 켜기/끄기 (M)" aria-label="사운드 토글"></button>
   <canvas id="minimap" width="160" height="160"></canvas>
 
   <div id="artwork-panel">
     <button class="close-btn">&times;</button>
-    <button class="fav-btn" title="즐겨찾기 (F)" aria-label="즐겨찾기 토글"></button>
+    <button class="fav-btn" data-i18n-title="panel.fav.add" title="즐겨찾기 (F)" aria-label="즐겨찾기 토글"></button>
     <div class="art-nav">
-      <button class="nav-btn nav-prev" title="이전 작품">‹</button>
-      <button class="nav-btn nav-next" title="다음 작품">›</button>
+      <button class="nav-btn nav-prev" data-i18n-title="panel.nav.prev" title="이전 작품">‹</button>
+      <button class="nav-btn nav-next" data-i18n-title="panel.nav.next" title="다음 작품">›</button>
     </div>
     <h2 class="art-title"></h2>
     <p class="art-artist"></p>
@@ -411,43 +420,44 @@
     <p class="art-desc"></p>
     <div class="art-tags"></div>
     <p class="art-stats"></p>
-    <a class="art-link" target="_blank" rel="noopener noreferrer">Grafolio에서 보기 →</a>
+    <a class="art-link" data-i18n="panel.link" target="_blank" rel="noopener noreferrer">Grafolio에서 보기 →</a>
     <div class="art-body"></div>
     <p class="art-loading"></p>
   </div>
 
   <div id="exhibition-picker" class="hidden">
-    <div id="picker-title">전시 선택</div>
+    <button id="lang-toggle" class="lang-toggle" data-i18n-title="btn.lang.title" aria-label="Language"></button>
+    <div id="picker-title" data-i18n="picker.title">전시 선택</div>
     <div class="picker-container">
       <div class="picker-section">
         <div class="template-tabs">
-          <button class="template-tab active" id="tab-builtin">기본 템플릿</button>
-          <button class="template-tab" id="tab-custom">내 템플릿 <span class="tab-count" id="tab-custom-count"></span></button>
+          <button class="template-tab active" id="tab-builtin" data-i18n="picker.tab.builtin">기본 템플릿</button>
+          <button class="template-tab" id="tab-custom"><span data-i18n="picker.tab.custom">내 템플릿</span> <span class="tab-count" id="tab-custom-count"></span></button>
           <span class="tab-spacer"></span>
           <div class="picker-btn-group">
-            <button class="picker-btn" id="template-import">가져오기</button>
-            <a class="picker-btn" href="/editor/">새 템플릿 만들기</a>
+            <button class="picker-btn" id="template-import" data-i18n="picker.btn.import">가져오기</button>
+            <a class="picker-btn" href="/editor/" data-i18n="picker.btn.newTemplate">새 템플릿 만들기</a>
           </div>
         </div>
         <div class="filter-bar">
-          <input type="search" id="template-search" class="filter-input" placeholder="이름으로 검색..." />
+          <input type="search" id="template-search" class="filter-input" data-i18n-placeholder="picker.search.placeholder" placeholder="이름으로 검색..." />
         </div>
         <div id="picker-templates" class="picker-list"></div>
       </div>
       <div class="picker-section">
         <div class="picker-section-header">
-          <h2>내 전시회</h2>
+          <h2 data-i18n="picker.tab.exhibitions">내 전시회</h2>
           <div class="picker-btn-group">
-            <button class="picker-btn" id="exhibition-import">가져오기</button>
-            <a class="picker-btn" href="/editor/">새 전시회 만들기</a>
+            <button class="picker-btn" id="exhibition-import" data-i18n="picker.btn.import">가져오기</button>
+            <a class="picker-btn" href="/editor/" data-i18n="picker.btn.newExhibition">새 전시회 만들기</a>
           </div>
         </div>
         <div class="filter-bar">
-          <input type="search" id="exhibition-search" class="filter-input" placeholder="이름으로 검색..." />
+          <input type="search" id="exhibition-search" class="filter-input" data-i18n-placeholder="picker.search.placeholder" placeholder="이름으로 검색..." />
           <select id="exhibition-sort" class="filter-select">
-            <option value="updated">최근 수정 순</option>
-            <option value="created">최신 생성 순</option>
-            <option value="name">이름 순</option>
+            <option value="updated" data-i18n="picker.sort.updated">최근 수정 순</option>
+            <option value="created" data-i18n="picker.sort.created">최신 생성 순</option>
+            <option value="name" data-i18n="picker.sort.name">이름 순</option>
           </select>
         </div>
         <div id="picker-custom" class="picker-list"></div>

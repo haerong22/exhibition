@@ -1,5 +1,6 @@
 import type { ArtworkConfig } from '../types/exhibition';
 import { FavoritesStore } from '../systems/FavoritesStore';
+import { I18n } from '../systems/I18n';
 
 const STAR_ICON = '<svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>';
 const STAR_OUTLINE_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>';
@@ -110,7 +111,7 @@ export class ArtworkInfoPanel {
   private refreshFavButton(starred: boolean): void {
     this.favBtn.classList.toggle('starred', starred);
     this.favBtn.innerHTML = starred ? STAR_ICON : STAR_OUTLINE_ICON;
-    this.favBtn.title = starred ? '즐겨찾기 해제 (F)' : '즐겨찾기 (F)';
+    this.favBtn.title = I18n.t(starred ? 'panel.fav.remove' : 'panel.fav.add');
   }
 
   setNavVisible(visible: boolean): void {
@@ -124,7 +125,7 @@ export class ArtworkInfoPanel {
   show(config: ArtworkConfig): void {
     this.currentArtworkId = config.id;
     // Show basic info immediately
-    this.titleEl.textContent = config.titleKo ?? config.title;
+    this.titleEl.textContent = I18n.pick(config.title, config.titleKo);
     this.artistEl.textContent = config.artist;
     this.categoryEl.textContent = '';
     this.yearEl.textContent = '';
@@ -134,7 +135,7 @@ export class ArtworkInfoPanel {
     this.bodyEl.innerHTML = '';
     this.linkEl.href = `https://grafolio.ogq.me/project/detail/${config.id}`;
     this.linkEl.style.display = 'inline-block';
-    this.loadingEl.textContent = '상세 정보 불러오는 중...';
+    this.loadingEl.textContent = I18n.t('panel.detail.loading');
     this.panel.classList.add('visible');
     this.panel.scrollTop = 0;
 
@@ -179,7 +180,8 @@ export class ArtworkInfoPanel {
       // Date
       if (data.createdAt) {
         const date = new Date(data.createdAt);
-        this.yearEl.textContent = date.toLocaleDateString('ko-KR', {
+        const localeTag = I18n.current === 'ko' ? 'ko-KR' : 'en-US';
+        this.yearEl.textContent = date.toLocaleDateString(localeTag, {
           year: 'numeric', month: 'long', day: 'numeric'
         });
       }
@@ -194,13 +196,16 @@ export class ArtworkInfoPanel {
       // Stats
       const likes = data.numberOfLikes ?? 0;
       const views = data.numberOfViews ?? 0;
-      this.statsEl.textContent = `조회 ${views.toLocaleString()} · 좋아요 ${likes.toLocaleString()}`;
+      this.statsEl.textContent = I18n.t('panel.stats', {
+        views: views.toLocaleString(),
+        likes: likes.toLocaleString(),
+      });
 
       // Project body (text + images from contentBlocks)
       this.renderContentBlocks(data.contentBlocks);
 
     } catch {
-      this.loadingEl.textContent = '상세 정보를 불러올 수 없습니다';
+      this.loadingEl.textContent = I18n.t('panel.detail.error');
     }
   }
 

@@ -1,3 +1,5 @@
+import { I18n } from '../systems/I18n';
+
 export class LoadingScreen {
   private el: HTMLElement;
   private bar: HTMLElement;
@@ -32,31 +34,35 @@ export class LoadingScreen {
   private populateControls(isMobile: boolean): void {
     const list = this.controls.querySelector('ul');
     if (!list) return;
-    const items = isMobile
-      ? [
-          { key: '조이스틱', desc: '이동' },
-          { key: '드래그', desc: '시선' },
-          { key: '탭', desc: '감상' },
-        ]
-      : [
-          { key: 'WASD', desc: '이동' },
-          { key: '마우스', desc: '시선' },
-          { key: '클릭', desc: '감상' },
-          { key: 'T', desc: '투어' },
-          { key: 'M', desc: '음소거' },
-          { key: 'ESC', desc: '닫기' },
-        ];
-    list.innerHTML = '';
-    for (const item of items) {
-      const li = document.createElement('li');
-      const kbd = document.createElement('kbd');
-      kbd.textContent = item.key;
-      const span = document.createElement('span');
-      span.textContent = item.desc;
-      li.appendChild(kbd);
-      li.appendChild(span);
-      list.appendChild(li);
-    }
+    const render = () => {
+      const items = isMobile
+        ? [
+            { key: I18n.current === 'ko' ? '조이스틱' : 'Stick', desc: I18n.t('controls.mobile.move') },
+            { key: I18n.current === 'ko' ? '드래그' : 'Drag', desc: I18n.t('controls.mobile.look') },
+            { key: I18n.current === 'ko' ? '탭' : 'Tap', desc: I18n.t('controls.mobile.view') },
+          ]
+        : [
+            { key: 'WASD', desc: I18n.t('controls.desktop.move') },
+            { key: I18n.current === 'ko' ? '마우스' : 'Mouse', desc: I18n.t('controls.desktop.look') },
+            { key: I18n.current === 'ko' ? '클릭' : 'Click', desc: I18n.t('controls.desktop.view') },
+            { key: 'T', desc: I18n.t('controls.desktop.tour') },
+            { key: 'M', desc: I18n.t('controls.desktop.mute') },
+            { key: 'ESC', desc: I18n.t('controls.desktop.close') },
+          ];
+      list.innerHTML = '';
+      for (const item of items) {
+        const li = document.createElement('li');
+        const kbd = document.createElement('kbd');
+        kbd.textContent = item.key;
+        const span = document.createElement('span');
+        span.textContent = item.desc;
+        li.appendChild(kbd);
+        li.appendChild(span);
+        list.appendChild(li);
+      }
+    };
+    render();
+    I18n.onChange(render);
   }
 
   setTitle(name: string): void {
@@ -78,7 +84,7 @@ export class LoadingScreen {
     const pct = (this.stageStart + (this.stageEnd - this.stageStart) * fraction) * 100;
     this.bar.style.width = `${pct}%`;
     if (total > 0) {
-      this.status.textContent = `작품 텍스처 로딩 ${loaded} / ${total}`;
+      this.status.textContent = I18n.t('loading.progress.textures', { loaded, total });
     }
   }
 
@@ -87,7 +93,7 @@ export class LoadingScreen {
   }
 
   showEnterButton(onClick: () => void): void {
-    this.status.textContent = '준비 완료';
+    this.status.textContent = I18n.t('loading.ready');
     this.bar.style.width = '100%';
     this.enterBtn.classList.add('visible');
     this.controls.classList.add('visible');
@@ -109,7 +115,7 @@ export class LoadingScreen {
     this.el.style.display = 'flex';
     this.el.classList.remove('hidden');
     this.bar.style.width = '0%';
-    this.status.textContent = '준비 중...';
+    this.status.textContent = I18n.t('loading.preparing');
     this.enterBtn.classList.remove('visible');
     this.controls.classList.remove('visible');
     this.description.classList.remove('visible');

@@ -1,3 +1,5 @@
+import { I18n } from '../systems/I18n';
+
 export class HUD {
   private el: HTMLElement;
   private crosshair: HTMLElement;
@@ -8,9 +10,10 @@ export class HUD {
     this.crosshair = document.getElementById('crosshair')!;
     this.isMobile = isMobile;
 
-    if (isMobile) {
-      this.el.textContent = '조이스틱 이동 · 터치 시선 · 탭 작품 감상';
-    }
+    // Mobile gets a shorter HUD string; toggle the data-i18n key so applyToDom picks the right one
+    if (isMobile) this.el.dataset.i18n = 'hud.mobile';
+    this.el.textContent = I18n.t(this.el.dataset.i18n!);
+    I18n.onChange(() => { this.el.textContent = I18n.t(this.el.dataset.i18n!); });
   }
 
   show(): void {
