@@ -5,6 +5,7 @@ import { TiledMapParser } from './gallery/TiledMapParser';
 import { TiledGalleryBuilder, type TextureConfig } from './gallery/TiledGalleryBuilder';
 import { TextureManager } from './systems/TextureManager';
 import { CustomMapStore, type CustomMap } from './systems/CustomMapStore';
+import { I18n } from './systems/I18n';
 import { disposeObject } from './utils/disposer';
 
 const TILE_SIZE = 32;
@@ -62,6 +63,8 @@ class EditorModal {
       this.body.innerHTML = '';
       const p = document.createElement('p');
       p.textContent = message;
+      // Preserve newlines for multi-line messages (e.g. shortcut help)
+      if (message.includes('\n')) p.style.whiteSpace = 'pre-wrap';
       this.body.appendChild(p);
       this.footer.innerHTML = '';
       const btn = document.createElement('button');
@@ -217,6 +220,11 @@ class MapEditor {
   private autoSaveTimer: ReturnType<typeof setInterval> | null = null;
   private static readonly DRAFT_KEY = 'editor-draft';
   private static readonly AUTO_SAVE_INTERVAL_MS = 30_000;
+  // 1..9, then 0 — order matches keyboard row, lined up with toolbar grid
+  private static readonly TOOL_SHORTCUTS: TileType[] = [
+    'floor', 'wall', 'door', 'artwork', 'spawn',
+    'bench', 'pillar', 'pedestal', 'model', 'empty',
+  ];
 
   // Undo/redo history: snapshots of { grid, width, height, wallHeight }
   private history: { grid: TileCell[][]; width: number; height: number; wallHeight: number }[] = [];
@@ -265,6 +273,7 @@ class MapEditor {
 
     this.initGrid();
     this.bindEvents();
+    this.setupLanguageToggle();
     this.render();
     this.resizePreview();
     this.startPreviewLoop();
@@ -464,9 +473,9 @@ class MapEditor {
     const statusEl = document.getElementById('moodboard-status')!;
     const lib = document.getElementById('artwork-library')!;
 
-    statusEl.textContent = '불러오는 중...';
+    statusEl.textContent = I18n.t('editor.moodboard.loading');
     statusEl.style.color = '#888';
-    lib.innerHTML = '<div class="artwork-empty">불러오는 중...</div>';
+    lib.innerHTML = `<div class="artwork-empty">${I18n.t('editor.moodboard.loading')}</div>`;
 
     try {
       const res = await fetch(`${MOODBOARD_API_BASE}/${moodboardId}/projects`);
@@ -475,14 +484,14 @@ class MapEditor {
       this.projects = data.elements ?? [];
       this.refreshArtworkSelect();
 
-      statusEl.textContent = `${this.projects.length}개 작품 로드 완료`;
+      statusEl.textContent = I18n.t('editor.moodboard.loaded', { n: this.projects.length });
       statusEl.style.color = '#4eff7e';
       const autoBtn = document.getElementById('btn-auto-exhibit')!;
       autoBtn.style.display = this.projects.length > 0 ? 'block' : 'none';
     } catch {
       this.projects = [];
       this.refreshArtworkSelect();
-      statusEl.textContent = '무드보드를 찾을 수 없습니다';
+      statusEl.textContent = I18n.t('editor.moodboard.notFound');
       statusEl.style.color = '#ff6b6b';
       document.getElementById('btn-auto-exhibit')!.style.display = 'none';
     }
@@ -607,18 +616,49 @@ class MapEditor {
     const canvasArea = this.canvas.parentElement;
     if (canvasArea) canvasArea.addEventListener('contextmenu', (e) => e.preventDefault());
 
-    // Undo / Redo (keyboard only — shortcut hint shown in canvas area)
+    // Keyboard shortcuts
     window.addEventListener('keydown', (e) => {
-      // Ignore when typing in inputs
+      // Ignore when typing in inputs / when editor modal is open
       const tag = (e.target as HTMLElement)?.tagName;
       if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+      const modal = document.getElementById('editor-modal');
+      if (modal && modal.classList.contains('visible')) return;
+
       const mod = e.ctrlKey || e.metaKey;
+
+      // Undo / Redo
       if (mod && e.key.toLowerCase() === 'z') {
         e.preventDefault();
         if (e.shiftKey) this.redo();
         else this.undo();
+        return;
+      }
+
+      // Shortcut help (? = Shift+/)
+      if (!mod && e.key === '?') {
+        e.preventDefault();
+        this.showShortcutHelp();
+        return;
+      }
+
+      // Tool shortcuts (1-9, 0). Ignore when modifier keys are held.
+      if (!mod && !e.shiftKey && !e.altKey && /^[0-9]$/.test(e.key)) {
+        const idx = e.key === '0' ? 9 : parseInt(e.key, 10) - 1;
+        const tools = MapEditor.TOOL_SHORTCUTS;
+        const tool = tools[idx];
+        if (!tool) return;
+        // Respect map/exhibition mode visibility
+        if (this.editorMode === 'exhibition' && MAP_ONLY_TILES.has(tool)) return;
+        const btn = document.querySelector<HTMLElement>(`.tool-btn[data-tool="${tool}"]`);
+        if (btn) {
+          e.preventDefault();
+          btn.click();
+        }
       }
     });
+
+    // Help button → shortcut modal
+    document.getElementById('btn-help')?.addEventListener('click', () => this.showShortcutHelp());
 
     // Resize
     document.getElementById('btn-resize')!.addEventListener('click', () => {
@@ -1613,7 +1653,7 @@ class MapEditor {
       this.selectedArtworkId = null;
     }
     if (this.projects.length === 0) {
-      lib.innerHTML = '<div class="artwork-empty">무드보드를 먼저 불러오세요</div>';
+      lib.innerHTML = `<div class="artwork-empty">${I18n.t('editor.artwork.empty.noMoodboard')}</div>`;
       return;
     }
     const q = this.artworkSearchQuery.trim().toLowerCase();
@@ -1623,7 +1663,7 @@ class MapEditor {
         )
       : this.projects;
     if (filtered.length === 0) {
-      lib.innerHTML = '<div class="artwork-empty">검색 결과가 없습니다</div>';
+      lib.innerHTML = `<div class="artwork-empty">${I18n.t('editor.artwork.empty.noResults')}</div>`;
       return;
     }
     lib.innerHTML = '';
@@ -1689,7 +1729,8 @@ class MapEditor {
     document.body.classList.toggle('mode-exhibition', mode === 'exhibition');
 
     const label = document.getElementById('mode-label')!;
-    label.textContent = mode === 'map' ? '맵 편집 모드' : '전시 모드';
+    label.dataset.i18n = mode === 'map' ? 'editor.mode.map' : 'editor.mode.exhibition';
+    label.textContent = I18n.t(label.dataset.i18n);
 
     const dot = document.getElementById('mode-dot')!;
     dot.className = `mode-dot ${mode}`;
@@ -1704,14 +1745,87 @@ class MapEditor {
     }
   }
 
+  private setupLanguageToggle(): void {
+    document.documentElement.lang = I18n.current;
+    I18n.applyToDom();
+    const btn = document.getElementById('btn-lang');
+    const refresh = () => {
+      if (btn) btn.textContent = I18n.current === 'ko' ? 'EN' : '한';
+    };
+    refresh();
+    btn?.addEventListener('click', () => {
+      I18n.toggle();
+      refresh();
+    });
+    I18n.onChange(() => {
+      refresh();
+      // Re-render dynamic UI parts that aren't covered by data-i18n
+      this.refreshArtworkSelect();
+      this.updateCurrentMapLabel();
+      this.updateToolButtonTitles();
+    });
+    this.updateToolButtonTitles();
+  }
+
+  private updateToolButtonTitles(): void {
+    MapEditor.TOOL_SHORTCUTS.forEach((tool, i) => {
+      const btn = document.querySelector<HTMLElement>(`.tool-btn[data-tool="${tool}"]`);
+      if (!btn) return;
+      const key = i === 9 ? '0' : String(i + 1);
+      const label = I18n.t(`editor.tool.${tool}`);
+      btn.title = `${label} (${key})`;
+    });
+  }
+
+  private showShortcutHelp(): void {
+    EditorModal.alert(this.buildShortcutHelpText(), I18n.t('editor.shortcut.title'));
+  }
+
+  private buildShortcutHelpText(): string {
+    const isKo = I18n.current === 'ko';
+    const lines: string[] = [];
+    lines.push(isKo ? '— 도구 —' : '— Tools —');
+    MapEditor.TOOL_SHORTCUTS.forEach((t, i) => {
+      const key = i === 9 ? '0' : String(i + 1);
+      lines.push(`  ${key}    ${I18n.t(`editor.tool.${t}`)}`);
+    });
+    lines.push('');
+    lines.push(isKo ? '— 캔버스 —' : '— Canvas —');
+    if (isKo) {
+      lines.push('  좌클릭          타일 배치 / 작품 토글');
+      lines.push('  우클릭          타일 삭제');
+      lines.push('  Shift+드래그    사각형 채우기');
+    } else {
+      lines.push('  Left click      Place tile / toggle artwork');
+      lines.push('  Right click     Erase tile');
+      lines.push('  Shift+drag      Rectangle fill');
+    }
+    lines.push('');
+    lines.push(isKo ? '— 편집 —' : '— Edit —');
+    lines.push(isKo ? '  ⌘/Ctrl+Z        실행 취소' : '  ⌘/Ctrl+Z        Undo');
+    lines.push(isKo ? '  ⌘/Ctrl+⇧+Z      다시 실행' : '  ⌘/Ctrl+⇧+Z      Redo');
+    lines.push('');
+    lines.push(isKo ? '  ?              이 도움말' : '  ?              This help');
+    return lines.join('\n');
+  }
+
   private updateCurrentMapLabel(): void {
     const label = document.getElementById('current-map-label');
     if (!label) return;
     if (this.currentMapName) {
-      label.innerHTML = `편집 중: <strong></strong>`;
-      label.querySelector('strong')!.textContent = this.currentMapName;
+      // Replace {name} with a <strong> for emphasis; clear data-i18n so applyToDom doesn't overwrite
+      delete label.dataset.i18n;
+      const template = I18n.t('editor.label.editing', { name: '\0NAME\0' });
+      const [before, after] = template.split('\0NAME\0');
+      label.innerHTML = '';
+      label.appendChild(document.createTextNode(before));
+      const strong = document.createElement('strong');
+      strong.textContent = this.currentMapName;
+      label.appendChild(strong);
+      if (after) label.appendChild(document.createTextNode(after));
     } else {
-      label.textContent = '새 전시회';
+      label.dataset.i18n = 'editor.label.newExhibition';
+      label.textContent = I18n.t('editor.label.newExhibition');
     }
   }
 

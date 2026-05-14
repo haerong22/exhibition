@@ -18,6 +18,7 @@
     .btn.primary:hover { background: #ccc; }
     .btn:disabled { opacity: 0.3; cursor: default; }
     .btn:disabled:hover { background: transparent; color: #ccc; border-color: #444; }
+    .btn.icon-btn { padding: 0.5rem 0.7rem; min-width: 2.4rem; text-align: center; font-size: 0.75rem; letter-spacing: 0.1em; }
 
     /* Main layout */
     .main { display: flex; flex: 1; overflow: hidden; }
@@ -245,18 +246,20 @@
   </div>
 
   <div class="header">
-    <h1>Gallery Map Editor</h1>
+    <h1 data-i18n="editor.title">Gallery Map Editor</h1>
     <div class="header-actions">
       <button class="btn mode-toggle" id="btn-mode-toggle">
         <span class="mode-dot map" id="mode-dot"></span>
-        <span id="mode-label">맵 편집 모드</span>
+        <span id="mode-label" data-i18n="editor.mode.map">맵 편집 모드</span>
       </button>
-      <span class="current-map" id="current-map-label">새 전시회</span>
-      <button class="btn" id="btn-new">새로 만들기</button>
-      <button class="btn" id="btn-my-maps">내 전시회</button>
-      <button class="btn" id="btn-save">저장</button>
-      <button class="btn" id="btn-export">JSON 내보내기</button>
-      <button class="btn primary" id="btn-preview">3D 미리보기</button>
+      <span class="current-map" id="current-map-label" data-i18n="editor.label.newExhibition">새 전시회</span>
+      <button class="btn" id="btn-new" data-i18n="editor.btn.new">새로 만들기</button>
+      <button class="btn" id="btn-my-maps" data-i18n="editor.btn.myMaps">내 전시회</button>
+      <button class="btn" id="btn-save" data-i18n="editor.btn.save">저장</button>
+      <button class="btn" id="btn-export" data-i18n="editor.btn.export">JSON 내보내기</button>
+      <button class="btn primary" id="btn-preview" data-i18n="editor.btn.preview">3D 미리보기</button>
+      <button class="btn icon-btn" id="btn-help" title="단축키 (?)" aria-label="단축키">?</button>
+      <button class="btn icon-btn" id="btn-lang" title="언어" aria-label="Language">EN</button>
     </div>
   </div>
 
@@ -286,50 +289,50 @@
   <div class="main">
     <div class="toolbar">
       <div class="tool-section">
-        <h3>도구</h3>
+        <h3 data-i18n="editor.section.tools">도구</h3>
         <div class="tool-grid">
-          <button class="tool-btn active" data-tool="floor" data-mode="map"><span class="icon">⬜</span>바닥</button>
-          <button class="tool-btn" data-tool="wall" data-mode="map"><span class="icon">⬛</span>벽</button>
-          <button class="tool-btn" data-tool="door" data-mode="map"><span class="icon">🚪</span>문</button>
-          <button class="tool-btn" data-tool="artwork"><span class="icon">🖼</span>작품</button>
-          <button class="tool-btn" data-tool="spawn"><span class="icon">📍</span>시작점</button>
-          <button class="tool-btn" data-tool="bench" data-mode="map"><span class="icon">🪑</span>벤치</button>
-          <button class="tool-btn" data-tool="pillar" data-mode="map"><span class="icon">🏛</span>기둥</button>
-          <button class="tool-btn" data-tool="pedestal" data-mode="map"><span class="icon">🗿</span>좌대</button>
-          <button class="tool-btn" data-tool="model" data-mode="map"><span class="icon">📦</span>3D모델</button>
-          <button class="tool-btn" data-tool="empty" data-mode="map"><span class="icon">✕</span>지우기</button>
+          <button class="tool-btn active" data-tool="floor" data-mode="map"><span class="icon">⬜</span><span data-i18n="editor.tool.floor">바닥</span></button>
+          <button class="tool-btn" data-tool="wall" data-mode="map"><span class="icon">⬛</span><span data-i18n="editor.tool.wall">벽</span></button>
+          <button class="tool-btn" data-tool="door" data-mode="map"><span class="icon">🚪</span><span data-i18n="editor.tool.door">문</span></button>
+          <button class="tool-btn" data-tool="artwork"><span class="icon">🖼</span><span data-i18n="editor.tool.artwork">작품</span></button>
+          <button class="tool-btn" data-tool="spawn"><span class="icon">📍</span><span data-i18n="editor.tool.spawn">시작점</span></button>
+          <button class="tool-btn" data-tool="bench" data-mode="map"><span class="icon">🪑</span><span data-i18n="editor.tool.bench">벤치</span></button>
+          <button class="tool-btn" data-tool="pillar" data-mode="map"><span class="icon">🏛</span><span data-i18n="editor.tool.pillar">기둥</span></button>
+          <button class="tool-btn" data-tool="pedestal" data-mode="map"><span class="icon">🗿</span><span data-i18n="editor.tool.pedestal">좌대</span></button>
+          <button class="tool-btn" data-tool="model" data-mode="map"><span class="icon">📦</span><span data-i18n="editor.tool.model">3D모델</span></button>
+          <button class="tool-btn" data-tool="empty" data-mode="map"><span class="icon">✕</span><span data-i18n="editor.tool.empty">지우기</span></button>
         </div>
       </div>
 
       <div class="tool-section">
-        <h3>무드보드</h3>
+        <h3 data-i18n="editor.section.moodboard">무드보드</h3>
         <div style="display:flex;gap:0.3rem">
-          <input type="text" id="moodboard-id" placeholder="무드보드 ID" style="flex:1;background:#1a1a1a;border:1px solid #333;color:#fff;padding:0.4rem;font-size:0.75rem;" />
-          <button class="btn" id="btn-load-moodboard" style="padding:0.4rem 0.6rem;font-size:0.7rem;">불러오기</button>
+          <input type="text" id="moodboard-id" data-i18n-placeholder="editor.moodboard.placeholder" placeholder="무드보드 ID" style="flex:1;background:#1a1a1a;border:1px solid #333;color:#fff;padding:0.4rem;font-size:0.75rem;" />
+          <button class="btn" id="btn-load-moodboard" data-i18n="editor.moodboard.load" style="padding:0.4rem 0.6rem;font-size:0.7rem;">불러오기</button>
         </div>
         <div id="moodboard-status" style="font-size:0.7rem;color:#666;margin-top:0.3rem;"></div>
-        <button class="btn" id="btn-auto-exhibit" style="margin-top:0.5rem;width:100%;display:none">자동 전시</button>
+        <button class="btn" id="btn-auto-exhibit" data-i18n="editor.moodboard.autoExhibit" style="margin-top:0.5rem;width:100%;display:none">자동 전시</button>
       </div>
 
       <div class="artwork-input" id="artwork-options">
-        <label>작품 라이브러리</label>
-        <input type="search" id="artwork-search" class="artwork-search" placeholder="제목/작가 검색..." />
+        <label data-i18n="editor.artwork.library">작품 라이브러리</label>
+        <input type="search" id="artwork-search" class="artwork-search" data-i18n-placeholder="editor.artwork.search" placeholder="제목/작가 검색..." />
         <div id="artwork-library" class="artwork-library">
-          <div class="artwork-empty">무드보드를 먼저 불러오세요</div>
+          <div class="artwork-empty" data-i18n="editor.artwork.empty.noMoodboard">무드보드를 먼저 불러오세요</div>
         </div>
-        <label style="margin-top:0.4rem">방향</label>
+        <label style="margin-top:0.4rem" data-i18n="editor.artwork.facing">방향</label>
         <select id="artwork-facing">
-          <option value="auto">자동 감지</option>
-          <option value="north">북 (위)</option>
-          <option value="south">남 (아래)</option>
-          <option value="east">동 (오른쪽)</option>
-          <option value="west">서 (왼쪽)</option>
+          <option value="auto" data-i18n="editor.artwork.facing.auto">자동 감지</option>
+          <option value="north" data-i18n="editor.artwork.facing.north">북 (위)</option>
+          <option value="south" data-i18n="editor.artwork.facing.south">남 (아래)</option>
+          <option value="east" data-i18n="editor.artwork.facing.east">동 (오른쪽)</option>
+          <option value="west" data-i18n="editor.artwork.facing.west">서 (왼쪽)</option>
         </select>
         <details class="artwork-manual">
-          <summary>ID로 직접 입력</summary>
-          <input type="text" id="artwork-id" placeholder="작품 ID" />
+          <summary data-i18n="editor.artwork.manualId">ID로 직접 입력</summary>
+          <input type="text" id="artwork-id" data-i18n-placeholder="editor.artwork.manualId.placeholder" placeholder="작품 ID" />
         </details>
-        <div class="artwork-hint">선택 후 클릭 또는 카드를 드래그하여 배치</div>
+        <div class="artwork-hint" data-i18n="editor.artwork.hint">선택 후 클릭 또는 카드를 드래그하여 배치</div>
       </div>
 
       <div class="artwork-input" id="model-options">
@@ -344,23 +347,23 @@
       </div>
 
       <div class="tool-section" id="section-map-size">
-        <h3>맵 크기</h3>
+        <h3 data-i18n="editor.section.mapSize">맵 크기</h3>
         <div class="size-row">
           <label>W</label>
           <input type="number" id="map-width" value="20" min="5" max="50" />
           <label>H</label>
           <input type="number" id="map-height" value="15" min="5" max="50" />
         </div>
-        <button class="btn" id="btn-resize" style="margin-top:0.5rem;width:100%">크기 변경</button>
+        <button class="btn" id="btn-resize" data-i18n="editor.size.resize" style="margin-top:0.5rem;width:100%">크기 변경</button>
       </div>
 
       <div class="tool-section" id="section-wall-height">
-        <h3>벽 높이 (m)</h3>
+        <h3 data-i18n="editor.section.wallHeight">벽 높이 (m)</h3>
         <input type="number" id="wall-height" value="6" min="2" max="8" step="0.5" style="width:100%;background:#1a1a1a;border:1px solid #333;color:#fff;padding:0.4rem;font-size:0.8rem;" />
       </div>
 
       <div class="tool-section">
-        <h3>텍스처</h3>
+        <h3 data-i18n="editor.section.textures">텍스처</h3>
         <div style="display:flex;flex-direction:column;gap:0.5rem">
           <div>
             <label style="font-size:0.7rem;color:#888;display:block;margin-bottom:0.2rem">바닥</label>
