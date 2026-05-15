@@ -717,9 +717,43 @@ class App {
     }
   }
 
+  // Build a small thumbnail for an exhibition card. Prefers the first artwork's image,
+  // falls back to a grid mini-preview if there are no artworks.
+  private renderCustomCardThumb(map: CustomMap): HTMLElement {
+    const thumb = document.createElement('div');
+    thumb.className = 'card-thumb';
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const firstArt = (map.artworks as any[] | undefined)?.find((a) => a && a.imageUrl);
+    if (firstArt?.imageUrl) {
+      const img = document.createElement('img');
+      img.src = firstArt.imageUrl as string;
+      img.loading = 'lazy';
+      img.alt = '';
+      // If the image fails, swap in a grid preview canvas
+      img.onerror = () => {
+        thumb.innerHTML = '';
+        const canvas = document.createElement('canvas');
+        thumb.appendChild(canvas);
+        // Defer so layout settles and getBoundingClientRect returns a real size
+        requestAnimationFrame(() => this.drawGridPreview(map.gridMap, canvas));
+      };
+      thumb.appendChild(img);
+    } else {
+      const canvas = document.createElement('canvas');
+      thumb.appendChild(canvas);
+      requestAnimationFrame(() => this.drawGridPreview(map.gridMap, canvas));
+    }
+    return thumb;
+  }
+
   private async renderCustomCard(map: CustomMap, containerEl: HTMLElement): Promise<HTMLElement> {
     const card = document.createElement('div');
     card.className = 'exhibition-card';
+
+    // Thumbnail: prefer first artwork image, fall back to grid mini-preview
+    const thumb = this.renderCustomCardThumb(map);
+    thumb.addEventListener('click', () => this.router.navigateTo(`custom-${map.id}`));
+    card.appendChild(thumb);
 
     const main = document.createElement('div');
     main.className = 'card-main';
