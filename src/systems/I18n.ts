@@ -60,7 +60,10 @@ const ko: Messages = {
   'hud.mobile': '조이스틱 이동 · 터치 시선 · 탭 작품 감상',
   // Tour
   'tour.start': '▶ 자동 투어 (T)',
+  'tour.startFavorites': '★ 즐겨찾기 투어',
   'tour.stop': '투어 종료',
+  'tour.progress': '투어 {current} / {total}',
+  'tour.progress.favorites': '★ 투어 {current} / {total}',
   // Buttons
   'btn.sound.title': '사운드 켜기/끄기 (M)',
   'btn.lang.title': '언어 변경',
@@ -186,7 +189,10 @@ const en: Messages = {
   'hud.desktop': 'WASD move · Mouse look · Click to view · T tour · M mute · ESC exit',
   'hud.mobile': 'Joystick move · Touch look · Tap to view',
   'tour.start': '▶ Auto tour (T)',
+  'tour.startFavorites': '★ Favorites tour',
   'tour.stop': 'Stop tour',
+  'tour.progress': 'Tour {current} / {total}',
+  'tour.progress.favorites': '★ Tour {current} / {total}',
   'btn.sound.title': 'Toggle sound (M)',
   'btn.lang.title': 'Change language',
   'panel.detail.loading': 'Loading details...',

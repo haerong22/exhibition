@@ -55,6 +55,7 @@ class App {
   private autoTour: AutoTour;
   private soundManager: SoundManager;
   private lastFootstepPos = new THREE.Vector3();
+  private currentFavorites: string[] = [];
 
   constructor() {
     const canvas = document.getElementById('canvas') as HTMLCanvasElement;
@@ -328,6 +329,8 @@ class App {
     this.soundManager.resetStride();
     this.hideSoundButton();
     this.infoPanel.setExhibitionId(null);
+    this.currentFavorites = [];
+    this.autoTour.setFavoritesAvailable(false);
     if (!this.isMobile) this.fpControls.unlock();
     this.engine.scene.clear();
     this.engine.scene.fog = null;
@@ -978,11 +981,42 @@ class App {
 
     this.artworkInteraction.setArtworks(this.tiledBuilder.artworkFrames);
     this.infoPanel.setExhibitionId(configId);
+    await this.wireFavoritesTour(configId);
 
     // Setup minimap with grid + artwork positions
     this.minimap.setup(gridMap, parsedMap.artworkSlots);
 
     this.loadingScreen.showEnterButton(() => this.startGallerySession({ withMinimap: true, withTour: true }));
+  }
+
+  // Set up the "favorites tour" button: resolver maps starred IDs → indices in the
+  // current artwork order, refresh visibility based on count. Also re-checks count
+  // whenever the user toggles a star from the info panel.
+  private async wireFavoritesTour(exhibitionId: string): Promise<void> {
+    const refresh = async () => {
+      const count = await FavoritesStore.count(exhibitionId);
+      this.autoTour.setFavoritesAvailable(count > 0);
+    };
+    this.autoTour.setFavoritesResolver(() => {
+      const ids = this.artworkInteraction.getArtworkIds();
+      // Re-read synchronously — adapter may be async, but LocalStorageFavoritesAdapter
+      // is effectively sync; we resolve immediately via cached state in main.ts
+      const starredSet = new Set(this.currentFavorites);
+      const indices: number[] = [];
+      ids.forEach((id, idx) => {
+        if (starredSet.has(id)) indices.push(idx);
+      });
+      return indices;
+    });
+    this.currentFavorites = await FavoritesStore.list(exhibitionId);
+    this.infoPanel.onFavoriteChange(async (artworkId, starred) => {
+      // Maintain local cache + refresh button availability
+      const set = new Set(this.currentFavorites);
+      if (starred) set.add(artworkId); else set.delete(artworkId);
+      this.currentFavorites = Array.from(set);
+      await refresh();
+    });
+    await refresh();
   }
 
   private teleportTo(worldX: number, worldZ: number): boolean {
@@ -1044,6 +1078,7 @@ class App {
       // Set artworks for interaction
       this.artworkInteraction.setArtworks(this.galleryBuilder.artworkFrames);
       this.infoPanel.setExhibitionId(config.id);
+      await this.wireFavoritesTour(config.id);
 
       // Show enter button
       this.loadingScreen.showEnterButton(() => this.startGallerySession({ withMinimap: false, withTour: false }));

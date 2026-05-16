@@ -122,6 +122,11 @@ export class ArtworkInteraction {
     return this.artworkFrames.length;
   }
 
+  // Sorted artwork IDs in tour order — used to map favorite IDs to indices
+  getArtworkIds(): string[] {
+    return this.artworkFrames.map((f) => f.config.id);
+  }
+
   focusByIndex(index: number): void {
     if (index < 0 || index >= this.artworkFrames.length) return;
     this.currentFrameIndex = index;

@@ -1,4 +1,5 @@
 import type { ArtworkInteraction } from './ArtworkInteraction';
+import { I18n } from '../systems/I18n';
 
 const DURATION_PER_ARTWORK = 6000; // ms
 
@@ -6,26 +7,36 @@ export class AutoTour {
   private interaction: ArtworkInteraction;
   private timer: ReturnType<typeof setTimeout> | null = null;
   private isRunning = false;
-  private currentIndex = 0;
-  private totalCount = 0;
+  private currentStep = 0;
+  private indices: number[] = [];
+  private mode: 'all' | 'favorites' = 'all';
+  private controls: HTMLElement;
   private btn: HTMLElement;
+  private favBtn: HTMLElement;
   private status: HTMLElement;
   private progressEl: HTMLElement;
   private stopBtn: HTMLElement;
+  private favoritesResolver: (() => number[]) | null = null;
   private onStartCallback: (() => void) | null = null;
   private onStopCallback: (() => void) | null = null;
   private onAdvanceCallback: (() => void) | null = null;
 
   constructor(interaction: ArtworkInteraction) {
     this.interaction = interaction;
+    this.controls = document.getElementById('tour-controls')!;
     this.btn = document.getElementById('tour-btn')!;
+    this.favBtn = document.getElementById('fav-tour-btn')!;
     this.status = document.getElementById('tour-status')!;
     this.progressEl = document.getElementById('tour-progress')!;
     this.stopBtn = document.getElementById('tour-stop')!;
 
     this.btn.addEventListener('click', (e) => {
       e.stopPropagation();
-      this.start();
+      this.startAll();
+    });
+    this.favBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.startFavorites();
     });
     this.stopBtn.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -37,38 +48,59 @@ export class AutoTour {
       if (e.code !== 'KeyT') return;
       const tag = (e.target as HTMLElement)?.tagName;
       if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
-      // Allow toggle if tour UI is visible (button or status)
-      const btnVisible = !this.btn.classList.contains('hidden');
-      if (!btnVisible && !this.isRunning) return;
+      const uiVisible = !this.controls.classList.contains('hidden');
+      if (!uiVisible && !this.isRunning) return;
       e.preventDefault();
       this.toggle();
     });
   }
 
-  toggle(): void {
-    if (this.isRunning) this.stop();
-    else this.start();
+  // Resolver returns the set of artwork indices considered "favorite" right now.
+  // Called each time a favorites tour begins so the list reflects current state.
+  setFavoritesResolver(fn: () => number[]): void {
+    this.favoritesResolver = fn;
   }
 
-  // Show "투어 시작" button (called when entering gallery)
+  setFavoritesAvailable(available: boolean): void {
+    this.favBtn.classList.toggle('hidden', !available);
+  }
+
+  toggle(): void {
+    if (this.isRunning) this.stop();
+    else this.startAll();
+  }
+
   enable(): void {
     if (this.isRunning) return;
-    this.btn.classList.remove('hidden');
+    this.controls.classList.remove('hidden');
   }
 
   disable(): void {
-    this.btn.classList.add('hidden');
+    this.controls.classList.add('hidden');
     this.status.classList.add('hidden');
   }
 
-  start(): void {
-    if (this.isRunning) return;
+  startAll(): void {
     const total = this.interaction.count();
-    if (total === 0) return;
+    const indices = Array.from({ length: total }, (_, i) => i);
+    this.beginTour(indices, 'all');
+  }
+
+  startFavorites(): void {
+    if (!this.favoritesResolver) return;
+    const indices = this.favoritesResolver();
+    if (indices.length === 0) return;
+    this.beginTour(indices, 'favorites');
+  }
+
+  private beginTour(indices: number[], mode: 'all' | 'favorites'): void {
+    if (this.isRunning) return;
+    if (indices.length === 0) return;
     this.isRunning = true;
-    this.currentIndex = 0;
-    this.totalCount = total;
-    this.btn.classList.add('hidden');
+    this.indices = indices;
+    this.mode = mode;
+    this.currentStep = 0;
+    this.controls.classList.add('hidden');
     this.status.classList.remove('hidden');
     this.onStartCallback?.();
     this.advance();
@@ -79,22 +111,19 @@ export class AutoTour {
     this.isRunning = false;
     if (this.timer) { clearTimeout(this.timer); this.timer = null; }
     this.status.classList.add('hidden');
-    this.btn.classList.remove('hidden');
+    this.controls.classList.remove('hidden');
     this.onStopCallback?.();
   }
 
   private advance(): void {
     if (!this.isRunning) return;
     this.updateProgress();
-    if (this.currentIndex === 0) {
-      this.interaction.focusByIndex(0);
-    } else {
-      this.interaction.next();
-    }
+    const idx = this.indices[this.currentStep];
+    this.interaction.focusByIndex(idx);
     this.onAdvanceCallback?.();
     this.timer = setTimeout(() => {
-      this.currentIndex++;
-      if (this.currentIndex >= this.totalCount) {
+      this.currentStep++;
+      if (this.currentStep >= this.indices.length) {
         this.stop();
         return;
       }
@@ -103,7 +132,8 @@ export class AutoTour {
   }
 
   private updateProgress(): void {
-    this.progressEl.textContent = `투어 ${this.currentIndex + 1} / ${this.totalCount}`;
+    const key = this.mode === 'favorites' ? 'tour.progress.favorites' : 'tour.progress';
+    this.progressEl.textContent = I18n.t(key, { current: this.currentStep + 1, total: this.indices.length });
   }
 
   get running(): boolean { return this.isRunning; }
