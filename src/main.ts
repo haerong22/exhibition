@@ -331,6 +331,7 @@ class App {
     this.infoPanel.setExhibitionId(null);
     this.currentFavorites = [];
     this.autoTour.setFavoritesAvailable(false);
+    this.minimap.setFavorites([]);
     if (!this.isMobile) this.fpControls.unlock();
     this.engine.scene.clear();
     this.engine.scene.fog = null;
@@ -996,6 +997,7 @@ class App {
     const refresh = async () => {
       const count = await FavoritesStore.count(exhibitionId);
       this.autoTour.setFavoritesAvailable(count > 0);
+      this.minimap.setFavorites(this.currentFavorites);
     };
     this.autoTour.setFavoritesResolver(() => {
       const ids = this.artworkInteraction.getArtworkIds();
@@ -1010,7 +1012,7 @@ class App {
     });
     this.currentFavorites = await FavoritesStore.list(exhibitionId);
     this.infoPanel.onFavoriteChange(async (artworkId, starred) => {
-      // Maintain local cache + refresh button availability
+      // Maintain local cache + refresh button availability + minimap markers
       const set = new Set(this.currentFavorites);
       if (starred) set.add(artworkId); else set.delete(artworkId);
       this.currentFavorites = Array.from(set);

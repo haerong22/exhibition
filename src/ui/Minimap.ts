@@ -23,6 +23,7 @@ export class Minimap {
   private mapWidth = 0;
   private mapDepth = 0;
   private artworkSlots: ParsedArtworkSlot[] = [];
+  private favoriteIds = new Set<string>();
   private tileSize = 1;
   private offsetX = 0;
   private offsetY = 0;
@@ -38,6 +39,10 @@ export class Minimap {
   // Returning true means teleport succeeded (will show green marker); false = blocked (red)
   onTeleport(cb: (worldX: number, worldZ: number) => boolean): void {
     this.onTeleportCallback = cb;
+  }
+
+  setFavorites(ids: string[] | Set<string>): void {
+    this.favoriteIds = ids instanceof Set ? new Set(ids) : new Set(ids);
   }
 
   private handleClick(e: MouseEvent): void {
@@ -60,6 +65,7 @@ export class Minimap {
     this.mapWidth = gridMap.width;
     this.mapDepth = gridMap.height;
     this.artworkSlots = artworkSlots;
+    this.favoriteIds = new Set();
 
     // Scale to fit
     const dpr = Math.min(window.devicePixelRatio, 2);
@@ -114,14 +120,22 @@ export class Minimap {
       }
     }
 
-    // Draw artwork positions
-    ctx.fillStyle = '#4a9eff';
+    // Draw artwork positions — favorites in gold, others in blue
+    const dotR = Math.max(2, ts * 0.4);
     for (const slot of this.artworkSlots) {
       const ax = fx(slot.worldX);
       const ay = fy(-slot.worldZ); // worldZ = -(row+0.5)
+      const isFav = this.favoriteIds.has(slot.artworkId);
+      ctx.fillStyle = isFav ? '#ffd166' : '#4a9eff';
       ctx.beginPath();
-      ctx.arc(ax, ay, Math.max(2, ts * 0.4), 0, Math.PI * 2);
+      ctx.arc(ax, ay, isFav ? dotR * 1.2 : dotR, 0, Math.PI * 2);
       ctx.fill();
+      if (isFav) {
+        // Thin dark outline so the gold dot stays readable on light walls
+        ctx.strokeStyle = 'rgba(0,0,0,0.4)';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      }
     }
 
     // Draw player position + direction
