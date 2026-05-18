@@ -169,6 +169,50 @@
     #artwork-panel .fav-btn.starred { color: #ffd166; }
     #artwork-panel .fav-btn.starred:hover { color: #ffe69b; }
     #artwork-panel .fav-btn svg { width: 18px; height: 18px; display: block; }
+    #artwork-panel .art-image-wrap {
+      margin: 1.5rem 0 1rem; background: #0a0a0a; border-radius: 3px;
+      overflow: hidden; cursor: zoom-in;
+      display: none; align-items: center; justify-content: center;
+      max-height: 280px;
+    }
+    #artwork-panel .art-image-wrap.visible { display: flex; }
+    #artwork-panel .art-image-wrap img {
+      max-width: 100%; max-height: 280px; display: block;
+      transition: transform 0.2s ease;
+    }
+    #artwork-panel .art-image-wrap:hover img { transform: scale(1.02); }
+
+    /* Fullscreen zoom view */
+    #image-zoom {
+      position: fixed; inset: 0; z-index: 90;
+      background: rgba(0,0,0,0.94); backdrop-filter: blur(12px);
+      display: none; align-items: center; justify-content: center;
+      cursor: grab; overflow: hidden;
+    }
+    #image-zoom.visible { display: flex; }
+    #image-zoom.dragging { cursor: grabbing; }
+    #image-zoom img {
+      max-width: 95vw; max-height: 95vh;
+      transform-origin: center center;
+      will-change: transform;
+      user-select: none; -webkit-user-drag: none;
+      transition: transform 0.05s linear;
+    }
+    #image-zoom .zoom-close {
+      position: fixed; top: 1.2rem; right: 1.2rem;
+      width: 36px; height: 36px;
+      background: rgba(0,0,0,0.5); color: #fff;
+      border: 1px solid rgba(255,255,255,0.2); border-radius: 4px;
+      font-size: 1.3rem; cursor: pointer; z-index: 91;
+      display: flex; align-items: center; justify-content: center;
+      backdrop-filter: blur(8px);
+    }
+    #image-zoom .zoom-close:hover { background: rgba(0,0,0,0.85); border-color: rgba(255,255,255,0.4); }
+    #image-zoom .zoom-hint {
+      position: fixed; bottom: 1.5rem; left: 50%; transform: translateX(-50%);
+      font-size: 0.72rem; color: #666; letter-spacing: 0.1em;
+      pointer-events: none; z-index: 91;
+    }
     #artwork-panel .art-nav {
       position: absolute; top: 1rem; left: 1rem;
       display: flex; gap: 0.3rem;
@@ -436,6 +480,7 @@
     <p class="art-artist"></p>
     <p class="art-category"></p>
     <p class="art-year"></p>
+    <div class="art-image-wrap"><img class="art-image" alt="" /></div>
     <div class="art-divider"></div>
     <p class="art-desc"></p>
     <div class="art-tags"></div>
@@ -486,6 +531,12 @@
   </div>
 
   <input type="file" id="import-file-input" accept="application/json,.json" style="display:none" multiple />
+
+  <div id="image-zoom">
+    <button class="zoom-close" aria-label="닫기">&times;</button>
+    <img alt="" />
+    <div class="zoom-hint" data-i18n="zoom.hint">스크롤 확대 · 드래그 이동 · 더블클릭 초기화 · ESC 닫기</div>
+  </div>
 
   <script type="module" src="/src/main.ts"></script>
 </body>

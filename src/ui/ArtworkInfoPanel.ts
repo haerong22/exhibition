@@ -1,6 +1,7 @@
 import type { ArtworkConfig } from '../types/exhibition';
 import { FavoritesStore } from '../systems/FavoritesStore';
 import { I18n } from '../systems/I18n';
+import { ImageZoom } from './ImageZoom';
 
 const STAR_ICON = '<svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>';
 const STAR_OUTLINE_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>';
@@ -38,6 +39,9 @@ export class ArtworkInfoPanel {
   private prevBtn: HTMLElement;
   private nextBtn: HTMLElement;
   private favBtn: HTMLButtonElement;
+  private imageWrap: HTMLElement;
+  private artImage: HTMLImageElement;
+  private zoom: ImageZoom;
   private onCloseCallback: (() => void) | null = null;
   private onPrevCallback: (() => void) | null = null;
   private onNextCallback: (() => void) | null = null;
@@ -61,6 +65,13 @@ export class ArtworkInfoPanel {
     this.prevBtn = this.panel.querySelector('.nav-prev')!;
     this.nextBtn = this.panel.querySelector('.nav-next')!;
     this.favBtn = this.panel.querySelector('.fav-btn') as HTMLButtonElement;
+    this.imageWrap = this.panel.querySelector('.art-image-wrap') as HTMLElement;
+    this.artImage = this.panel.querySelector('.art-image') as HTMLImageElement;
+    this.zoom = new ImageZoom();
+
+    this.imageWrap.addEventListener('click', () => {
+      if (this.artImage.src) this.zoom.open(this.artImage.src, this.titleEl.textContent ?? '');
+    });
 
     this.closeBtn.addEventListener('click', () => {
       this.hide();
@@ -73,6 +84,8 @@ export class ArtworkInfoPanel {
 
     window.addEventListener('keydown', (e) => {
       if (!this.panel.classList.contains('visible')) return;
+      // Zoom overlay handles its own ESC; don't unfocus the artwork while zoom is open
+      if (this.zoom.isOpen()) return;
       if (e.code === 'Escape') {
         this.hide();
         this.onCloseCallback?.();
@@ -138,6 +151,16 @@ export class ArtworkInfoPanel {
     this.loadingEl.textContent = I18n.t('panel.detail.loading');
     this.panel.classList.add('visible');
     this.panel.scrollTop = 0;
+
+    // Artwork primary image (clickable to zoom)
+    if (config.imageUrl) {
+      this.artImage.src = config.imageUrl;
+      this.artImage.alt = I18n.pick(config.title, config.titleKo);
+      this.imageWrap.classList.add('visible');
+    } else {
+      this.artImage.removeAttribute('src');
+      this.imageWrap.classList.remove('visible');
+    }
 
     // Optimistic default; refresh once async storage resolves
     this.refreshFavButton(false);
@@ -268,6 +291,7 @@ export class ArtworkInfoPanel {
 
   hide(): void {
     this.panel.classList.remove('visible');
+    if (this.zoom.isOpen()) this.zoom.close();
   }
 
   onClose(cb: () => void): void {

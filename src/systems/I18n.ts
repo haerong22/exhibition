@@ -76,6 +76,7 @@ const ko: Messages = {
   'panel.nav.next': '다음 작품',
   'panel.fav.add': '즐겨찾기 (F)',
   'panel.fav.remove': '즐겨찾기 해제 (F)',
+  'zoom.hint': '스크롤 확대 · 드래그 이동 · 더블클릭 초기화 · ESC 닫기',
   // Controls strip on loading screen (kbd labels)
   'controls.desktop.move': '이동',
   'controls.desktop.look': '시선',
@@ -203,6 +204,7 @@ const en: Messages = {
   'panel.nav.next': 'Next',
   'panel.fav.add': 'Favorite (F)',
   'panel.fav.remove': 'Unfavorite (F)',
+  'zoom.hint': 'Scroll to zoom · Drag to pan · Double-click to reset · ESC to close',
   'controls.desktop.move': 'Move',
   'controls.desktop.look': 'Look',
   'controls.desktop.view': 'View',
