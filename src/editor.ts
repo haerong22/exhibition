@@ -161,6 +161,75 @@ class EditorModal {
     });
   }
 
+  // Combined modal for exhibition metadata. Returns null if user cancelled (overlay/escape).
+  // An empty object signals 'skipped' — caller treats as "no changes / no values".
+  static promptExhibitionInfo(defaults: { description?: string; artist?: string; curator?: string }): Promise<{ description: string; artist: string; curator: string } | null> {
+    return new Promise((resolve) => {
+      this.titleEl.textContent = I18n.t('editor.info.title');
+      this.body.innerHTML = '';
+
+      const hint = document.createElement('p');
+      hint.textContent = I18n.t('editor.info.hint');
+      this.body.appendChild(hint);
+
+      const mkLabel = (text: string) => {
+        const l = document.createElement('label');
+        l.style.cssText = 'display:block;margin-top:0.7rem;font-size:0.78rem;color:#bbb;';
+        l.textContent = text;
+        return l;
+      };
+
+      this.body.appendChild(mkLabel(I18n.t('editor.info.description')));
+      const textarea = document.createElement('textarea');
+      textarea.className = 'modal-input modal-textarea';
+      textarea.rows = 4;
+      textarea.value = defaults.description ?? '';
+      textarea.placeholder = I18n.t('editor.info.descriptionPlaceholder');
+      this.body.appendChild(textarea);
+
+      this.body.appendChild(mkLabel(I18n.t('editor.info.artist')));
+      const artistInput = document.createElement('input');
+      artistInput.type = 'text';
+      artistInput.className = 'modal-input';
+      artistInput.value = defaults.artist ?? '';
+      artistInput.placeholder = I18n.t('editor.info.artistPlaceholder');
+      this.body.appendChild(artistInput);
+
+      this.body.appendChild(mkLabel(I18n.t('editor.info.curator')));
+      const curatorInput = document.createElement('input');
+      curatorInput.type = 'text';
+      curatorInput.className = 'modal-input';
+      curatorInput.value = defaults.curator ?? '';
+      curatorInput.placeholder = I18n.t('editor.info.curatorPlaceholder');
+      this.body.appendChild(curatorInput);
+
+      this.footer.innerHTML = '';
+      const skipBtn = document.createElement('button');
+      skipBtn.className = 'modal-btn';
+      skipBtn.textContent = I18n.t('editor.info.skip');
+      skipBtn.addEventListener('click', () => {
+        this.hide();
+        resolve({ description: '', artist: '', curator: '' });
+      });
+      this.footer.appendChild(skipBtn);
+      const okBtn = document.createElement('button');
+      okBtn.className = 'modal-btn primary';
+      okBtn.textContent = I18n.t('editor.info.confirm');
+      okBtn.addEventListener('click', () => {
+        this.hide();
+        resolve({
+          description: textarea.value,
+          artist: artistInput.value,
+          curator: curatorInput.value,
+        });
+      });
+      this.footer.appendChild(okBtn);
+
+      this.show(() => resolve(null));
+      textarea.focus();
+    });
+  }
+
   static choose<T extends string>(title: string, options: { value: T; label: string; desc?: string }[]): Promise<T | null> {
     return new Promise((resolve) => {
       this.titleEl.textContent = title;
@@ -215,6 +284,8 @@ class MapEditor {
   private currentMapId: string | null = null;
   private currentMapName: string | null = null;
   private currentMapDescription: string | null = null;
+  private currentMapArtist: string | null = null;
+  private currentMapCurator: string | null = null;
   private editorMode: 'map' | 'exhibition' = 'map';
   private isDirty = false;
   private autoSaveTimer: ReturnType<typeof setInterval> | null = null;
@@ -346,6 +417,8 @@ class MapEditor {
       this.currentMapId = null;
       this.currentMapName = null;
       this.currentMapDescription = null;
+      this.currentMapArtist = null;
+      this.currentMapCurator = null;
       this.updateCurrentMapLabel();
 
       this.resizeCanvas();
@@ -677,6 +750,8 @@ class MapEditor {
         this.currentMapId = null;
         this.currentMapName = null;
         this.currentMapDescription = null;
+        this.currentMapArtist = null;
+        this.currentMapCurator = null;
         this.projects = [];
         this.previewInitialized = false;
         this.initGrid();
@@ -1420,6 +1495,8 @@ class MapEditor {
         currentMapId: this.currentMapId,
         currentMapName: this.currentMapName,
         currentMapDescription: this.currentMapDescription,
+        currentMapArtist: this.currentMapArtist,
+        currentMapCurator: this.currentMapCurator,
         gridMap: this.getGridMap(),
         textures: this.getTextureConfig(),
         projects: this.projects,
@@ -1469,6 +1546,8 @@ class MapEditor {
     this.currentMapId = draft.currentMapId ?? null;
     this.currentMapName = draft.currentMapName ?? null;
     this.currentMapDescription = draft.currentMapDescription ?? null;
+    this.currentMapArtist = draft.currentMapArtist ?? null;
+    this.currentMapCurator = draft.currentMapCurator ?? null;
     if (draft.editorMode) this.setEditorMode(draft.editorMode);
     this.updateCurrentMapLabel();
     this.resizeCanvas();
@@ -1536,15 +1615,18 @@ class MapEditor {
     if (!name || !name.trim()) return;
 
     let description: string | null = this.currentMapDescription;
+    let artist: string | null = this.currentMapArtist;
+    let curator: string | null = this.currentMapCurator;
     if (!isTemplate) {
-      const result = await EditorModal.promptMultiline(
-        '관람객이 입장 전 보게 될 설명입니다.',
-        this.currentMapDescription ?? '',
-        '전시 소개 (선택)',
-        { placeholder: '큐레이터 노트, 작가 소개, 전시 의도 등을 자유롭게 작성하세요.' },
-      );
+      const result = await EditorModal.promptExhibitionInfo({
+        description: this.currentMapDescription ?? '',
+        artist: this.currentMapArtist ?? '',
+        curator: this.currentMapCurator ?? '',
+      });
       if (result === null) return; // user closed via overlay/escape — abort save
-      description = result.trim() ? result.trim() : null;
+      description = result.description.trim() ? result.description.trim() : null;
+      artist = result.artist.trim() ? result.artist.trim() : null;
+      curator = result.curator.trim() ? result.curator.trim() : null;
     }
 
     const id = this.currentMapId ?? CustomMapStore.newId();
@@ -1561,12 +1643,16 @@ class MapEditor {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       artworks: isTemplate ? [] : (this.buildArtworksConfig() as any),
       ...(description ? { description } : {}),
+      ...(artist ? { artist } : {}),
+      ...(curator ? { curator } : {}),
     };
 
     const saved = await CustomMapStore.save(map);
     this.currentMapId = saved.id;
     this.currentMapName = saved.name;
     this.currentMapDescription = description;
+    this.currentMapArtist = artist;
+    this.currentMapCurator = curator;
     this.updateCurrentMapLabel();
     this.isDirty = false;
     this.clearDraft();
@@ -1612,6 +1698,8 @@ class MapEditor {
     this.currentMapId = map.id;
     this.currentMapName = map.name;
     this.currentMapDescription = map.description ?? null;
+    this.currentMapArtist = map.artist ?? null;
+    this.currentMapCurator = map.curator ?? null;
     this.updateCurrentMapLabel();
 
     this.resizeCanvas();

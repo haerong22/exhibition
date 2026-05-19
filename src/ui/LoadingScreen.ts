@@ -7,6 +7,7 @@ export class LoadingScreen {
   private enterBtn: HTMLElement;
   private controls: HTMLElement;
   private description: HTMLElement;
+  private credits: HTMLElement;
   // Stage-based progress: each stage occupies a slice of the overall bar
   private stageStart = 0;
   private stageEnd = 1;
@@ -18,6 +19,7 @@ export class LoadingScreen {
     this.enterBtn = document.getElementById('enter-prompt')!;
     this.controls = document.getElementById('loading-controls')!;
     this.description = document.getElementById('loading-description')!;
+    this.credits = document.getElementById('loading-credits')!;
     this.populateControls(isMobile);
   }
 
@@ -29,6 +31,25 @@ export class LoadingScreen {
       this.description.textContent = '';
       this.description.classList.remove('has-content');
     }
+  }
+
+  setCredits(opts: { artist?: string | null; curator?: string | null }): void {
+    const artist = opts.artist?.trim();
+    const curator = opts.curator?.trim();
+    if (!artist && !curator) {
+      this.credits.innerHTML = '';
+      this.credits.classList.remove('has-content');
+      return;
+    }
+    const parts: string[] = [];
+    if (artist) parts.push(`<span>${this.escape(I18n.t('credit.artist', { name: artist }))}</span>`);
+    if (curator) parts.push(`<span>${this.escape(I18n.t('credit.curator', { name: curator }))}</span>`);
+    this.credits.innerHTML = parts.join('<span class="sep">·</span>');
+    this.credits.classList.add('has-content');
+  }
+
+  private escape(s: string): string {
+    return s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));
   }
 
   private populateControls(isMobile: boolean): void {
@@ -98,6 +119,7 @@ export class LoadingScreen {
     this.enterBtn.classList.add('visible');
     this.controls.classList.add('visible');
     this.description.classList.add('visible');
+    this.credits.classList.add('visible');
     this.enterBtn.addEventListener('click', () => {
       onClick();
       this.hide();
@@ -119,7 +141,9 @@ export class LoadingScreen {
     this.enterBtn.classList.remove('visible');
     this.controls.classList.remove('visible');
     this.description.classList.remove('visible');
+    this.credits.classList.remove('visible');
     this.setDescription(null);
+    this.setCredits({});
     this.stageStart = 0;
     this.stageEnd = 1;
   }

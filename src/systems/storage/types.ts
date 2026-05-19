@@ -15,6 +15,8 @@ export interface CustomMap {
   artworks: ArtworkConfig[];
   // Optional curator note shown on the loading screen before entering
   description?: string;
+  artist?: string;
+  curator?: string;
 }
 
 // Storage backend contract. Replace the implementation (localStorage / API / IndexedDB / etc.)

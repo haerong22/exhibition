@@ -5,6 +5,7 @@ export interface ExhibitionConfig {
   description: string;
   descriptionKo?: string;
   artist?: string;
+  curator?: string;
   roomShape: 'rectangular' | 'L-shaped' | 'corridor';
   roomWidth?: number;
   roomDepth?: number;

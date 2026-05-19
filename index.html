@@ -47,6 +47,16 @@
     }
     #loading-description::before { margin-bottom: 1.2rem; }
     #loading-description::after { margin-top: 1.2rem; }
+    /* Exhibition byline: 작가 / 큐레이터 */
+    #loading-credits {
+      display: none; margin-top: 0.6rem;
+      font-size: 0.75rem; color: #666; letter-spacing: 0.08em;
+      text-align: center; font-weight: 300;
+      opacity: 0; transition: opacity 0.6s ease;
+    }
+    #loading-credits.has-content { display: block; }
+    #loading-credits.has-content.visible { opacity: 1; }
+    #loading-credits .sep { color: #333; margin: 0 0.5rem; }
 
     /* Loading screen — single horizontal strip pinned to bottom */
     #loading-controls {
@@ -454,6 +464,7 @@
     <div id="loading-bar-container"><div id="loading-bar"></div></div>
     <div id="loading-status" data-i18n="loading.preparing">준비 중...</div>
     <div id="loading-description"></div>
+    <div id="loading-credits"></div>
     <button id="enter-prompt" data-i18n="loading.enter">입장하기</button>
     <div id="loading-controls"><ul></ul></div>
   </div>

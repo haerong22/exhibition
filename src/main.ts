@@ -925,6 +925,8 @@ class App {
       configId: `custom-${map.id}`,
       name: map.name,
       description: map.description,
+      artist: map.artist,
+      curator: map.curator,
     });
   }
 
@@ -935,9 +937,12 @@ class App {
     configId: string;
     name: string;
     description?: string;
+    artist?: string;
+    curator?: string;
   }): Promise<void> {
-    const { gridMap, artworks, textures, configId, name, description } = params;
+    const { gridMap, artworks, textures, configId, name, description, artist, curator } = params;
     this.loadingScreen.setDescription(description);
+    this.loadingScreen.setCredits({ artist, curator });
 
     const parser = new TiledMapParser();
     const parsedMap = parser.parse(gridMap);
@@ -1059,6 +1064,7 @@ class App {
       const config = await this.loader.load(id, configUrl);
       this.loadingScreen.setTitle(I18n.pick(config.name, config.nameKo));
       this.loadingScreen.setDescription(I18n.pick(config.description, config.descriptionKo));
+      this.loadingScreen.setCredits({ artist: config.artist, curator: config.curator });
 
       this.loadingScreen.setStage(I18n.t('loading.stage.texturesArtworks'), 0.15, 0.9);
       const { group, boundary } = await this.galleryBuilder.build(

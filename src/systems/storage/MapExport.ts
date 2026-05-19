@@ -59,12 +59,12 @@ function validateMap(data: unknown): CustomMap | null {
   if (!isObject(textures)) return null;
 
   const mapType: CustomMapType = type === 'template' ? 'template' : 'exhibition';
-  const description = typeof (data as Record<string, unknown>).description === 'string'
-    ? ((data as Record<string, unknown>).description as string)
-    : undefined;
-  const createdAt = typeof (data as Record<string, unknown>).createdAt === 'string'
-    ? ((data as Record<string, unknown>).createdAt as string)
-    : new Date().toISOString();
+  const obj = data as Record<string, unknown>;
+  const optStr = (v: unknown): string | undefined => (typeof v === 'string' && v.trim() ? v : undefined);
+  const description = optStr(obj.description);
+  const artist = optStr(obj.artist);
+  const curator = optStr(obj.curator);
+  const createdAt = typeof obj.createdAt === 'string' ? obj.createdAt : new Date().toISOString();
 
   return {
     id: '', // caller assigns
@@ -79,6 +79,8 @@ function validateMap(data: unknown): CustomMap | null {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     artworks: artworks as any,
     ...(description ? { description } : {}),
+    ...(artist ? { artist } : {}),
+    ...(curator ? { curator } : {}),
   };
 }
 
