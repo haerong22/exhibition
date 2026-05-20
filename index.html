@@ -152,6 +152,32 @@
     #sound-btn.hidden { display: none; }
     #sound-btn svg { width: 18px; height: 18px; display: block; }
 
+    /* Screenshot button (left of sound button) */
+    #screenshot-btn {
+      position: fixed; top: 1.5rem; right: 4rem; z-index: 16;
+      width: 38px; height: 38px; padding: 0;
+      background: rgba(0,0,0,0.65); color: rgba(255,255,255,0.85);
+      border: 1px solid rgba(255,255,255,0.2); border-radius: 4px;
+      cursor: pointer; backdrop-filter: blur(8px);
+      transition: all 0.2s;
+      display: flex; align-items: center; justify-content: center;
+    }
+    #screenshot-btn:hover { background: rgba(0,0,0,0.85); border-color: rgba(255,255,255,0.4); color: #fff; }
+    #screenshot-btn.hidden { display: none; }
+    #screenshot-btn svg { width: 18px; height: 18px; display: block; }
+
+    /* Screenshot flash overlay */
+    #screenshot-flash {
+      position: fixed; inset: 0; z-index: 95;
+      background: #fff; opacity: 0; pointer-events: none;
+    }
+    #screenshot-flash.flash { animation: flashFade 0.32s ease-out; }
+    @keyframes flashFade {
+      0% { opacity: 0; }
+      15% { opacity: 0.75; }
+      100% { opacity: 0; }
+    }
+
     /* Artwork Info Panel */
     #artwork-panel {
       position: fixed; right: 0; top: 0; bottom: 0; width: 380px;
@@ -446,6 +472,7 @@
       #tour-btn, #fav-tour-btn, #tour-status { font-size: 0.75rem; padding: 0.7rem 1rem; }
       #tour-controls { gap: 0.35rem; }
       #sound-btn { top: 0.8rem; right: 0.8rem; width: 34px; height: 34px; font-size: 0.9rem; }
+      #screenshot-btn { top: 0.8rem; right: 3.2rem; width: 34px; height: 34px; }
       #loading-controls { bottom: 1.5rem; }
       #loading-controls ul { gap: 0.9rem; }
       #loading-controls kbd { font-size: 0.6rem; padding: 0.18rem 0.4rem; }
@@ -478,6 +505,8 @@
   </div>
   <div id="tour-status" class="hidden"><span id="tour-progress"></span> · <button id="tour-stop" data-i18n="tour.stop">투어 종료</button></div>
   <button id="sound-btn" class="hidden" data-i18n-title="btn.sound.title" title="사운드 켜기/끄기 (M)" aria-label="사운드 토글"></button>
+  <button id="screenshot-btn" class="hidden" data-i18n-title="btn.screenshot.title" title="스크린샷 (P)" aria-label="스크린샷"></button>
+  <div id="screenshot-flash"></div>
   <canvas id="minimap" width="160" height="160"></canvas>
 
   <div id="artwork-panel">

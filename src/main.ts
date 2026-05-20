@@ -230,6 +230,7 @@ class App {
     // Sound toggle button
     this.setupSoundButton();
     this.setupLanguageToggle();
+    this.setupScreenshotButton();
 
     // Router
     this.router.onRouteChange((route) => {
@@ -300,6 +301,91 @@ class App {
     document.getElementById('sound-btn')?.classList.add('hidden');
   }
 
+  private setupScreenshotButton(): void {
+    const btn = document.getElementById('screenshot-btn') as HTMLButtonElement | null;
+    if (!btn) return;
+    // Camera icon (Lucide-style)
+    btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>';
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.takeScreenshot();
+    });
+    // Keyboard shortcut: P
+    window.addEventListener('keydown', (e) => {
+      if (e.code !== 'KeyP') return;
+      if (btn.classList.contains('hidden')) return;
+      const target = e.target as HTMLElement | null;
+      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) return;
+      if (e.ctrlKey || e.metaKey || e.altKey) return; // don't hijack browser print
+      e.preventDefault();
+      this.takeScreenshot();
+    });
+  }
+
+  private showScreenshotButton(): void {
+    document.getElementById('screenshot-btn')?.classList.remove('hidden');
+  }
+
+  private hideScreenshotButton(): void {
+    document.getElementById('screenshot-btn')?.classList.add('hidden');
+  }
+
+  // Capture the WebGL canvas with all overlays hidden, then trigger a PNG download.
+  private async takeScreenshot(): Promise<void> {
+    const canvas = this.engine.renderer.domElement;
+    // Elements to hide during capture — each restored to its prior state after
+    const overlays: Array<{ el: HTMLElement; hiddenClass: string; hadHidden: boolean }> = [];
+    const hideClass = (id: string, cls: string) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      const hadHidden = cls === 'hidden' ? el.classList.contains('hidden') : !el.classList.contains('visible');
+      overlays.push({ el, hiddenClass: cls, hadHidden });
+      if (cls === 'hidden') el.classList.add('hidden');
+      else el.classList.remove('visible');
+    };
+    hideClass('hud', 'visible');
+    hideClass('crosshair', 'visible');
+    hideClass('minimap', 'visible');
+    hideClass('tour-controls', 'hidden');
+    hideClass('sound-btn', 'hidden');
+    hideClass('screenshot-btn', 'hidden');
+
+    // Wait one frame so the next render is overlay-free, then capture
+    await new Promise<void>((r) => requestAnimationFrame(() => r()));
+    this.engine.renderer.render(this.engine.scene, this.engine.camera);
+
+    const blob: Blob | null = await new Promise((resolve) => canvas.toBlob((b) => resolve(b), 'image/png'));
+
+    // Restore overlay states
+    for (const { el, hiddenClass, hadHidden } of overlays) {
+      if (hiddenClass === 'hidden') {
+        if (!hadHidden) el.classList.remove('hidden');
+      } else {
+        if (!hadHidden) el.classList.add('visible');
+      }
+    }
+
+    if (!blob) return;
+    // Flash effect on the now-restored UI
+    const flash = document.getElementById('screenshot-flash');
+    if (flash) {
+      flash.classList.remove('flash');
+      // Restart animation
+      void flash.offsetWidth;
+      flash.classList.add('flash');
+    }
+
+    const url = URL.createObjectURL(blob);
+    const ts = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `gallery-${ts}.png`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1500);
+  }
+
   private async handleRoute(route: Route): Promise<void> {
     const picker = document.getElementById('exhibition-picker');
     if (route.type === 'exhibition') {
@@ -328,6 +414,7 @@ class App {
     this.autoTour.stop();
     this.soundManager.resetStride();
     this.hideSoundButton();
+    this.hideScreenshotButton();
     this.infoPanel.setExhibitionId(null);
     this.currentFavorites = [];
     this.autoTour.setFavoritesAvailable(false);
@@ -1052,6 +1139,7 @@ class App {
     this.lastFootstepPos.set(this.engine.camera.position.x, 0, this.engine.camera.position.z);
     this.soundManager.ensureContext();
     this.showSoundButton();
+    this.showScreenshotButton();
   }
 
   private async loadExhibition(id: string, configUrl?: string): Promise<void> {

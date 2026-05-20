@@ -56,7 +56,7 @@ const ko: Messages = {
   'loading.error.title': '오류',
   'loading.title.editorPreview': '에디터 미리보기',
   // HUD
-  'hud.desktop': 'WASD 이동 · 마우스 시선 · 클릭 작품 감상 · T 자동 투어 · M 음소거 · ESC 나가기',
+  'hud.desktop': 'WASD 이동 · 마우스 시선 · 클릭 작품 감상 · T 투어 · M 음소거 · P 스크린샷 · ESC 나가기',
   'hud.mobile': '조이스틱 이동 · 터치 시선 · 탭 작품 감상',
   // Tour
   'tour.start': '▶ 자동 투어 (T)',
@@ -67,6 +67,7 @@ const ko: Messages = {
   // Buttons
   'btn.sound.title': '사운드 켜기/끄기 (M)',
   'btn.lang.title': '언어 변경',
+  'btn.screenshot.title': '스크린샷 (P)',
   // Artwork info panel
   'panel.detail.loading': '상세 정보 불러오는 중...',
   'panel.detail.error': '상세 정보를 불러올 수 없습니다',
@@ -201,7 +202,7 @@ const en: Messages = {
   'loading.error.mapNotFound': 'Map not found: {id}',
   'loading.error.title': 'Error',
   'loading.title.editorPreview': 'Editor preview',
-  'hud.desktop': 'WASD move · Mouse look · Click to view · T tour · M mute · ESC exit',
+  'hud.desktop': 'WASD move · Mouse look · Click to view · T tour · M mute · P screenshot · ESC exit',
   'hud.mobile': 'Joystick move · Touch look · Tap to view',
   'tour.start': '▶ Auto tour (T)',
   'tour.startFavorites': '★ Favorites tour',
@@ -210,6 +211,7 @@ const en: Messages = {
   'tour.progress.favorites': '★ Tour {current} / {total}',
   'btn.sound.title': 'Toggle sound (M)',
   'btn.lang.title': 'Change language',
+  'btn.screenshot.title': 'Screenshot (P)',
   'panel.detail.loading': 'Loading details...',
   'panel.detail.error': 'Cannot load details',
   'panel.stats': '{views} views · {likes} likes',

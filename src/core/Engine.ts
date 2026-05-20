@@ -13,6 +13,8 @@ export class Engine {
       canvas,
       antialias: true,
       powerPreference: 'high-performance',
+      // Keep the back buffer so toBlob/toDataURL captures the rendered frame
+      preserveDrawingBuffer: true,
     });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     this.renderer.setSize(window.innerWidth, window.innerHeight);
