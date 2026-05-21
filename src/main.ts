@@ -23,6 +23,7 @@ import { LoadingScreen } from './ui/LoadingScreen';
 import { ArtworkInfoPanel } from './ui/ArtworkInfoPanel';
 import { HUD } from './ui/HUD';
 import { Minimap } from './ui/Minimap';
+import { ShortcutHelp } from './ui/ShortcutHelp';
 import { SoundManager } from './systems/SoundManager';
 import { DEFAULTS } from './utils/constants';
 
@@ -53,6 +54,7 @@ class App {
   private hud: HUD;
   private minimap: Minimap;
   private autoTour: AutoTour;
+  private shortcutHelp: ShortcutHelp;
   private soundManager: SoundManager;
   private lastFootstepPos = new THREE.Vector3();
   private currentFavorites: string[] = [];
@@ -77,6 +79,7 @@ class App {
     this.minimap = new Minimap();
     this.artworkInteraction = new ArtworkInteraction(this.engine.camera, this.cameraController);
     this.autoTour = new AutoTour(this.artworkInteraction);
+    this.shortcutHelp = new ShortcutHelp(this.isMobile);
     this.soundManager = new SoundManager();
     this.minimap.onTeleport((wx, wz) => this.teleportTo(wx, wz));
 
@@ -412,6 +415,7 @@ class App {
     this.minimap.hide();
     this.autoTour.disable();
     this.autoTour.stop();
+    this.shortcutHelp.close();
     this.soundManager.resetStride();
     this.hideSoundButton();
     this.hideScreenshotButton();

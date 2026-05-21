@@ -166,6 +166,54 @@
     #screenshot-btn.hidden { display: none; }
     #screenshot-btn svg { width: 18px; height: 18px; display: block; }
 
+    /* Shortcut help overlay */
+    #shortcut-help {
+      position: fixed; inset: 0; z-index: 85;
+      display: none; align-items: center; justify-content: center;
+    }
+    #shortcut-help.visible { display: flex; }
+    #shortcut-help .sh-backdrop {
+      position: absolute; inset: 0;
+      background: rgba(0,0,0,0.85); backdrop-filter: blur(10px);
+    }
+    #shortcut-help .sh-card {
+      position: relative; padding: 2rem 2.2rem 1.6rem;
+      background: #141414; border: 1px solid #2a2a2a; border-radius: 6px;
+      width: 90%; max-width: 380px; color: #fff;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+    }
+    #shortcut-help .sh-close {
+      position: absolute; top: 0.6rem; right: 0.8rem;
+      width: 28px; height: 28px;
+      background: transparent; border: none;
+      color: #888; font-size: 1.4rem; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+    }
+    #shortcut-help .sh-close:hover { color: #fff; }
+    #shortcut-help .sh-title {
+      font-size: 0.85rem; font-weight: 300; letter-spacing: 0.3em;
+      text-transform: uppercase; color: #aaa;
+      margin-bottom: 1.4rem; text-align: center;
+    }
+    #shortcut-help .sh-list { list-style: none; padding: 0; margin: 0; }
+    #shortcut-help .sh-list li {
+      display: flex; align-items: center;
+      padding: 0.55rem 0; border-bottom: 1px solid #222;
+    }
+    #shortcut-help .sh-list li:last-child { border-bottom: none; }
+    #shortcut-help .sh-list kbd {
+      flex-shrink: 0; min-width: 110px;
+      font-family: -apple-system, BlinkMacSystemFont, monospace;
+      font-size: 0.72rem; color: #fff;
+      padding: 0.28rem 0.6rem; border-radius: 3px;
+      background: #1f1f1f; border: 1px solid #333;
+      text-align: center; margin-right: 1rem;
+      letter-spacing: 0.08em;
+    }
+    #shortcut-help .sh-list span {
+      color: #ccc; font-size: 0.85rem; flex: 1;
+    }
+
     /* Screenshot flash overlay */
     #screenshot-flash {
       position: fixed; inset: 0; z-index: 95;
@@ -473,6 +521,9 @@
       #tour-controls { gap: 0.35rem; }
       #sound-btn { top: 0.8rem; right: 0.8rem; width: 34px; height: 34px; font-size: 0.9rem; }
       #screenshot-btn { top: 0.8rem; right: 3.2rem; width: 34px; height: 34px; }
+      #shortcut-help .sh-card { padding: 1.6rem 1.4rem 1.3rem; max-width: 92vw; }
+      #shortcut-help .sh-list kbd { min-width: 90px; font-size: 0.66rem; }
+      #shortcut-help .sh-list span { font-size: 0.78rem; }
       #loading-controls { bottom: 1.5rem; }
       #loading-controls ul { gap: 0.9rem; }
       #loading-controls kbd { font-size: 0.6rem; padding: 0.18rem 0.4rem; }
