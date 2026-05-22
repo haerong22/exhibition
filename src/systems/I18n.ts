@@ -67,6 +67,7 @@ const ko: Messages = {
   // Buttons
   'btn.sound.title': '사운드 켜기/끄기 (M)',
   'btn.lang.title': '언어 변경',
+  'btn.theme.title': '테마 전환 (라이트/다크)',
   'btn.screenshot.title': '스크린샷 (P)',
   // Shortcut help overlay
   'help.title': '컨트롤 안내',
@@ -222,6 +223,7 @@ const en: Messages = {
   'tour.progress.favorites': '★ Tour {current} / {total}',
   'btn.sound.title': 'Toggle sound (M)',
   'btn.lang.title': 'Change language',
+  'btn.theme.title': 'Toggle theme (light/dark)',
   'btn.screenshot.title': 'Screenshot (P)',
   'help.title': 'Controls',
   'help.move': 'Move',
