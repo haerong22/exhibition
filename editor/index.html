@@ -5,72 +5,115 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Gallery Map Editor</title>
   <style>
+    /* Theme tokens — dark default, light via [data-theme="light"] */
+    :root {
+      --bg: #0a0a0a;
+      --bg-panel: #111;
+      --bg-input: #1a1a1a;
+      --bg-input-deep: #0e0e0e;
+      --bg-tile: #161616;
+      --bg-tile-active: #2a2a2a;
+      --border: #222;
+      --border-input: #333;
+      --border-tile: #2a2a2a;
+      --border-strong: #555;
+      --text: #fff;
+      --text-muted: #aaa;
+      --text-faint: #888;
+      --text-very-faint: #666;
+      --text-min: #555;
+      --primary: #fff;
+      --primary-fg: #000;
+      --primary-hover: #ccc;
+      --tag-bg: rgba(255,255,255,0.05);
+    }
+    [data-theme="light"] {
+      --bg: #f5f5f5;
+      --bg-panel: #ffffff;
+      --bg-input: #ffffff;
+      --bg-input-deep: #f0f0f0;
+      --bg-tile: #fafafa;
+      --bg-tile-active: #e8e8e8;
+      --border: #e2e2e2;
+      --border-input: #d8d8d8;
+      --border-tile: #d8d8d8;
+      --border-strong: #999;
+      --text: #222;
+      --text-muted: #444;
+      --text-faint: #666;
+      --text-very-faint: #888;
+      --text-min: #aaa;
+      --primary: #222;
+      --primary-fg: #fff;
+      --primary-hover: #000;
+      --tag-bg: rgba(0,0,0,0.06);
+    }
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { background: #0a0a0a; color: #fff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; height: 100vh; display: flex; flex-direction: column; }
+    body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; height: 100vh; display: flex; flex-direction: column; }
 
     /* Header */
-    .header { display: flex; align-items: center; justify-content: space-between; padding: 0.8rem 1.5rem; background: #111; border-bottom: 1px solid #222; }
-    .header h1 { font-size: 1rem; font-weight: 400; letter-spacing: 0.15em; text-transform: uppercase; color: #888; }
+    .header { display: flex; align-items: center; justify-content: space-between; padding: 0.8rem 1.5rem; background: var(--bg-panel); border-bottom: 1px solid var(--border); }
+    .header h1 { font-size: 1rem; font-weight: 400; letter-spacing: 0.15em; text-transform: uppercase; color: var(--text-faint); }
     .header-actions { display: flex; gap: 0.6rem; }
-    .btn { padding: 0.5rem 1.2rem; border: 1px solid #444; background: transparent; color: #ccc; font-size: 0.8rem; cursor: pointer; transition: all 0.2s; letter-spacing: 0.05em; }
-    .btn:hover { background: #fff; color: #000; border-color: #fff; }
-    .btn.primary { background: #fff; color: #000; border-color: #fff; }
-    .btn.primary:hover { background: #ccc; }
+    .btn { padding: 0.5rem 1.2rem; border: 1px solid var(--border-strong); background: transparent; color: var(--text-muted); font-size: 0.8rem; cursor: pointer; transition: all 0.2s; letter-spacing: 0.05em; }
+    .btn:hover { background: var(--primary); color: var(--primary-fg); border-color: var(--primary); }
+    .btn.primary { background: var(--primary); color: var(--primary-fg); border-color: var(--primary); }
+    .btn.primary:hover { background: var(--primary-hover); border-color: var(--primary-hover); }
     .btn:disabled { opacity: 0.3; cursor: default; }
-    .btn:disabled:hover { background: transparent; color: #ccc; border-color: #444; }
+    .btn:disabled:hover { background: transparent; color: var(--text-muted); border-color: var(--border-strong); }
     .btn.icon-btn { padding: 0.5rem 0.7rem; min-width: 2.4rem; text-align: center; font-size: 0.75rem; letter-spacing: 0.1em; }
 
     /* Main layout */
     .main { display: flex; flex: 1; overflow: hidden; }
 
     /* Toolbar */
-    .toolbar { width: 220px; background: #111; border-right: 1px solid #222; padding: 1rem; display: flex; flex-direction: column; gap: 1rem; }
-    .tool-section h3 { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em; color: #666; margin-bottom: 0.6rem; }
+    .toolbar { width: 220px; background: var(--bg-panel); border-right: 1px solid var(--border); padding: 1rem; display: flex; flex-direction: column; gap: 1rem; }
+    .tool-section h3 { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-very-faint); margin-bottom: 0.6rem; }
     .tool-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.3rem; }
-    .tool-btn { padding: 0.35rem 0.3rem; border: 1px solid #2a2a2a; background: #1a1a1a; color: #aaa; font-size: 0.65rem; cursor: pointer; text-align: center; transition: all 0.2s; border-radius: 3px; }
-    .tool-btn:hover { border-color: #555; color: #fff; }
-    .tool-btn.active { border-color: #fff; color: #fff; background: #2a2a2a; }
+    .tool-btn { padding: 0.35rem 0.3rem; border: 1px solid var(--border-tile); background: var(--bg-tile); color: var(--text-muted); font-size: 0.65rem; cursor: pointer; text-align: center; transition: all 0.2s; border-radius: 3px; }
+    .tool-btn:hover { border-color: var(--border-strong); color: var(--text); }
+    .tool-btn.active { border-color: var(--primary); color: var(--text); background: var(--bg-tile-active); }
     .tool-btn .icon { font-size: 0.9rem; display: block; margin-bottom: 0.1rem; }
 
     /* Size controls */
     .size-row { display: flex; align-items: center; gap: 0.5rem; }
-    .size-row label { font-size: 0.75rem; color: #888; min-width: 25px; }
-    .size-row input { flex: 1; background: #1a1a1a; border: 1px solid #333; color: #fff; padding: 0.4rem; font-size: 0.8rem; width: 60px; text-align: center; }
+    .size-row label { font-size: 0.75rem; color: var(--text-faint); min-width: 25px; }
+    .size-row input { flex: 1; background: var(--bg-input); border: 1px solid var(--border-input); color: var(--text); padding: 0.4rem; font-size: 0.8rem; width: 60px; text-align: center; }
 
     /* Artwork ID input */
     .artwork-input { display: none; margin-top: 0.5rem; }
     .artwork-input.visible { display: block; }
-    .artwork-input label { font-size: 0.75rem; color: #888; display: block; margin-bottom: 0.3rem; }
-    .artwork-input input { width: 100%; background: #1a1a1a; border: 1px solid #333; color: #fff; padding: 0.4rem; font-size: 0.8rem; }
-    .artwork-input select { width: 100%; background: #1a1a1a; border: 1px solid #333; color: #fff; padding: 0.4rem; font-size: 0.8rem; margin-top: 0.3rem; }
+    .artwork-input label { font-size: 0.75rem; color: var(--text-faint); display: block; margin-bottom: 0.3rem; }
+    .artwork-input input { width: 100%; background: var(--bg-input); border: 1px solid var(--border-input); color: var(--text); padding: 0.4rem; font-size: 0.8rem; }
+    .artwork-input select { width: 100%; background: var(--bg-input); border: 1px solid var(--border-input); color: var(--text); padding: 0.4rem; font-size: 0.8rem; margin-top: 0.3rem; }
     /* Artwork library (thumbnail grid) */
     .artwork-search {
-      width: 100%; background: #1a1a1a; border: 1px solid #333; color: #fff;
+      width: 100%; background: var(--bg-input); border: 1px solid var(--border-input); color: var(--text);
       padding: 0.4rem 0.5rem; font-size: 0.75rem; outline: none;
       margin-bottom: 0.4rem;
     }
-    .artwork-search:focus { border-color: #555; }
+    .artwork-search:focus { border-color: var(--border-strong); }
     .artwork-library {
       display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem;
       max-height: 260px; overflow-y: auto;
-      padding: 0.3rem; background: #0e0e0e; border: 1px solid #222; border-radius: 3px;
+      padding: 0.3rem; background: var(--bg-input-deep); border: 1px solid var(--border); border-radius: 3px;
     }
     .artwork-library .artwork-empty {
       grid-column: 1 / -1;
-      font-size: 0.72rem; color: #555; text-align: center; padding: 1.2rem 0.5rem;
+      font-size: 0.72rem; color: var(--text-min); text-align: center; padding: 1.2rem 0.5rem;
     }
     .artwork-card {
       position: relative; display: flex; flex-direction: column;
-      background: #161616; border: 1px solid #2a2a2a; border-radius: 3px;
+      background: var(--bg-tile); border: 1px solid var(--border-tile); border-radius: 3px;
       cursor: grab; overflow: hidden;
       transition: border-color 0.15s, transform 0.1s;
     }
-    .artwork-card:hover { border-color: #444; }
+    .artwork-card:hover { border-color: var(--border-strong); }
     .artwork-card:active { cursor: grabbing; }
     .artwork-card.selected { border-color: #4eff7e; box-shadow: 0 0 0 1px #4eff7e44 inset; }
     .artwork-card.dragging { opacity: 0.4; transform: scale(0.96); }
     .artwork-card .thumb {
-      width: 100%; aspect-ratio: 1; background: #0a0a0a;
+      width: 100%; aspect-ratio: 1; background: var(--bg-input-deep);
       display: block; object-fit: cover; pointer-events: none;
     }
     .artwork-card .meta {
@@ -78,23 +121,23 @@
       line-height: 1.2; pointer-events: none;
     }
     .artwork-card .meta .title {
-      color: #ddd; display: block;
+      color: var(--text); display: block;
       overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     }
     .artwork-card .meta .artist {
-      color: #777; display: block; margin-top: 0.1rem;
+      color: var(--text-very-faint); display: block; margin-top: 0.1rem;
       overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     }
     .artwork-manual {
-      margin-top: 0.4rem; font-size: 0.7rem; color: #888;
+      margin-top: 0.4rem; font-size: 0.7rem; color: var(--text-faint);
     }
     .artwork-manual summary {
       cursor: pointer; padding: 0.2rem 0; user-select: none;
     }
-    .artwork-manual summary:hover { color: #ccc; }
+    .artwork-manual summary:hover { color: var(--text-muted); }
     .artwork-manual input { margin-top: 0.3rem; }
     .artwork-hint {
-      font-size: 0.66rem; color: #555; text-align: center;
+      font-size: 0.66rem; color: var(--text-min); text-align: center;
       margin-top: 0.4rem; padding: 0 0.2rem;
     }
     /* Canvas drag-over feedback */
@@ -102,61 +145,63 @@
 
     /* Content area (2D + 3D split) */
     .content { flex: 1; display: flex; overflow: hidden; }
-    .canvas-area { flex: 1; display: flex; align-items: center; justify-content: center; overflow: auto; background: #080808; position: relative; min-width: 0; }
+    .canvas-area { flex: 1; display: flex; align-items: center; justify-content: center; overflow: auto; background: var(--bg); position: relative; min-width: 0; }
     #grid-canvas { cursor: crosshair; image-rendering: pixelated; }
     .shortcut-hint {
       position: absolute; top: 1rem; right: 1rem;
-      background: rgba(0,0,0,0.6); border: 1px solid #2a2a2a; border-radius: 4px;
-      padding: 0.6rem 0.9rem; font-size: 0.7rem; color: #888;
+      background: var(--tag-bg); border: 1px solid var(--border); border-radius: 4px;
+      padding: 0.6rem 0.9rem; font-size: 0.7rem; color: var(--text-faint);
       pointer-events: none; user-select: none;
       display: flex; flex-direction: column; gap: 0.5rem;
+      backdrop-filter: blur(4px);
     }
     .shortcut-hint kbd {
       display: inline-block; padding: 0.1rem 0.35rem; margin: 0 0.1rem;
-      background: #1a1a1a; border: 1px solid #333; border-radius: 3px;
-      font-family: inherit; font-size: 0.65rem; color: #ccc;
+      background: var(--bg-input); border: 1px solid var(--border-input); border-radius: 3px;
+      font-family: inherit; font-size: 0.65rem; color: var(--text-muted);
     }
     .legend-overlay {
       position: absolute; bottom: 1rem; right: 1rem;
-      background: rgba(0,0,0,0.6); border: 1px solid #2a2a2a; border-radius: 4px;
-      padding: 0.6rem 0.8rem; font-size: 0.7rem; color: #888;
+      background: var(--tag-bg); border: 1px solid var(--border); border-radius: 4px;
+      padding: 0.6rem 0.8rem; font-size: 0.7rem; color: var(--text-faint);
       pointer-events: none; user-select: none;
+      backdrop-filter: blur(4px);
     }
     .legend-title {
       font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.1em;
-      color: #666; margin-bottom: 0.4rem;
+      color: var(--text-very-faint); margin-bottom: 0.4rem;
     }
     .legend-items { display: grid; grid-template-columns: 1fr 1fr; gap: 0.2rem 0.8rem; }
-    .legend-items > div { display: flex; align-items: center; gap: 0.3rem; color: #aaa; }
+    .legend-items > div { display: flex; align-items: center; gap: 0.3rem; color: var(--text-muted); }
     .legend-items span {
       display: inline-block; width: 10px; height: 10px; border-radius: 2px;
-      border: 1px solid rgba(255,255,255,0.15);
+      border: 1px solid var(--border-input);
     }
 
     /* 3D Preview panel */
-    .preview-panel { width: 45%; min-width: 300px; background: #0a0a0a; border-left: 1px solid #222; position: relative; display: flex; flex-direction: column; transition: width 0.25s ease, min-width 0.25s ease; }
+    .preview-panel { width: 45%; min-width: 300px; background: var(--bg); border-left: 1px solid var(--border); position: relative; display: flex; flex-direction: column; transition: width 0.25s ease, min-width 0.25s ease; }
     .preview-panel.collapsed { width: 32px; min-width: 32px; }
     .preview-panel.collapsed .preview-header { padding: 0.5rem 0; justify-content: center; }
     .preview-panel.collapsed .preview-header > span,
     .preview-panel.collapsed #preview-canvas,
     .preview-panel.collapsed #preview-overlay { display: none; }
-    .preview-header { display: flex; align-items: center; justify-content: space-between; padding: 0.5rem 1rem; background: #111; border-bottom: 1px solid #222; }
-    .preview-header span { font-size: 0.75rem; color: #666; text-transform: uppercase; letter-spacing: 0.1em; }
+    .preview-header { display: flex; align-items: center; justify-content: space-between; padding: 0.5rem 1rem; background: var(--bg-panel); border-bottom: 1px solid var(--border); }
+    .preview-header span { font-size: 0.75rem; color: var(--text-very-faint); text-transform: uppercase; letter-spacing: 0.1em; }
     .preview-header .preview-status { font-size: 0.7rem; color: #4eff7e; }
     .preview-toggle {
-      background: transparent; border: none; color: #888; cursor: pointer;
+      background: transparent; border: none; color: var(--text-faint); cursor: pointer;
       font-size: 0.9rem; padding: 0 0.3rem; line-height: 1;
     }
-    .preview-toggle:hover { color: #fff; }
+    .preview-toggle:hover { color: var(--text); }
     #preview-canvas { flex: 1; width: 100%; display: block; }
-    .preview-overlay { position: absolute; inset: 0; top: 32px; display: flex; align-items: center; justify-content: center; color: #444; font-size: 0.85rem; pointer-events: none; }
+    .preview-overlay { position: absolute; inset: 0; top: 32px; display: flex; align-items: center; justify-content: center; color: var(--text-min); font-size: 0.85rem; pointer-events: none; }
 
     /* Status */
-    .status { padding: 0.4rem 1.5rem; background: #111; border-top: 1px solid #222; font-size: 0.75rem; color: #666; display: flex; justify-content: space-between; }
+    .status { padding: 0.4rem 1.5rem; background: var(--bg-panel); border-top: 1px solid var(--border); font-size: 0.75rem; color: var(--text-very-faint); display: flex; justify-content: space-between; }
 
     /* Current map indicator */
-    .current-map { font-size: 0.75rem; color: #888; padding: 0.3rem 0.8rem; border: 1px solid #222; border-radius: 3px; }
-    .current-map strong { color: #ccc; font-weight: 500; }
+    .current-map { font-size: 0.75rem; color: var(--text-faint); padding: 0.3rem 0.8rem; border: 1px solid var(--border); border-radius: 3px; }
+    .current-map strong { color: var(--text); font-weight: 500; }
 
     /* Editor mode toggle */
     .mode-toggle { display: flex; align-items: center; gap: 0.4rem; }
@@ -173,69 +218,70 @@
     .modal { position: fixed; inset: 0; z-index: 100; display: none; align-items: center; justify-content: center; }
     .modal.visible { display: flex; }
     .modal-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.75); backdrop-filter: blur(4px); }
-    .modal-content { position: relative; width: 520px; max-width: 90vw; max-height: 80vh; background: #141414; border: 1px solid #2a2a2a; border-radius: 4px; display: flex; flex-direction: column; overflow: hidden; }
-    .modal-header { display: flex; align-items: center; justify-content: space-between; padding: 1rem 1.4rem; border-bottom: 1px solid #222; }
-    .modal-header h2 { font-size: 0.9rem; font-weight: 400; letter-spacing: 0.1em; text-transform: uppercase; color: #ccc; }
-    .modal-close { background: none; border: none; color: #666; font-size: 1.3rem; cursor: pointer; line-height: 1; }
-    .modal-close:hover { color: #fff; }
+    [data-theme="light"] .modal-overlay { background: rgba(255,255,255,0.7); }
+    .modal-content { position: relative; width: 520px; max-width: 90vw; max-height: 80vh; background: var(--bg-panel); border: 1px solid var(--border); border-radius: 4px; display: flex; flex-direction: column; overflow: hidden; }
+    .modal-header { display: flex; align-items: center; justify-content: space-between; padding: 1rem 1.4rem; border-bottom: 1px solid var(--border); }
+    .modal-header h2 { font-size: 0.9rem; font-weight: 400; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); }
+    .modal-close { background: none; border: none; color: var(--text-very-faint); font-size: 1.3rem; cursor: pointer; line-height: 1; }
+    .modal-close:hover { color: var(--text); }
     .modal-body { padding: 1rem 1.4rem; overflow-y: auto; }
-    .map-item { display: flex; align-items: center; gap: 0.8rem; padding: 0.8rem 1rem; background: #1a1a1a; border: 1px solid #252525; border-radius: 3px; margin-bottom: 0.5rem; }
+    .map-item { display: flex; align-items: center; gap: 0.8rem; padding: 0.8rem 1rem; background: var(--bg-tile); border: 1px solid var(--border-tile); border-radius: 3px; margin-bottom: 0.5rem; }
     .map-item .map-main { flex: 1; min-width: 0; }
-    .map-item h4 { font-size: 0.9rem; font-weight: 400; color: #e0e0e0; margin-bottom: 0.2rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .map-item .map-meta { font-size: 0.7rem; color: #666; }
+    .map-item h4 { font-size: 0.9rem; font-weight: 400; color: var(--text); margin-bottom: 0.2rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .map-item .map-meta { font-size: 0.7rem; color: var(--text-very-faint); }
     .map-item .map-actions { display: flex; gap: 0.4rem; flex-shrink: 0; }
-    .map-item .map-btn { font-size: 0.7rem; color: #aaa; background: transparent; border: 1px solid #333; padding: 0.35rem 0.7rem; cursor: pointer; transition: all 0.2s; }
-    .map-item .map-btn:hover { border-color: #666; color: #fff; }
+    .map-item .map-btn { font-size: 0.7rem; color: var(--text-muted); background: transparent; border: 1px solid var(--border-input); padding: 0.35rem 0.7rem; cursor: pointer; transition: all 0.2s; }
+    .map-item .map-btn:hover { border-color: var(--border-strong); color: var(--text); }
     .map-item .map-btn.danger:hover { border-color: #a44; color: #ff8a8a; }
-    .modal-empty { text-align: center; color: #555; font-size: 0.85rem; padding: 2rem 0; }
+    .modal-empty { text-align: center; color: var(--text-min); font-size: 0.85rem; padding: 2rem 0; }
 
-    /* Mobile blocker */
+    /* Mobile blocker — kept dark/light reactive */
     #mobile-blocker {
       position: fixed; inset: 0; z-index: 200;
       display: none; flex-direction: column; align-items: center; justify-content: center;
-      background: #0a0a0a; color: #fff; padding: 2rem; text-align: center;
+      background: var(--bg); color: var(--text); padding: 2rem; text-align: center;
     }
     #mobile-blocker.visible { display: flex; }
     #mobile-blocker h2 { font-size: 1.2rem; font-weight: 400; margin-bottom: 1rem; letter-spacing: 0.05em; }
-    #mobile-blocker p { font-size: 0.9rem; color: #888; line-height: 1.6; margin-bottom: 1.5rem; }
+    #mobile-blocker p { font-size: 0.9rem; color: var(--text-faint); line-height: 1.6; margin-bottom: 1.5rem; }
     #mobile-blocker a {
-      padding: 0.6rem 1.4rem; background: #fff; color: #000;
+      padding: 0.6rem 1.4rem; background: var(--primary); color: var(--primary-fg);
       text-decoration: none; border-radius: 3px; font-size: 0.85rem;
     }
-    #mobile-blocker a:hover { background: #ddd; }
+    #mobile-blocker a:hover { background: var(--primary-hover); }
     @media (max-width: 768px) {
       #mobile-blocker { display: flex; }
     }
 
     /* Generic editor modal */
-    .modal-footer { display: flex; justify-content: flex-end; gap: 0.5rem; padding: 0.8rem 1.4rem; border-top: 1px solid #222; }
+    .modal-footer { display: flex; justify-content: flex-end; gap: 0.5rem; padding: 0.8rem 1.4rem; border-top: 1px solid var(--border); }
     .modal-btn {
-      padding: 0.5rem 1.2rem; border: 1px solid #444; background: transparent;
-      color: #ccc; font-size: 0.8rem; cursor: pointer; border-radius: 3px;
+      padding: 0.5rem 1.2rem; border: 1px solid var(--border-strong); background: transparent;
+      color: var(--text-muted); font-size: 0.8rem; cursor: pointer; border-radius: 3px;
       transition: all 0.2s; letter-spacing: 0.03em;
     }
-    .modal-btn:hover { border-color: #666; color: #fff; }
-    .modal-btn.primary { background: #fff; color: #000; border-color: #fff; }
-    .modal-btn.primary:hover { background: #ddd; }
+    .modal-btn:hover { border-color: var(--text-faint); color: var(--text); }
+    .modal-btn.primary { background: var(--primary); color: var(--primary-fg); border-color: var(--primary); }
+    .modal-btn.primary:hover { background: var(--primary-hover); border-color: var(--primary-hover); }
     .modal-btn.danger { border-color: #a44; color: #ff8a8a; }
     .modal-btn.danger:hover { background: rgba(170,68,68,0.15); }
     .modal-input {
       width: 100%; margin-top: 0.8rem; padding: 0.6rem 0.8rem;
-      background: #1a1a1a; border: 1px solid #333; color: #fff;
+      background: var(--bg-input); border: 1px solid var(--border-input); color: var(--text);
       font-size: 0.85rem; border-radius: 3px; outline: none;
     }
-    .modal-input:focus { border-color: #666; }
+    .modal-input:focus { border-color: var(--border-strong); }
     .modal-textarea { resize: vertical; min-height: 110px; line-height: 1.5; font-family: inherit; }
-    .modal-body p { font-size: 0.85rem; color: #bbb; line-height: 1.6; }
+    .modal-body p { font-size: 0.85rem; color: var(--text-muted); line-height: 1.6; }
     .modal-choice {
       display: block; width: 100%; text-align: left;
       padding: 0.8rem 1rem; margin-bottom: 0.5rem;
-      background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 4px;
-      color: #ccc; cursor: pointer; transition: all 0.2s;
+      background: var(--bg-tile); border: 1px solid var(--border-tile); border-radius: 4px;
+      color: var(--text-muted); cursor: pointer; transition: all 0.2s;
     }
-    .modal-choice:hover { border-color: #555; background: #222; }
-    .modal-choice strong { display: block; font-size: 0.85rem; color: #eee; margin-bottom: 0.15rem; }
-    .modal-choice span { font-size: 0.7rem; color: #777; }
+    .modal-choice:hover { border-color: var(--border-strong); background: var(--bg-tile-active); }
+    .modal-choice strong { display: block; font-size: 0.85rem; color: var(--text); margin-bottom: 0.15rem; }
+    .modal-choice span { font-size: 0.7rem; color: var(--text-very-faint); }
   </style>
 </head>
 <body>
@@ -260,6 +306,7 @@
       <button class="btn primary" id="btn-preview" data-i18n="editor.btn.preview">3D 미리보기</button>
       <button class="btn icon-btn" id="btn-help" title="단축키 (?)" aria-label="단축키">?</button>
       <button class="btn icon-btn" id="btn-lang" title="언어" aria-label="Language">EN</button>
+      <button class="btn icon-btn" id="btn-theme" title="테마 전환" aria-label="Theme"></button>
     </div>
   </div>
 
@@ -307,7 +354,7 @@
       <div class="tool-section">
         <h3 data-i18n="editor.section.moodboard">무드보드</h3>
         <div style="display:flex;gap:0.3rem">
-          <input type="text" id="moodboard-id" data-i18n-placeholder="editor.moodboard.placeholder" placeholder="무드보드 ID" style="flex:1;background:#1a1a1a;border:1px solid #333;color:#fff;padding:0.4rem;font-size:0.75rem;" />
+          <input type="text" id="moodboard-id" data-i18n-placeholder="editor.moodboard.placeholder" placeholder="무드보드 ID" style="flex:1;background:var(--bg-input);border:1px solid var(--border-input);color:var(--text);padding:0.4rem;font-size:0.75rem;" />
           <button class="btn" id="btn-load-moodboard" data-i18n="editor.moodboard.load" style="padding:0.4rem 0.6rem;font-size:0.7rem;">불러오기</button>
         </div>
         <div id="moodboard-status" style="font-size:0.7rem;color:#666;margin-top:0.3rem;"></div>
@@ -359,7 +406,7 @@
 
       <div class="tool-section" id="section-wall-height">
         <h3 data-i18n="editor.section.wallHeight">벽 높이 (m)</h3>
-        <input type="number" id="wall-height" value="6" min="2" max="8" step="0.5" style="width:100%;background:#1a1a1a;border:1px solid #333;color:#fff;padding:0.4rem;font-size:0.8rem;" />
+        <input type="number" id="wall-height" value="6" min="2" max="8" step="0.5" style="width:100%;background:var(--bg-input);border:1px solid var(--border-input);color:var(--text);padding:0.4rem;font-size:0.8rem;" />
       </div>
 
       <div class="tool-section">
@@ -367,7 +414,7 @@
         <div style="display:flex;flex-direction:column;gap:0.5rem">
           <div>
             <label style="font-size:0.7rem;color:#888;display:block;margin-bottom:0.2rem">바닥</label>
-            <select id="tex-floor" style="width:100%;background:#1a1a1a;border:1px solid #333;color:#fff;padding:0.3rem;font-size:0.75rem;">
+            <select id="tex-floor" style="width:100%;background:var(--bg-input);border:1px solid var(--border-input);color:var(--text);padding:0.3rem;font-size:0.75rem;">
               <option value="">기본 색상</option>
               <option value="/textures/gallery-floor.jpg">갤러리 마루</option>
               <option value="wood-light">밝은 나무 마루</option>
@@ -377,11 +424,11 @@
               <option value="concrete">콘크리트</option>
               <option value="custom">직접 입력</option>
             </select>
-            <input type="text" id="tex-floor-url" placeholder="이미지 URL" style="display:none;width:100%;background:#1a1a1a;border:1px solid #333;color:#fff;padding:0.3rem;font-size:0.75rem;margin-top:0.2rem;" />
+            <input type="text" id="tex-floor-url" placeholder="이미지 URL" style="display:none;width:100%;background:var(--bg-input);border:1px solid var(--border-input);color:var(--text);padding:0.3rem;font-size:0.75rem;margin-top:0.2rem;" />
           </div>
           <div>
             <label style="font-size:0.7rem;color:#888;display:block;margin-bottom:0.2rem">벽</label>
-            <select id="tex-wall" style="width:100%;background:#1a1a1a;border:1px solid #333;color:#fff;padding:0.3rem;font-size:0.75rem;">
+            <select id="tex-wall" style="width:100%;background:var(--bg-input);border:1px solid var(--border-input);color:var(--text);padding:0.3rem;font-size:0.75rem;">
               <option value="">기본 색상</option>
               <option value="/textures/gallery-wall.jpg">갤러리 벽</option>
               <option value="plaster">흰 플라스터</option>
@@ -391,11 +438,11 @@
               <option value="concrete">콘크리트</option>
               <option value="custom">직접 입력</option>
             </select>
-            <input type="text" id="tex-wall-url" placeholder="이미지 URL" style="display:none;width:100%;background:#1a1a1a;border:1px solid #333;color:#fff;padding:0.3rem;font-size:0.75rem;margin-top:0.2rem;" />
+            <input type="text" id="tex-wall-url" placeholder="이미지 URL" style="display:none;width:100%;background:var(--bg-input);border:1px solid var(--border-input);color:var(--text);padding:0.3rem;font-size:0.75rem;margin-top:0.2rem;" />
           </div>
           <div>
             <label style="font-size:0.7rem;color:#888;display:block;margin-bottom:0.2rem">천장</label>
-            <select id="tex-ceiling" style="width:100%;background:#1a1a1a;border:1px solid #333;color:#fff;padding:0.3rem;font-size:0.75rem;">
+            <select id="tex-ceiling" style="width:100%;background:var(--bg-input);border:1px solid var(--border-input);color:var(--text);padding:0.3rem;font-size:0.75rem;">
               <option value="">기본 색상</option>
               <option value="white-tile">흰 타일</option>
               <option value="plaster">플라스터</option>
@@ -404,11 +451,11 @@
               <option value="concrete">콘크리트</option>
               <option value="custom">직접 입력</option>
             </select>
-            <input type="text" id="tex-ceiling-url" placeholder="이미지 URL" style="display:none;width:100%;background:#1a1a1a;border:1px solid #333;color:#fff;padding:0.3rem;font-size:0.75rem;margin-top:0.2rem;" />
+            <input type="text" id="tex-ceiling-url" placeholder="이미지 URL" style="display:none;width:100%;background:var(--bg-input);border:1px solid var(--border-input);color:var(--text);padding:0.3rem;font-size:0.75rem;margin-top:0.2rem;" />
           </div>
           <div>
             <label style="font-size:0.7rem;color:#888;display:block;margin-bottom:0.2rem">문틀</label>
-            <select id="tex-doorframe" style="width:100%;background:#1a1a1a;border:1px solid #333;color:#fff;padding:0.3rem;font-size:0.75rem;">
+            <select id="tex-doorframe" style="width:100%;background:var(--bg-input);border:1px solid var(--border-input);color:var(--text);padding:0.3rem;font-size:0.75rem;">
               <option value="">기본 색상</option>
               <option value="wood-light">밝은 나무</option>
               <option value="/textures/gallery-doorframe.jpg">갤러리 문틀</option>
@@ -417,7 +464,7 @@
               <option value="concrete">콘크리트</option>
               <option value="custom">직접 입력</option>
             </select>
-            <input type="text" id="tex-doorframe-url" placeholder="이미지 URL" style="display:none;width:100%;background:#1a1a1a;border:1px solid #333;color:#fff;padding:0.3rem;font-size:0.75rem;margin-top:0.2rem;" />
+            <input type="text" id="tex-doorframe-url" placeholder="이미지 URL" style="display:none;width:100%;background:var(--bg-input);border:1px solid var(--border-input);color:var(--text);padding:0.3rem;font-size:0.75rem;margin-top:0.2rem;" />
           </div>
         </div>
       </div>

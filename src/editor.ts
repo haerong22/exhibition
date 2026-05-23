@@ -6,6 +6,7 @@ import { TiledGalleryBuilder, type TextureConfig } from './gallery/TiledGalleryB
 import { TextureManager } from './systems/TextureManager';
 import { CustomMapStore, type CustomMap } from './systems/CustomMapStore';
 import { I18n } from './systems/I18n';
+import { Theme } from './systems/Theme';
 import { disposeObject } from './utils/disposer';
 
 const TILE_SIZE = 32;
@@ -345,6 +346,7 @@ class MapEditor {
     this.initGrid();
     this.bindEvents();
     this.setupLanguageToggle();
+    this.setupThemeToggle();
     this.render();
     this.resizePreview();
     this.startPreviewLoop();
@@ -1831,6 +1833,22 @@ class MapEditor {
       artBtn?.classList.add('active');
       document.getElementById('artwork-options')!.classList.add('visible');
     }
+  }
+
+  private setupThemeToggle(): void {
+    const btn = document.getElementById('btn-theme');
+    if (!btn) return;
+    const SUN = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:block;margin:0 auto;"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="M4.93 4.93l1.41 1.41"/><path d="M17.66 17.66l1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="M4.93 19.07l1.41-1.41"/><path d="M17.66 6.34l1.41-1.41"/></svg>';
+    const MOON = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:block;margin:0 auto;"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
+    const refresh = () => {
+      btn.innerHTML = Theme.value === 'dark' ? SUN : MOON;
+    };
+    refresh();
+    btn.addEventListener('click', () => {
+      Theme.toggle();
+      refresh();
+    });
+    Theme.onChange(refresh);
   }
 
   private setupLanguageToggle(): void {
