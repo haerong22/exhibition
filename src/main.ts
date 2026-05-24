@@ -1151,6 +1151,7 @@ class App {
   }
 
   private startGallerySession(opts: { withMinimap: boolean; withTour: boolean }): void {
+    this.playEntryFade();
     if (this.isMobile) {
       this.touchControls.enable();
       this.hud.show();
@@ -1163,6 +1164,24 @@ class App {
     this.soundManager.ensureContext();
     this.showSoundButton();
     this.showScreenshotButton();
+  }
+
+  // Black overlay that covers immediately, then fades to transparent (1.4s) for a cinematic reveal
+  private playEntryFade(): void {
+    const fade = document.getElementById('scene-fade');
+    if (!fade) return;
+    fade.classList.remove('reveal');
+    fade.classList.add('cover');
+    // Two RAFs to ensure the cover class is committed before the reveal class triggers the transition
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        fade.classList.add('reveal');
+      });
+    });
+    setTimeout(() => {
+      fade.classList.remove('cover');
+      fade.classList.remove('reveal');
+    }, 1500);
   }
 
   private async loadExhibition(id: string, configUrl?: string): Promise<void> {

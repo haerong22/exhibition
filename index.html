@@ -255,6 +255,17 @@
       color: var(--text); font-size: 0.85rem; flex: 1;
     }
 
+    /* Cinematic entry fade — black overlay that fades to transparent on gallery entry */
+    #scene-fade {
+      position: fixed; inset: 0; z-index: 70;
+      background: #000; pointer-events: none;
+      opacity: 0;
+    }
+    /* .cover: instant black, no transition */
+    #scene-fade.cover { opacity: 1; transition: none; }
+    /* .reveal added on next frame so the transition kicks in (1 → 0) */
+    #scene-fade.reveal { opacity: 0; transition: opacity 1.4s ease-out; }
+
     /* Screenshot flash overlay */
     #screenshot-flash {
       position: fixed; inset: 0; z-index: 95;
@@ -678,6 +689,8 @@
   </div>
 
   <input type="file" id="import-file-input" accept="application/json,.json" style="display:none" multiple />
+
+  <div id="scene-fade"></div>
 
   <div id="image-zoom">
     <button class="zoom-close" aria-label="닫기">&times;</button>
