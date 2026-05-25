@@ -29,6 +29,9 @@ export interface ArtworkConfig {
   position?: number;
   frameStyle?: 'classic' | 'modern' | 'none';
   frameColor?: string;
+  // Optional curator commentary for this specific artwork in this exhibition
+  curatorNote?: string;
+  curatorNoteKo?: string;
 }
 
 export type CameraState =

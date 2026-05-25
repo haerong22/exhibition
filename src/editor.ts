@@ -280,6 +280,8 @@ class MapEditor {
   private rectEnd: { col: number; row: number } | null = null;
   private rectErase = false;
   private projects: ProjectItem[] = [];
+  // Per-artwork curator notes, keyed by project (artwork) ID
+  private artworkNotes: Record<string, string> = {};
   private selectedArtworkId: string | null = null;
   private artworkSearchQuery = '';
   private currentMapId: string | null = null;
@@ -453,6 +455,8 @@ class MapEditor {
   private schedulePreviewUpdate(): void {
     if (this.previewTimer) clearTimeout(this.previewTimer);
     this.previewTimer = setTimeout(() => this.updatePreview(), 300);
+    // Sidebar notes list reflects current placed artworks
+    this.renderPlacedNotes();
   }
 
   private async updatePreview(): Promise<void> {
@@ -755,6 +759,7 @@ class MapEditor {
         this.currentMapArtist = null;
         this.currentMapCurator = null;
         this.projects = [];
+        this.artworkNotes = {};
         this.previewInitialized = false;
         this.initGrid();
         this.updateCurrentMapLabel();
@@ -1196,7 +1201,7 @@ class MapEditor {
     };
   }
 
-  private buildArtworksConfig(): { id: string; imageUrl: string; title: string; artist: string; width: number; height: number; frameStyle: 'modern'; frameColor: string }[] {
+  private buildArtworksConfig(): { id: string; imageUrl: string; title: string; artist: string; width: number; height: number; frameStyle: 'modern'; frameColor: string; curatorNote?: string }[] {
     const usedIds = new Set<string>();
     for (const row of this.grid) {
       for (const cell of row) {
@@ -1206,12 +1211,13 @@ class MapEditor {
       }
     }
 
-    const artworks: { id: string; imageUrl: string; title: string; artist: string; width: number; height: number; frameStyle: 'modern'; frameColor: string }[] = [];
+    const artworks: { id: string; imageUrl: string; title: string; artist: string; width: number; height: number; frameStyle: 'modern'; frameColor: string; curatorNote?: string }[] = [];
 
     for (const id of usedIds) {
       const proj = this.projects.find(p => p.projectId === id);
       if (proj) {
         const imgUrl = proj.imageUrl.replace(/https:\/\/(dev-)?files\.grafolio\.ogq\.me\//, '/img-proxy/').replace('?type=THUMBNAIL', '');
+        const note = this.artworkNotes[id]?.trim();
         artworks.push({
           id,
           imageUrl: imgUrl,
@@ -1221,6 +1227,7 @@ class MapEditor {
           height: 1.2,
           frameStyle: 'modern' as const,
           frameColor: '#2a2a2a',
+          ...(note ? { curatorNote: note } : {}),
         });
       }
     }
@@ -1502,6 +1509,7 @@ class MapEditor {
         gridMap: this.getGridMap(),
         textures: this.getTextureConfig(),
         projects: this.projects,
+        artworkNotes: this.artworkNotes,
         editorMode: this.editorMode,
       };
       localStorage.setItem(MapEditor.DRAFT_KEY, JSON.stringify(draft));
@@ -1550,6 +1558,8 @@ class MapEditor {
     this.currentMapDescription = draft.currentMapDescription ?? null;
     this.currentMapArtist = draft.currentMapArtist ?? null;
     this.currentMapCurator = draft.currentMapCurator ?? null;
+    this.artworkNotes = draft.artworkNotes ?? {};
+    this.renderPlacedNotes();
     if (draft.editorMode) this.setEditorMode(draft.editorMode);
     this.updateCurrentMapLabel();
     this.resizeCanvas();
@@ -1694,7 +1704,14 @@ class MapEditor {
       imageUrl: art.imageUrl,
       owner: { nickname: art.artist },
     }));
+    this.artworkNotes = {};
+    for (const art of (map.artworks ?? [])) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const note = (art as any).curatorNote as string | undefined;
+      if (note) this.artworkNotes[art.id] = note;
+    }
     this.refreshArtworkSelect();
+    this.renderPlacedNotes();
 
     // Track identity for subsequent saves
     this.currentMapId = map.id;
@@ -1800,6 +1817,87 @@ class MapEditor {
 
       lib.appendChild(card);
     }
+  }
+
+  // Re-render the "작품 메모" sidebar list. Called after placement / removal / load.
+  private renderPlacedNotes(): void {
+    const list = document.getElementById('notes-list');
+    if (!list) return;
+
+    // Collect unique artwork IDs currently on the grid (in placement order)
+    const placedIds: string[] = [];
+    const seen = new Set<string>();
+    for (const row of this.grid) {
+      for (const cell of row) {
+        if (cell.type === 'artwork' && cell.artworkId && !seen.has(cell.artworkId)) {
+          seen.add(cell.artworkId);
+          placedIds.push(cell.artworkId);
+        }
+      }
+    }
+
+    if (placedIds.length === 0) {
+      list.innerHTML = `<div class="notes-empty">${I18n.t('editor.notes.empty')}</div>`;
+      return;
+    }
+
+    list.innerHTML = '';
+    for (const id of placedIds) {
+      const proj = this.projects.find((p) => p.projectId === id);
+      const title = proj?.title ?? id;
+      const thumb = proj?.imageUrl ?? '';
+      const hasNote = !!this.artworkNotes[id]?.trim();
+
+      const row = document.createElement('div');
+      row.className = 'note-row';
+
+      if (thumb) {
+        const img = document.createElement('img');
+        img.className = 'note-thumb';
+        img.src = thumb;
+        img.loading = 'lazy';
+        img.alt = '';
+        row.appendChild(img);
+      }
+
+      const meta = document.createElement('div');
+      meta.className = 'note-meta';
+      const titleEl = document.createElement('span');
+      titleEl.className = 'note-title';
+      titleEl.textContent = title;
+      const status = document.createElement('span');
+      status.className = `note-status${hasNote ? ' has' : ''}`;
+      status.textContent = I18n.t(hasNote ? 'editor.notes.hasNote' : 'editor.notes.noNote');
+      meta.appendChild(titleEl);
+      meta.appendChild(status);
+      row.appendChild(meta);
+
+      const editBtn = document.createElement('button');
+      editBtn.className = 'note-edit';
+      editBtn.textContent = '…';
+      editBtn.title = I18n.t('editor.notes.editTitle');
+      editBtn.addEventListener('click', () => this.editArtworkNote(id));
+      row.appendChild(editBtn);
+
+      list.appendChild(row);
+    }
+  }
+
+  private async editArtworkNote(artworkId: string): Promise<void> {
+    const proj = this.projects.find((p) => p.projectId === artworkId);
+    const title = proj?.title ?? artworkId;
+    const result = await EditorModal.promptMultiline(
+      I18n.t('editor.notes.editHint'),
+      this.artworkNotes[artworkId] ?? '',
+      `${I18n.t('editor.notes.editTitle')} — ${title}`,
+      { placeholder: I18n.t('editor.notes.placeholder') },
+    );
+    if (result === null) return;
+    const trimmed = result.trim();
+    if (trimmed) this.artworkNotes[artworkId] = trimmed;
+    else delete this.artworkNotes[artworkId];
+    this.isDirty = true;
+    this.renderPlacedNotes();
   }
 
   private selectArtwork(projectId: string | null): void {

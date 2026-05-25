@@ -169,6 +169,15 @@ const ko: Messages = {
   'editor.artwork.hint': '선택 후 클릭 또는 카드를 드래그하여 배치',
   'editor.size.resize': '크기 변경',
   'editor.shortcut.title': '단축키',
+  'editor.notes.section': '작품 메모',
+  'editor.notes.empty': '배치된 작품이 없습니다',
+  'editor.notes.editTitle': '큐레이터 메모',
+  'editor.notes.editHint': '관람객이 이 작품을 볼 때 보게 될 메모입니다.',
+  'editor.notes.placeholder': '작품에 대한 큐레이터의 짧은 메모를 작성하세요.',
+  'editor.notes.hasNote': '메모 있음',
+  'editor.notes.noNote': '메모 없음',
+  // Artwork panel — curator note
+  'panel.curatorNote': '큐레이터 노트',
 };
 
 const en: Messages = {
@@ -318,6 +327,14 @@ const en: Messages = {
   'editor.artwork.hint': 'Select & click, or drag a card to place',
   'editor.size.resize': 'Resize',
   'editor.shortcut.title': 'Shortcuts',
+  'editor.notes.section': 'Artwork notes',
+  'editor.notes.empty': 'No artworks placed yet',
+  'editor.notes.editTitle': 'Curator note',
+  'editor.notes.editHint': 'Shown to visitors when viewing this artwork.',
+  'editor.notes.placeholder': 'Write a short curator note for this artwork.',
+  'editor.notes.hasNote': 'Has note',
+  'editor.notes.noNote': 'No note',
+  'panel.curatorNote': 'Curator note',
 };
 
 const messages: Record<Locale, Messages> = { ko, en };

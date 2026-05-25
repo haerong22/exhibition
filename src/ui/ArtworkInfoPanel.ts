@@ -41,6 +41,7 @@ export class ArtworkInfoPanel {
   private favBtn: HTMLButtonElement;
   private imageWrap: HTMLElement;
   private artImage: HTMLImageElement;
+  private curatorNoteEl: HTMLElement;
   private zoom: ImageZoom;
   private onCloseCallback: (() => void) | null = null;
   private onPrevCallback: (() => void) | null = null;
@@ -67,6 +68,7 @@ export class ArtworkInfoPanel {
     this.favBtn = this.panel.querySelector('.fav-btn') as HTMLButtonElement;
     this.imageWrap = this.panel.querySelector('.art-image-wrap') as HTMLElement;
     this.artImage = this.panel.querySelector('.art-image') as HTMLImageElement;
+    this.curatorNoteEl = this.panel.querySelector('.art-curator-note') as HTMLElement;
     this.zoom = new ImageZoom();
 
     this.imageWrap.addEventListener('click', () => {
@@ -160,6 +162,17 @@ export class ArtworkInfoPanel {
     } else {
       this.artImage.removeAttribute('src');
       this.imageWrap.classList.remove('visible');
+    }
+
+    // Curator note (per-artwork commentary)
+    const note = I18n.pick(config.curatorNote, config.curatorNoteKo);
+    if (note && note.trim()) {
+      this.curatorNoteEl.textContent = note.trim();
+      this.curatorNoteEl.setAttribute('data-label', I18n.t('panel.curatorNote'));
+      this.curatorNoteEl.classList.add('has-content');
+    } else {
+      this.curatorNoteEl.textContent = '';
+      this.curatorNoteEl.classList.remove('has-content');
     }
 
     // Optimistic default; refresh once async storage resolves

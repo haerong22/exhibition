@@ -368,6 +368,20 @@
     #artwork-panel .art-year { font-size: 0.85rem; color: var(--text-faint); margin-bottom: 1.5rem; }
     #artwork-panel .art-divider { width: 40px; height: 1px; background: var(--border-strong); margin-bottom: 1.5rem; }
     #artwork-panel .art-desc { font-size: 0.9rem; line-height: 1.7; color: var(--text); font-weight: 300; }
+    #artwork-panel .art-curator-note {
+      display: none; margin: 1.2rem 0 1.5rem; padding: 0.9rem 1rem;
+      background: var(--bg-tag); border-left: 2px solid #ffd166;
+      border-radius: 3px;
+      font-size: 0.85rem; line-height: 1.65; color: var(--text);
+      white-space: pre-line; font-weight: 300;
+    }
+    #artwork-panel .art-curator-note.has-content { display: block; }
+    #artwork-panel .art-curator-note::before {
+      content: attr(data-label);
+      display: block; font-size: 0.66rem; color: #ffd166;
+      letter-spacing: 0.2em; text-transform: uppercase;
+      margin-bottom: 0.5rem; font-weight: 400;
+    }
     #artwork-panel .art-category { font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.8rem; }
     #artwork-panel .art-tags { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 1.2rem; }
     #artwork-panel .art-tag { font-size: 0.75rem; color: var(--text-muted); background: var(--bg-tag); padding: 0.25rem 0.6rem; border-radius: 12px; }
@@ -636,6 +650,7 @@
     <p class="art-category"></p>
     <p class="art-year"></p>
     <div class="art-image-wrap"><img class="art-image" alt="" /></div>
+    <div class="art-curator-note"></div>
     <div class="art-divider"></div>
     <p class="art-desc"></p>
     <div class="art-tags"></div>
