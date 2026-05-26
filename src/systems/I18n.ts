@@ -178,6 +178,22 @@ const ko: Messages = {
   'editor.notes.noNote': '메모 없음',
   // Artwork panel — curator note
   'panel.curatorNote': '큐레이터 노트',
+  // Welcome guide
+  'welcome.step': '{current} / {total}',
+  'welcome.skip': '건너뛰기',
+  'welcome.next': '다음',
+  'welcome.start': '관람 시작',
+  'welcome.move.title': '이동',
+  'welcome.move.body.desktop': 'W A S D 키로 갤러리를 둘러볼 수 있어요.',
+  'welcome.move.body.mobile': '왼쪽 조이스틱으로 이동하세요.',
+  'welcome.look.title': '시선',
+  'welcome.look.body.desktop': '마우스로 둘러보세요. 화면 클릭으로 시점을 잠그거나 ESC로 해제할 수 있어요.',
+  'welcome.look.body.mobile': '화면을 드래그하여 시선을 움직이세요.',
+  'welcome.view.title': '작품 감상',
+  'welcome.view.body.desktop': '작품 앞에서 클릭하면 자세히 볼 수 있어요. ESC로 다시 갤러리로 돌아갑니다.',
+  'welcome.view.body.mobile': '작품을 탭하면 자세히 볼 수 있어요.',
+  'welcome.more.title': '편의',
+  'welcome.more.body.desktop': 'T 자동 투어 · M 음소거 · P 스크린샷 · F 즐겨찾기 · ? 단축키 안내',
 };
 
 const en: Messages = {
@@ -335,6 +351,21 @@ const en: Messages = {
   'editor.notes.hasNote': 'Has note',
   'editor.notes.noNote': 'No note',
   'panel.curatorNote': 'Curator note',
+  'welcome.step': '{current} / {total}',
+  'welcome.skip': 'Skip',
+  'welcome.next': 'Next',
+  'welcome.start': 'Start tour',
+  'welcome.move.title': 'Move',
+  'welcome.move.body.desktop': 'Use W A S D to walk around the gallery.',
+  'welcome.move.body.mobile': 'Use the left joystick to move.',
+  'welcome.look.title': 'Look',
+  'welcome.look.body.desktop': 'Move your mouse to look. Click the canvas to lock the view, ESC to release.',
+  'welcome.look.body.mobile': 'Drag the screen to look around.',
+  'welcome.view.title': 'View artworks',
+  'welcome.view.body.desktop': 'Click an artwork to view details. ESC returns to the gallery.',
+  'welcome.view.body.mobile': 'Tap an artwork to view details.',
+  'welcome.more.title': 'More',
+  'welcome.more.body.desktop': 'T auto tour · M mute · P screenshot · F favorite · ? shortcut help',
 };
 
 const messages: Record<Locale, Messages> = { ko, en };

@@ -25,6 +25,7 @@ import { ArtworkInfoPanel } from './ui/ArtworkInfoPanel';
 import { HUD } from './ui/HUD';
 import { Minimap } from './ui/Minimap';
 import { ShortcutHelp } from './ui/ShortcutHelp';
+import { WelcomeGuide } from './ui/WelcomeGuide';
 import { SoundManager } from './systems/SoundManager';
 import { DEFAULTS } from './utils/constants';
 
@@ -56,6 +57,7 @@ class App {
   private minimap: Minimap;
   private autoTour: AutoTour;
   private shortcutHelp: ShortcutHelp;
+  private welcomeGuide: WelcomeGuide;
   private soundManager: SoundManager;
   private lastFootstepPos = new THREE.Vector3();
   private currentFavorites: string[] = [];
@@ -81,6 +83,7 @@ class App {
     this.artworkInteraction = new ArtworkInteraction(this.engine.camera, this.cameraController);
     this.autoTour = new AutoTour(this.artworkInteraction);
     this.shortcutHelp = new ShortcutHelp(this.isMobile);
+    this.welcomeGuide = new WelcomeGuide(this.isMobile);
     this.soundManager = new SoundManager();
     this.minimap.onTeleport((wx, wz) => this.teleportTo(wx, wz));
 
@@ -1164,6 +1167,10 @@ class App {
     this.soundManager.ensureContext();
     this.showSoundButton();
     this.showScreenshotButton();
+    // First-time visitor: show welcome guide after the entry fade settles
+    if (!this.welcomeGuide.hasSeen()) {
+      setTimeout(() => this.welcomeGuide.show(), 1600);
+    }
   }
 
   // Black overlay that covers immediately, then fades to transparent (1.4s) for a cinematic reveal

@@ -255,6 +255,98 @@
       color: var(--text); font-size: 0.85rem; flex: 1;
     }
 
+    /* Welcome guide — bottom-center stepped toast for first-time visitors */
+    #welcome-guide {
+      position: fixed; left: 50%; bottom: 6.5rem; transform: translateX(-50%);
+      z-index: 75; display: none; pointer-events: none;
+    }
+    #welcome-guide.visible { display: block; }
+    #welcome-guide .wg-card {
+      position: relative; pointer-events: auto;
+      width: 92vw; max-width: 380px;
+      padding: 1.1rem 1.2rem 1rem;
+      background: rgba(20,20,20,0.95);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 6px; color: #fff;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+    }
+    [data-theme="light"] #welcome-guide .wg-card {
+      background: rgba(255,255,255,0.96); color: #222;
+      border-color: rgba(0,0,0,0.12);
+      box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+    }
+    #welcome-guide .wg-close {
+      position: absolute; top: 0.3rem; right: 0.5rem;
+      width: 28px; height: 28px;
+      background: transparent; border: none;
+      color: var(--text-faint); font-size: 1.2rem; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+    }
+    #welcome-guide .wg-close:hover { color: var(--text); }
+    #welcome-guide .wg-step {
+      font-size: 0.62rem; color: var(--text-faint);
+      letter-spacing: 0.2em; text-transform: uppercase;
+      margin-bottom: 0.5rem;
+    }
+    #welcome-guide .wg-title {
+      font-size: 1.05rem; font-weight: 500; margin-bottom: 0.4rem;
+      letter-spacing: 0.02em;
+    }
+    [data-theme="light"] #welcome-guide .wg-title { color: #111; }
+    #welcome-guide .wg-body {
+      font-size: 0.82rem; line-height: 1.55; color: var(--text-muted);
+      font-weight: 300; margin-bottom: 0.9rem;
+    }
+    [data-theme="light"] #welcome-guide .wg-body { color: #444; }
+    #welcome-guide .wg-dots {
+      display: flex; gap: 0.35rem; justify-content: center;
+      margin-bottom: 0.9rem;
+    }
+    #welcome-guide .wg-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: rgba(255,255,255,0.2);
+      transition: background 0.2s, transform 0.2s;
+    }
+    [data-theme="light"] #welcome-guide .wg-dot { background: rgba(0,0,0,0.15); }
+    #welcome-guide .wg-dot.active {
+      background: rgba(255,255,255,0.85); transform: scale(1.2);
+    }
+    [data-theme="light"] #welcome-guide .wg-dot.active { background: rgba(0,0,0,0.8); }
+    #welcome-guide .wg-actions {
+      display: flex; gap: 0.5rem; justify-content: flex-end;
+    }
+    #welcome-guide .wg-skip, #welcome-guide .wg-next {
+      padding: 0.45rem 0.95rem;
+      background: transparent; color: var(--text-muted);
+      border: 1px solid rgba(255,255,255,0.2); border-radius: 3px;
+      font-family: inherit; font-size: 0.78rem; cursor: pointer;
+      transition: all 0.15s;
+    }
+    [data-theme="light"] #welcome-guide .wg-skip,
+    [data-theme="light"] #welcome-guide .wg-next {
+      border-color: rgba(0,0,0,0.2);
+    }
+    #welcome-guide .wg-skip:hover, #welcome-guide .wg-next:hover {
+      border-color: rgba(255,255,255,0.4); color: #fff;
+    }
+    [data-theme="light"] #welcome-guide .wg-skip:hover,
+    [data-theme="light"] #welcome-guide .wg-next:hover {
+      border-color: rgba(0,0,0,0.45); color: #000;
+    }
+    #welcome-guide .wg-next {
+      background: rgba(255,255,255,0.95); color: #000; border-color: transparent;
+    }
+    [data-theme="light"] #welcome-guide .wg-next {
+      background: #222; color: #fff;
+    }
+    #welcome-guide .wg-next:hover {
+      background: #fff; color: #000;
+    }
+    [data-theme="light"] #welcome-guide .wg-next:hover {
+      background: #000;
+    }
+
     /* Cinematic entry fade — black overlay that fades to transparent on gallery entry */
     #scene-fade {
       position: fixed; inset: 0; z-index: 70;
