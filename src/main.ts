@@ -84,6 +84,7 @@ class App {
     this.autoTour = new AutoTour(this.artworkInteraction);
     this.shortcutHelp = new ShortcutHelp(this.isMobile);
     this.welcomeGuide = new WelcomeGuide(this.isMobile);
+    this.shortcutHelp.setReplayCallback(() => this.welcomeGuide.show());
     this.soundManager = new SoundManager();
     this.minimap.onTeleport((wx, wz) => this.teleportTo(wx, wz));
 

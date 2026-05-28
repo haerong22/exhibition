@@ -80,6 +80,7 @@ const ko: Messages = {
   'help.favorite': '즐겨찾기 토글 (작품 감상 중)',
   'help.close': '작품 닫기',
   'help.thisHelp': '이 도움말',
+  'help.replayWelcome': '환영 가이드 다시 보기',
   // Artwork info panel
   'panel.detail.loading': '상세 정보 불러오는 중...',
   'panel.detail.error': '상세 정보를 불러올 수 없습니다',
@@ -260,6 +261,7 @@ const en: Messages = {
   'help.favorite': 'Toggle favorite (while viewing)',
   'help.close': 'Close artwork',
   'help.thisHelp': 'This help',
+  'help.replayWelcome': 'Replay welcome guide',
   'panel.detail.loading': 'Loading details...',
   'panel.detail.error': 'Cannot load details',
   'panel.stats': '{views} views · {likes} likes',

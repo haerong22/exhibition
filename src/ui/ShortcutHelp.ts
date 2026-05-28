@@ -11,7 +11,9 @@ interface Row {
 export class ShortcutHelp {
   private container: HTMLElement;
   private listEl: HTMLElement;
+  private replayBtn: HTMLButtonElement;
   private isMobile: boolean;
+  private replayCallback: (() => void) | null = null;
 
   constructor(isMobile: boolean) {
     this.isMobile = isMobile;
@@ -23,17 +25,27 @@ export class ShortcutHelp {
         <button class="sh-close" aria-label="닫기">&times;</button>
         <h2 class="sh-title"></h2>
         <ul class="sh-list"></ul>
+        <button class="sh-replay" style="display:none"></button>
       </div>
     `;
     document.body.appendChild(this.container);
 
     this.listEl = this.container.querySelector('.sh-list') as HTMLElement;
+    this.replayBtn = this.container.querySelector('.sh-replay') as HTMLButtonElement;
     const titleEl = this.container.querySelector('.sh-title') as HTMLElement;
     const closeBtn = this.container.querySelector('.sh-close') as HTMLElement;
     const backdrop = this.container.querySelector('.sh-backdrop') as HTMLElement;
 
+    this.replayBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const cb = this.replayCallback;
+      this.close();
+      cb?.();
+    });
+
     const refreshContent = () => {
       titleEl.textContent = I18n.t('help.title');
+      this.replayBtn.textContent = I18n.t('help.replayWelcome');
       this.render();
     };
     refreshContent();
@@ -106,6 +118,11 @@ export class ShortcutHelp {
       li.appendChild(span);
       this.listEl.appendChild(li);
     }
+  }
+
+  setReplayCallback(cb: () => void): void {
+    this.replayCallback = cb;
+    this.replayBtn.style.display = '';
   }
 
   open(): void { this.container.classList.add('visible'); }
