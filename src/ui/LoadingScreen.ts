@@ -8,6 +8,7 @@ export class LoadingScreen {
   private controls: HTMLElement;
   private description: HTMLElement;
   private credits: HTMLElement;
+  private meta: HTMLElement;
   // Stage-based progress: each stage occupies a slice of the overall bar
   private stageStart = 0;
   private stageEnd = 1;
@@ -20,6 +21,7 @@ export class LoadingScreen {
     this.controls = document.getElementById('loading-controls')!;
     this.description = document.getElementById('loading-description')!;
     this.credits = document.getElementById('loading-credits')!;
+    this.meta = document.getElementById('loading-meta')!;
     this.populateControls(isMobile);
   }
 
@@ -31,6 +33,23 @@ export class LoadingScreen {
       this.description.textContent = '';
       this.description.classList.remove('has-content');
     }
+  }
+
+  setMeta(opts: { artworkCount?: number; width?: number; height?: number }): void {
+    const parts: string[] = [];
+    if (typeof opts.artworkCount === 'number' && opts.artworkCount > 0) {
+      parts.push(this.escape(I18n.t('meta.artworkCount', { n: opts.artworkCount })));
+    }
+    if (opts.width && opts.height) {
+      parts.push(this.escape(I18n.t('meta.size', { w: opts.width, h: opts.height })));
+    }
+    if (parts.length === 0) {
+      this.meta.innerHTML = '';
+      this.meta.classList.remove('has-content');
+      return;
+    }
+    this.meta.innerHTML = parts.map((p) => `<span>${p}</span>`).join('<span class="sep">·</span>');
+    this.meta.classList.add('has-content');
   }
 
   setCredits(opts: { artist?: string | null; curator?: string | null }): void {
@@ -120,6 +139,7 @@ export class LoadingScreen {
     this.controls.classList.add('visible');
     this.description.classList.add('visible');
     this.credits.classList.add('visible');
+    this.meta.classList.add('visible');
     this.enterBtn.addEventListener('click', () => {
       onClick();
       this.hide();
@@ -142,8 +162,10 @@ export class LoadingScreen {
     this.controls.classList.remove('visible');
     this.description.classList.remove('visible');
     this.credits.classList.remove('visible');
+    this.meta.classList.remove('visible');
     this.setDescription(null);
     this.setCredits({});
+    this.setMeta({});
     this.stageStart = 0;
     this.stageEnd = 1;
   }

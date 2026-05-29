@@ -1057,6 +1057,11 @@ class App {
     const { gridMap, artworks, textures, configId, name, description, artist, curator } = params;
     this.loadingScreen.setDescription(description);
     this.loadingScreen.setCredits({ artist, curator });
+    this.loadingScreen.setMeta({
+      artworkCount: artworks?.length ?? 0,
+      width: gridMap.width,
+      height: gridMap.height,
+    });
 
     const parser = new TiledMapParser();
     const parsedMap = parser.parse(gridMap);
@@ -1203,6 +1208,11 @@ class App {
       this.loadingScreen.setTitle(I18n.pick(config.name, config.nameKo));
       this.loadingScreen.setDescription(I18n.pick(config.description, config.descriptionKo));
       this.loadingScreen.setCredits({ artist: config.artist, curator: config.curator });
+      this.loadingScreen.setMeta({
+        artworkCount: config.artworks?.length ?? 0,
+        width: config.roomWidth,
+        height: config.roomDepth,
+      });
 
       this.loadingScreen.setStage(I18n.t('loading.stage.texturesArtworks'), 0.15, 0.9);
       const { group, boundary } = await this.galleryBuilder.build(

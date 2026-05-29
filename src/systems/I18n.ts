@@ -94,6 +94,9 @@ const ko: Messages = {
   // Exhibition credits
   'credit.artist': '작가: {name}',
   'credit.curator': '큐레이터: {name}',
+  // Loading headline meta (작품 수 / 면적)
+  'meta.artworkCount': '작품 {n}점',
+  'meta.size': '{w}×{h}',
   // Exhibition info modal (editor save flow)
   'editor.info.title': '전시 정보 (선택)',
   'editor.info.description': '큐레이터 노트 / 인트로 설명',
@@ -273,6 +276,8 @@ const en: Messages = {
   'zoom.hint': 'Scroll to zoom · Drag to pan · Double-click to reset · ESC to close',
   'credit.artist': 'Artist: {name}',
   'credit.curator': 'Curator: {name}',
+  'meta.artworkCount': '{n} works',
+  'meta.size': '{w}×{h}',
   'editor.info.title': 'Exhibition info (optional)',
   'editor.info.description': 'Curator note / intro',
   'editor.info.descriptionPlaceholder': 'Write a curator note, artist bio, or exhibition intent.',

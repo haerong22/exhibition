@@ -61,6 +61,15 @@
     #loading-bar-container { width: 300px; height: 2px; background: var(--border); border-radius: 1px; overflow: hidden; }
     #loading-bar { width: 0%; height: 100%; background: var(--text); transition: width 0.3s ease; }
     #loading-status { margin-top: 1rem; font-size: 0.85rem; color: var(--text-faint); letter-spacing: 0.1em; }
+    #loading-meta {
+      display: none; margin-top: -1rem; margin-bottom: 1.4rem;
+      font-size: 0.75rem; color: var(--text-faint); letter-spacing: 0.18em;
+      text-transform: uppercase; font-weight: 300;
+      opacity: 0; transition: opacity 0.5s ease;
+    }
+    #loading-meta.has-content { display: block; }
+    #loading-meta.has-content.visible { opacity: 1; }
+    #loading-meta .sep { color: var(--text-very-faint); margin: 0 0.5rem; }
 
     /* Enter Prompt */
     #enter-prompt {
@@ -754,6 +763,7 @@
 
   <div id="loading-screen">
     <div id="loading-title" data-i18n="loading.title">EXHIBITION</div>
+    <div id="loading-meta"></div>
     <div id="loading-bar-container"><div id="loading-bar"></div></div>
     <div id="loading-status" data-i18n="loading.preparing">준비 중...</div>
     <div id="loading-description"></div>
