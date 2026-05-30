@@ -155,7 +155,8 @@ export class LoadingScreen {
 
   show(): void {
     this.el.style.display = 'flex';
-    this.el.classList.remove('hidden');
+    // Start hidden so the next frame can transition opacity 0 → 1 (fade in)
+    this.el.classList.add('hidden');
     this.bar.style.width = '0%';
     this.status.textContent = I18n.t('loading.preparing');
     this.enterBtn.classList.remove('visible');
@@ -168,5 +169,10 @@ export class LoadingScreen {
     this.setMeta({});
     this.stageStart = 0;
     this.stageEnd = 1;
+    // Force reflow so the next class removal triggers the CSS opacity transition
+    void this.el.offsetHeight;
+    requestAnimationFrame(() => {
+      this.el.classList.remove('hidden');
+    });
   }
 }
