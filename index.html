@@ -579,6 +579,27 @@
     .filter-select { cursor: pointer; }
     .picker-list { display: flex; flex-direction: column; gap: 0.8rem; }
     .picker-empty { font-size: 0.8rem; color: var(--text-faint); padding: 1rem; text-align: center; border: 1px dashed var(--border); border-radius: 3px; }
+    /* Card entry animation — staggered fade-up. `backwards` fill so hover transforms still work after entry. */
+    @keyframes cardFadeUp {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .template-card, .exhibition-card {
+      animation: cardFadeUp 0.42s ease-out backwards;
+    }
+    .template-card:nth-child(1), .exhibition-card:nth-child(1) { animation-delay: 0ms; }
+    .template-card:nth-child(2), .exhibition-card:nth-child(2) { animation-delay: 50ms; }
+    .template-card:nth-child(3), .exhibition-card:nth-child(3) { animation-delay: 100ms; }
+    .template-card:nth-child(4), .exhibition-card:nth-child(4) { animation-delay: 150ms; }
+    .template-card:nth-child(5), .exhibition-card:nth-child(5) { animation-delay: 200ms; }
+    .template-card:nth-child(6), .exhibition-card:nth-child(6) { animation-delay: 250ms; }
+    .template-card:nth-child(7), .exhibition-card:nth-child(7) { animation-delay: 290ms; }
+    .template-card:nth-child(8), .exhibition-card:nth-child(8) { animation-delay: 320ms; }
+    .template-card:nth-child(n+9), .exhibition-card:nth-child(n+9) { animation-delay: 350ms; }
+    @media (prefers-reduced-motion: reduce) {
+      .template-card, .exhibition-card { animation: none; }
+    }
+
     /* Template tabs */
     .template-tabs {
       display: flex; align-items: center; gap: 0; margin-bottom: 1rem;
