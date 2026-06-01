@@ -17,6 +17,7 @@ import { ExhibitionLoader } from './systems/ExhibitionLoader';
 import { CustomMapStore, type CustomMap } from './systems/CustomMapStore';
 import { exportMap, parseImportFile } from './systems/storage/MapExport';
 import { FavoritesStore } from './systems/FavoritesStore';
+import { GuestbookStore } from './systems/GuestbookStore';
 import { I18n } from './systems/I18n';
 import { Theme } from './systems/Theme';
 import { Router, type Route } from './systems/Router';
@@ -26,6 +27,7 @@ import { HUD } from './ui/HUD';
 import { Minimap } from './ui/Minimap';
 import { ShortcutHelp } from './ui/ShortcutHelp';
 import { WelcomeGuide } from './ui/WelcomeGuide';
+import { Guestbook } from './ui/Guestbook';
 import { SoundManager } from './systems/SoundManager';
 import { DEFAULTS } from './utils/constants';
 
@@ -58,9 +60,11 @@ class App {
   private autoTour: AutoTour;
   private shortcutHelp: ShortcutHelp;
   private welcomeGuide: WelcomeGuide;
+  private guestbook: Guestbook;
   private soundManager: SoundManager;
   private lastFootstepPos = new THREE.Vector3();
   private currentFavorites: string[] = [];
+  private currentExhibitionId: string | null = null;
 
   constructor() {
     const canvas = document.getElementById('canvas') as HTMLCanvasElement;
@@ -85,6 +89,7 @@ class App {
     this.shortcutHelp = new ShortcutHelp(this.isMobile);
     this.welcomeGuide = new WelcomeGuide(this.isMobile);
     this.shortcutHelp.setReplayCallback(() => this.welcomeGuide.show());
+    this.guestbook = new Guestbook();
     this.soundManager = new SoundManager();
     this.minimap.onTeleport((wx, wz) => this.teleportTo(wx, wz));
 
@@ -240,6 +245,7 @@ class App {
     this.setupLanguageToggle();
     this.setupThemeToggle();
     this.setupScreenshotButton();
+    this.setupGuestbookButton();
 
     // Router
     this.router.onRouteChange((route) => {
@@ -325,6 +331,47 @@ class App {
 
   private hideSoundButton(): void {
     document.getElementById('sound-btn')?.classList.add('hidden');
+  }
+
+  private setupGuestbookButton(): void {
+    const btn = document.getElementById('guestbook-btn') as HTMLButtonElement | null;
+    if (!btn) return;
+    btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>';
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.guestbook.open();
+    });
+    window.addEventListener('keydown', (e) => {
+      if (e.code !== 'KeyG') return;
+      if (btn.classList.contains('hidden')) return;
+      const target = e.target as HTMLElement | null;
+      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) return;
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      e.preventDefault();
+      this.guestbook.open();
+    });
+  }
+
+  private showGuestbookButton(): void {
+    document.getElementById('guestbook-btn')?.classList.remove('hidden');
+    this.refreshGuestbookBadge();
+  }
+
+  private hideGuestbookButton(): void {
+    document.getElementById('guestbook-btn')?.classList.add('hidden');
+  }
+
+  private async refreshGuestbookBadge(): Promise<void> {
+    const btn = document.getElementById('guestbook-btn');
+    if (!btn || !this.currentExhibitionId) return;
+    const count = await GuestbookStore.count(this.currentExhibitionId);
+    btn.querySelector('.gb-badge')?.remove();
+    if (count > 0) {
+      const badge = document.createElement('span');
+      badge.className = 'gb-badge';
+      badge.textContent = count > 99 ? '99+' : String(count);
+      btn.appendChild(badge);
+    }
   }
 
   private setupScreenshotButton(): void {
@@ -442,8 +489,12 @@ class App {
     this.soundManager.resetStride();
     this.hideSoundButton();
     this.hideScreenshotButton();
+    this.hideGuestbookButton();
+    this.guestbook.close();
+    this.guestbook.setExhibitionId(null);
     this.infoPanel.setExhibitionId(null);
     this.currentFavorites = [];
+    this.currentExhibitionId = null;
     this.autoTour.setFavoritesAvailable(false);
     this.minimap.setFavorites([]);
     if (!this.isMobile) this.fpControls.unlock();
@@ -1106,6 +1157,8 @@ class App {
 
     this.artworkInteraction.setArtworks(this.tiledBuilder.artworkFrames);
     this.infoPanel.setExhibitionId(configId);
+    this.guestbook.setExhibitionId(configId);
+    this.currentExhibitionId = configId;
     await this.wireFavoritesTour(configId);
 
     // Setup minimap with grid + artwork positions
@@ -1173,6 +1226,7 @@ class App {
     this.soundManager.ensureContext();
     this.showSoundButton();
     this.showScreenshotButton();
+    this.showGuestbookButton();
     // First-time visitor: show welcome guide after the entry fade settles
     if (!this.welcomeGuide.hasSeen()) {
       setTimeout(() => this.welcomeGuide.show(), 1600);
@@ -1234,6 +1288,8 @@ class App {
       // Set artworks for interaction
       this.artworkInteraction.setArtworks(this.galleryBuilder.artworkFrames);
       this.infoPanel.setExhibitionId(config.id);
+      this.guestbook.setExhibitionId(config.id);
+      this.currentExhibitionId = config.id;
       await this.wireFavoritesTour(config.id);
 
       // Show enter button

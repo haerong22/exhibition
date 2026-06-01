@@ -103,6 +103,7 @@ export class ShortcutHelp {
           { key: 'M', desc: I18n.t('help.mute') },
           { key: 'P', desc: I18n.t('help.screenshot') },
           { key: 'F', desc: I18n.t('help.favorite') },
+          { key: 'G', desc: I18n.t('help.guestbook') },
           { key: 'ESC', desc: I18n.t('help.close') },
           { key: '?', desc: I18n.t('help.thisHelp') },
         ];
