@@ -13,6 +13,8 @@ export interface GuestbookDraft {
   exhibitionId: string;
   name: string;
   message: string;
+  // Optional — set by import flow to preserve original timestamp
+  createdAt?: string;
 }
 
 export interface GuestbookStorage {

@@ -600,10 +600,24 @@ class App {
           try {
             const result = await parseImportFile(file);
             rejected += result.rejected;
-            for (const map of result.maps) {
+            for (let i = 0; i < result.maps.length; i++) {
+              const map = result.maps[i];
               const newMap: CustomMap = { ...map, id: CustomMapStore.newId(), type: expectedType };
-              await CustomMapStore.save(newMap);
+              const saved = await CustomMapStore.save(newMap);
               imported++;
+              // Restore guestbook entries under the new exhibition id (templates have no guestbook)
+              const entries = result.guestbook[i];
+              if (entries && expectedType === 'exhibition') {
+                const newExhibitionId = `custom-${saved.id}`;
+                for (const e of entries) {
+                  await GuestbookStore.add({
+                    exhibitionId: newExhibitionId,
+                    name: e.name,
+                    message: e.message,
+                    createdAt: e.createdAt,
+                  });
+                }
+              }
             }
           } catch (e) {
             errors.push(`${file.name}: ${(e as Error).message}`);
@@ -797,7 +811,7 @@ class App {
       exportBtn.addEventListener('click', async (e) => {
         e.stopPropagation();
         const map = await CustomMapStore.get(t.customMapId!);
-        if (map) exportMap(map);
+        if (map) await exportMap(map);
       });
       actions.appendChild(exportBtn);
       const deleteBtn = document.createElement('button');
@@ -976,7 +990,7 @@ class App {
     exportBtn.textContent = I18n.t('card.btn.export');
     exportBtn.addEventListener('click', (e) => {
       e.stopPropagation();
-      exportMap(map);
+      void exportMap(map);
     });
     actions.appendChild(exportBtn);
 
