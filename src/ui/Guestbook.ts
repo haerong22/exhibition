@@ -140,9 +140,11 @@ export class Guestbook {
     const name = document.createElement('span');
     name.className = 'gb-entry-name';
     name.textContent = entry.name;
-    const time = document.createElement('span');
+    const time = document.createElement('time');
     time.className = 'gb-entry-time';
     time.textContent = this.formatTime(entry.createdAt);
+    time.title = this.formatFullDateTime(entry.createdAt);
+    time.dateTime = entry.createdAt;
     head.appendChild(name);
     head.appendChild(time);
     row.appendChild(head);
@@ -172,9 +174,21 @@ export class Guestbook {
     if (diffMs < hour) return I18n.t('time.minutesAgo', { n: Math.floor(diffMs / min) });
     if (diffMs < day) return I18n.t('time.hoursAgo', { n: Math.floor(diffMs / hour) });
     if (diffMs < 7 * day) return I18n.t('time.daysAgo', { n: Math.floor(diffMs / day) });
-    return new Date(iso).toLocaleDateString(I18n.current === 'ko' ? 'ko-KR' : 'en-US', {
+    return new Date(iso).toLocaleDateString(this.localeTag(), {
       year: 'numeric', month: '2-digit', day: '2-digit',
     });
+  }
+
+  // Tooltip — show absolute date + time so users can see exact moment a message was posted
+  private formatFullDateTime(iso: string): string {
+    return new Date(iso).toLocaleString(this.localeTag(), {
+      year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit',
+    });
+  }
+
+  private localeTag(): string {
+    return I18n.current === 'ko' ? 'ko-KR' : 'en-US';
   }
 
   private escape(s: string): string {
