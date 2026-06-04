@@ -36,6 +36,7 @@ const ko: Messages = {
   'card.btn.delete': '삭제',
   'card.meta.artworkCount': '작품 {n}개',
   'card.meta.favorites': '★ {n}',
+  'card.meta.guestbookCount': '💬 {n}',
   'card.meta.customTemplate': '커스텀 템플릿',
   'card.meta.recommended': '추천 {label}',
   // QR
@@ -239,6 +240,7 @@ const en: Messages = {
   'card.btn.delete': 'Delete',
   'card.meta.artworkCount': '{n} artworks',
   'card.meta.favorites': '★ {n}',
+  'card.meta.guestbookCount': '💬 {n}',
   'card.meta.customTemplate': 'Custom template',
   'card.meta.recommended': 'Recommended {label}',
   'qr.hint': 'Scan with your phone camera',

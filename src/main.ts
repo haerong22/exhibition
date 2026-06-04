@@ -945,12 +945,26 @@ class App {
     const updated = new Date(map.updatedAt).toLocaleString('ko-KR', {
       year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit',
     });
-    main.innerHTML = `<h3></h3><p class="card-meta"></p>`;
+    main.innerHTML = `<h3></h3><p class="card-meta"></p><p class="card-guestbook"></p>`;
     main.querySelector('h3')!.textContent = map.name;
-    const favCount = await FavoritesStore.count(`custom-${map.id}`);
+    const exhibitionId = `custom-${map.id}`;
+    const [favCount, gbEntries] = await Promise.all([
+      FavoritesStore.count(exhibitionId),
+      GuestbookStore.list(exhibitionId),
+    ]);
     const metaParts = [size, I18n.t('card.meta.artworkCount', { n: artCount }), updated];
     if (favCount > 0) metaParts.push(I18n.t('card.meta.favorites', { n: favCount }));
+    if (gbEntries.length > 0) metaParts.push(I18n.t('card.meta.guestbookCount', { n: gbEntries.length }));
     main.querySelector('.card-meta')!.textContent = metaParts.join(' · ');
+
+    // Latest guestbook snippet (single line, ellipsised). Hidden if no entries.
+    const gbEl = main.querySelector('.card-guestbook') as HTMLElement;
+    if (gbEntries.length > 0) {
+      const latest = gbEntries[0]; // list() returns newest-first
+      gbEl.textContent = `“${latest.message}” — ${latest.name}`;
+    } else {
+      gbEl.remove();
+    }
     main.addEventListener('click', () => {
       this.router.navigateTo(`custom-${map.id}`);
     });
