@@ -61,14 +61,14 @@ export class Guestbook {
       const name = this.nameInput.value.trim();
       this.submitBtn.disabled = true;
       try {
-        await GuestbookStore.add({
+        const created = await GuestbookStore.add({
           exhibitionId: this.exhibitionId,
           name,
           message,
         });
         try { localStorage.setItem(NAME_KEY, name); } catch { /* ignore */ }
         this.messageInput.value = '';
-        await this.refreshList();
+        await this.refreshList(created.id);
       } finally {
         this.submitBtn.disabled = false;
       }
@@ -115,7 +115,7 @@ export class Guestbook {
     this.submitBtn.textContent = I18n.t('guestbook.submit');
   }
 
-  private async refreshList(): Promise<void> {
+  private async refreshList(highlightId?: string): Promise<void> {
     if (!this.exhibitionId) {
       this.listEl.innerHTML = '';
       return;
@@ -128,13 +128,15 @@ export class Guestbook {
     }
     this.listEl.innerHTML = '';
     for (const entry of entries) {
-      this.listEl.appendChild(this.renderEntry(entry));
+      this.listEl.appendChild(this.renderEntry(entry, entry.id === highlightId));
     }
+    // Scroll the newest entry into view (it's at the top after the newest-first sort)
+    if (highlightId) this.listEl.scrollTop = 0;
   }
 
-  private renderEntry(entry: GuestbookEntry): HTMLElement {
+  private renderEntry(entry: GuestbookEntry, highlight = false): HTMLElement {
     const row = document.createElement('div');
-    row.className = 'gb-entry';
+    row.className = 'gb-entry' + (highlight ? ' gb-entry-new' : '');
     const head = document.createElement('div');
     head.className = 'gb-entry-head';
     const name = document.createElement('span');

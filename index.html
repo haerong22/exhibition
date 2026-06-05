@@ -276,6 +276,18 @@
       padding: 0.7rem 0.9rem;
       background: var(--bg-tag); border-radius: 4px;
     }
+    /* Newly posted entry — brief glow + slide-down emphasis */
+    @keyframes gbEntryNew {
+      0%   { background: rgba(255,209,102,0.35); transform: translateY(-6px); opacity: 0; }
+      30%  { background: rgba(255,209,102,0.35); transform: translateY(0); opacity: 1; }
+      100% { background: var(--bg-tag); transform: translateY(0); opacity: 1; }
+    }
+    #guestbook .gb-entry.gb-entry-new {
+      animation: gbEntryNew 1.6s ease-out;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      #guestbook .gb-entry.gb-entry-new { animation: none; }
+    }
     #guestbook .gb-entry-head {
       display: flex; align-items: baseline; gap: 0.5rem;
       margin-bottom: 0.3rem;
