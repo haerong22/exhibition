@@ -2,6 +2,7 @@ import { I18n } from '../systems/I18n';
 import { GuestbookStore, type GuestbookEntry } from '../systems/GuestbookStore';
 
 const NAME_KEY = 'gallery-guestbook-name';
+const PAGE_SIZE = 10;
 
 export class Guestbook {
   private container: HTMLElement;
@@ -12,6 +13,7 @@ export class Guestbook {
   private titleEl: HTMLElement;
   private countEl: HTMLElement;
   private exhibitionId: string | null = null;
+  private visibleCount = PAGE_SIZE;
 
   constructor() {
     this.container = document.createElement('div');
@@ -99,6 +101,7 @@ export class Guestbook {
   async open(): Promise<void> {
     if (!this.exhibitionId) return;
     this.refreshLabels();
+    this.visibleCount = PAGE_SIZE; // reset paging each time it opens
     await this.refreshList();
     this.container.classList.add('visible');
     // Focus message field for quick entry
@@ -126,9 +129,24 @@ export class Guestbook {
       this.listEl.innerHTML = `<div class="gb-empty">${this.escape(I18n.t('guestbook.empty'))}</div>`;
       return;
     }
+    // After post: keep current page; newest is at index 0 so it's always visible
+    const visible = entries.slice(0, this.visibleCount);
     this.listEl.innerHTML = '';
-    for (const entry of entries) {
+    for (const entry of visible) {
       this.listEl.appendChild(this.renderEntry(entry, entry.id === highlightId));
+    }
+    if (entries.length > this.visibleCount) {
+      const moreBtn = document.createElement('button');
+      moreBtn.className = 'gb-more';
+      moreBtn.type = 'button';
+      const remaining = entries.length - this.visibleCount;
+      moreBtn.textContent = I18n.t('guestbook.loadMore', { n: Math.min(PAGE_SIZE, remaining) });
+      moreBtn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        this.visibleCount += PAGE_SIZE;
+        await this.refreshList();
+      });
+      this.listEl.appendChild(moreBtn);
     }
     // Scroll the newest entry into view (it's at the top after the newest-first sort)
     if (highlightId) this.listEl.scrollTop = 0;

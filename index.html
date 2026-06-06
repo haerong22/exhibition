@@ -312,6 +312,19 @@
     }
     #guestbook .gb-entry:hover .gb-entry-remove { opacity: 1; }
     #guestbook .gb-entry-remove:hover { color: #ff8a8a; }
+    #guestbook .gb-more {
+      align-self: center; margin-top: 0.3rem;
+      padding: 0.45rem 1rem;
+      background: transparent; color: var(--text-muted);
+      border: 1px solid var(--border-input); border-radius: 3px;
+      font-family: inherit; font-size: 0.75rem;
+      letter-spacing: 0.05em; cursor: pointer;
+      transition: all 0.15s;
+    }
+    #guestbook .gb-more:hover {
+      border-color: var(--border-strong); color: var(--text);
+      background: var(--bg-tag);
+    }
     #guestbook .gb-form {
       display: flex; flex-direction: column; gap: 0.5rem;
       padding-top: 1rem; border-top: 1px solid var(--border);

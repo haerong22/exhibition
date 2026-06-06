@@ -77,6 +77,7 @@ const ko: Messages = {
   'guestbook.messagePlaceholder': '전시에 대한 짧은 감상을 남겨주세요.',
   'guestbook.submit': '등록',
   'guestbook.remove': '삭제',
+  'guestbook.loadMore': '{n}개 더 보기',
   // Relative time
   'time.justNow': '방금 전',
   'time.minutesAgo': '{n}분 전',
@@ -276,6 +277,7 @@ const en: Messages = {
   'guestbook.messagePlaceholder': 'Leave a short impression of the exhibition.',
   'guestbook.submit': 'Post',
   'guestbook.remove': 'Remove',
+  'guestbook.loadMore': 'Load {n} more',
   'time.justNow': 'Just now',
   'time.minutesAgo': '{n}m ago',
   'time.hoursAgo': '{n}h ago',
