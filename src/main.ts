@@ -353,8 +353,18 @@ class App {
   }
 
   private showGuestbookButton(): void {
-    document.getElementById('guestbook-btn')?.classList.remove('hidden');
+    const btn = document.getElementById('guestbook-btn');
+    btn?.classList.remove('hidden');
     this.refreshGuestbookBadge();
+    // First-time hint pulse to draw attention to the button location (esp. mobile, no G shortcut)
+    const HINT_KEY = 'gallery-guestbook-hint-seen';
+    try {
+      if (btn && !localStorage.getItem(HINT_KEY)) {
+        btn.classList.add('pulse');
+        setTimeout(() => btn.classList.remove('pulse'), 5500);
+        localStorage.setItem(HINT_KEY, '1');
+      }
+    } catch { /* private mode */ }
   }
 
   private hideGuestbookButton(): void {

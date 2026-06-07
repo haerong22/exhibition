@@ -222,6 +222,19 @@
       font-size: 0.6rem; font-weight: 600;
       border-radius: 8px; line-height: 16px; text-align: center;
     }
+    /* First-visit hint pulse — golden ring expands and fades around the button */
+    @keyframes gbBtnPulse {
+      0%   { box-shadow: 0 0 0 0 rgba(255,209,102,0.7); }
+      70%  { box-shadow: 0 0 0 12px rgba(255,209,102,0); }
+      100% { box-shadow: 0 0 0 0 rgba(255,209,102,0); }
+    }
+    #guestbook-btn.pulse {
+      animation: gbBtnPulse 1.6s ease-out 0s 3;
+      border-color: rgba(255,209,102,0.55);
+    }
+    @media (prefers-reduced-motion: reduce) {
+      #guestbook-btn.pulse { animation: none; }
+    }
 
     /* Guestbook modal */
     #guestbook {
