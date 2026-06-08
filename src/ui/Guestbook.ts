@@ -14,6 +14,8 @@ export class Guestbook {
   private countEl: HTMLElement;
   private exhibitionId: string | null = null;
   private visibleCount = PAGE_SIZE;
+  private searchInput: HTMLInputElement;
+  private searchQuery = '';
 
   constructor() {
     this.container = document.createElement('div');
@@ -26,6 +28,7 @@ export class Guestbook {
           <h2 class="gb-title"></h2>
           <span class="gb-count"></span>
         </div>
+        <input class="gb-search" type="search" />
         <div class="gb-list"></div>
         <form class="gb-form" novalidate>
           <input class="gb-name" type="text" maxlength="40" />
@@ -42,6 +45,12 @@ export class Guestbook {
     this.submitBtn = this.container.querySelector('.gb-submit') as HTMLButtonElement;
     this.titleEl = this.container.querySelector('.gb-title') as HTMLElement;
     this.countEl = this.container.querySelector('.gb-count') as HTMLElement;
+    this.searchInput = this.container.querySelector('.gb-search') as HTMLInputElement;
+    this.searchInput.addEventListener('input', () => {
+      this.searchQuery = this.searchInput.value;
+      this.visibleCount = PAGE_SIZE;
+      void this.refreshList();
+    });
     const form = this.container.querySelector('.gb-form') as HTMLFormElement;
     const closeBtn = this.container.querySelector('.gb-close') as HTMLButtonElement;
     const backdrop = this.container.querySelector('.gb-backdrop') as HTMLElement;
@@ -102,6 +111,8 @@ export class Guestbook {
     if (!this.exhibitionId) return;
     this.refreshLabels();
     this.visibleCount = PAGE_SIZE; // reset paging each time it opens
+    this.searchQuery = '';
+    this.searchInput.value = '';
     await this.refreshList();
     this.container.classList.add('visible');
     // Focus message field for quick entry
@@ -116,6 +127,7 @@ export class Guestbook {
     this.nameInput.placeholder = I18n.t('guestbook.namePlaceholder');
     this.messageInput.placeholder = I18n.t('guestbook.messagePlaceholder');
     this.submitBtn.textContent = I18n.t('guestbook.submit');
+    this.searchInput.placeholder = I18n.t('guestbook.searchPlaceholder');
   }
 
   private async refreshList(highlightId?: string): Promise<void> {
@@ -123,10 +135,21 @@ export class Guestbook {
       this.listEl.innerHTML = '';
       return;
     }
-    const entries = await GuestbookStore.list(this.exhibitionId);
-    this.countEl.textContent = entries.length > 0 ? String(entries.length) : '';
-    if (entries.length === 0) {
+    const all = await GuestbookStore.list(this.exhibitionId);
+    this.countEl.textContent = all.length > 0 ? String(all.length) : '';
+    // Hide the search box when there are no entries at all
+    this.searchInput.style.display = all.length === 0 ? 'none' : '';
+    if (all.length === 0) {
       this.listEl.innerHTML = `<div class="gb-empty">${this.escape(I18n.t('guestbook.empty'))}</div>`;
+      return;
+    }
+    // Apply case-insensitive filter on name + message
+    const q = this.searchQuery.trim().toLowerCase();
+    const entries = q
+      ? all.filter((e) => e.name.toLowerCase().includes(q) || e.message.toLowerCase().includes(q))
+      : all;
+    if (entries.length === 0) {
+      this.listEl.innerHTML = `<div class="gb-empty">${this.escape(I18n.t('guestbook.noResults'))}</div>`;
       return;
     }
     // After post: keep current page; newest is at index 0 so it's always visible

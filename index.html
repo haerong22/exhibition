@@ -273,6 +273,15 @@
       font-size: 0.7rem; color: var(--text-faint);
       letter-spacing: 0.1em;
     }
+    #guestbook .gb-search {
+      width: 100%; margin-bottom: 0.7rem;
+      padding: 0.45rem 0.7rem;
+      background: var(--bg-input); color: var(--text);
+      border: 1px solid var(--border-input); border-radius: 3px;
+      font-family: inherit; font-size: 0.8rem; outline: none;
+    }
+    #guestbook .gb-search:focus { border-color: var(--border-input-focus); }
+    #guestbook .gb-search::placeholder { color: var(--text-faint); }
     #guestbook .gb-list {
       flex: 1; overflow-y: auto;
       display: flex; flex-direction: column; gap: 0.6rem;

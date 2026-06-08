@@ -78,6 +78,8 @@ const ko: Messages = {
   'guestbook.submit': '등록',
   'guestbook.remove': '삭제',
   'guestbook.loadMore': '{n}개 더 보기',
+  'guestbook.searchPlaceholder': '이름/내용 검색...',
+  'guestbook.noResults': '검색 결과가 없습니다.',
   // Relative time
   'time.justNow': '방금 전',
   'time.minutesAgo': '{n}분 전',
@@ -278,6 +280,8 @@ const en: Messages = {
   'guestbook.submit': 'Post',
   'guestbook.remove': 'Remove',
   'guestbook.loadMore': 'Load {n} more',
+  'guestbook.searchPlaceholder': 'Search name or message...',
+  'guestbook.noResults': 'No results.',
   'time.justNow': 'Just now',
   'time.minutesAgo': '{n}m ago',
   'time.hoursAgo': '{n}h ago',
