@@ -15,7 +15,9 @@ export class Guestbook {
   private exhibitionId: string | null = null;
   private visibleCount = PAGE_SIZE;
   private searchInput: HTMLInputElement;
+  private sortSelect: HTMLSelectElement;
   private searchQuery = '';
+  private sortMode: 'newest' | 'oldest' | 'name' = 'newest';
 
   constructor() {
     this.container = document.createElement('div');
@@ -28,7 +30,14 @@ export class Guestbook {
           <h2 class="gb-title"></h2>
           <span class="gb-count"></span>
         </div>
-        <input class="gb-search" type="search" />
+        <div class="gb-filters">
+          <input class="gb-search" type="search" />
+          <select class="gb-sort">
+            <option value="newest"></option>
+            <option value="oldest"></option>
+            <option value="name"></option>
+          </select>
+        </div>
         <div class="gb-list"></div>
         <form class="gb-form" novalidate>
           <input class="gb-name" type="text" maxlength="40" />
@@ -46,8 +55,14 @@ export class Guestbook {
     this.titleEl = this.container.querySelector('.gb-title') as HTMLElement;
     this.countEl = this.container.querySelector('.gb-count') as HTMLElement;
     this.searchInput = this.container.querySelector('.gb-search') as HTMLInputElement;
+    this.sortSelect = this.container.querySelector('.gb-sort') as HTMLSelectElement;
     this.searchInput.addEventListener('input', () => {
       this.searchQuery = this.searchInput.value;
+      this.visibleCount = PAGE_SIZE;
+      void this.refreshList();
+    });
+    this.sortSelect.addEventListener('change', () => {
+      this.sortMode = this.sortSelect.value as 'newest' | 'oldest' | 'name';
       this.visibleCount = PAGE_SIZE;
       void this.refreshList();
     });
@@ -113,6 +128,8 @@ export class Guestbook {
     this.visibleCount = PAGE_SIZE; // reset paging each time it opens
     this.searchQuery = '';
     this.searchInput.value = '';
+    this.sortMode = 'newest';
+    this.sortSelect.value = 'newest';
     await this.refreshList();
     this.container.classList.add('visible');
     // Focus message field for quick entry
@@ -128,6 +145,10 @@ export class Guestbook {
     this.messageInput.placeholder = I18n.t('guestbook.messagePlaceholder');
     this.submitBtn.textContent = I18n.t('guestbook.submit');
     this.searchInput.placeholder = I18n.t('guestbook.searchPlaceholder');
+    const opts = this.sortSelect.options;
+    opts[0].textContent = I18n.t('guestbook.sort.newest');
+    opts[1].textContent = I18n.t('guestbook.sort.oldest');
+    opts[2].textContent = I18n.t('guestbook.sort.name');
   }
 
   private async refreshList(highlightId?: string): Promise<void> {
@@ -137,22 +158,29 @@ export class Guestbook {
     }
     const all = await GuestbookStore.list(this.exhibitionId);
     this.countEl.textContent = all.length > 0 ? String(all.length) : '';
-    // Hide the search box when there are no entries at all
-    this.searchInput.style.display = all.length === 0 ? 'none' : '';
+    // Hide the filter row when there are no entries at all
+    const filters = this.container.querySelector('.gb-filters') as HTMLElement;
+    filters.style.display = all.length === 0 ? 'none' : '';
     if (all.length === 0) {
       this.listEl.innerHTML = `<div class="gb-empty">${this.escape(I18n.t('guestbook.empty'))}</div>`;
       return;
     }
     // Apply case-insensitive filter on name + message
     const q = this.searchQuery.trim().toLowerCase();
-    const entries = q
+    let entries = q
       ? all.filter((e) => e.name.toLowerCase().includes(q) || e.message.toLowerCase().includes(q))
-      : all;
+      : [...all];
     if (entries.length === 0) {
       this.listEl.innerHTML = `<div class="gb-empty">${this.escape(I18n.t('guestbook.noResults'))}</div>`;
       return;
     }
-    // After post: keep current page; newest is at index 0 so it's always visible
+    // Sort — store returns newest-first by default
+    if (this.sortMode === 'oldest') {
+      entries.sort((a, b) => Date.parse(a.createdAt) - Date.parse(b.createdAt));
+    } else if (this.sortMode === 'name') {
+      entries.sort((a, b) => a.name.localeCompare(b.name));
+    }
+    // After post: keep current page; newest is at index 0 (for newest sort)
     const visible = entries.slice(0, this.visibleCount);
     this.listEl.innerHTML = '';
     for (const entry of visible) {
