@@ -7,6 +7,7 @@ export interface GuestbookEntry {
   name: string;
   message: string;
   createdAt: string; // ISO timestamp
+  likes?: number;
 }
 
 export interface GuestbookDraft {
@@ -22,4 +23,7 @@ export interface GuestbookStorage {
   add(draft: GuestbookDraft): Promise<GuestbookEntry>;
   remove(id: string): Promise<void>;
   count(exhibitionId: string): Promise<number>;
+  // Adjusts the entry's like count by `delta` (typically +1 or -1) and returns the new count.
+  // Caller is responsible for tracking per-device liked state.
+  adjustLikes(id: string, delta: number): Promise<number>;
 }

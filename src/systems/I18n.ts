@@ -83,6 +83,7 @@ const ko: Messages = {
   'guestbook.sort.newest': '최신순',
   'guestbook.sort.oldest': '오래된순',
   'guestbook.sort.name': '이름순',
+  'guestbook.like': '좋아요',
   // Relative time
   'time.justNow': '방금 전',
   'time.minutesAgo': '{n}분 전',
@@ -288,6 +289,7 @@ const en: Messages = {
   'guestbook.sort.newest': 'Newest first',
   'guestbook.sort.oldest': 'Oldest first',
   'guestbook.sort.name': 'By name',
+  'guestbook.like': 'Like',
   'time.justNow': 'Just now',
   'time.minutesAgo': '{n}m ago',
   'time.hoursAgo': '{n}h ago',

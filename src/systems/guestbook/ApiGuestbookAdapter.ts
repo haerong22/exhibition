@@ -47,4 +47,18 @@ export class ApiGuestbookAdapter implements GuestbookStorage {
     if (!res.ok) throw new Error(`count failed: ${res.status}`);
     return res.json();
   }
+
+  async adjustLikes(id: string, delta: number): Promise<number> {
+    const res = await fetch(
+      `${this.baseUrl}/guestbook/entries/${encodeURIComponent(id)}/likes`,
+      {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ delta }),
+      },
+    );
+    if (!res.ok) throw new Error(`adjustLikes failed: ${res.status}`);
+    return res.json();
+  }
 }

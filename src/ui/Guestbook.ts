@@ -2,6 +2,7 @@ import { I18n } from '../systems/I18n';
 import { GuestbookStore, type GuestbookEntry } from '../systems/GuestbookStore';
 
 const NAME_KEY = 'gallery-guestbook-name';
+const LIKED_KEY = 'gallery-guestbook-liked';
 const PAGE_SIZE = 10;
 
 export class Guestbook {
@@ -18,6 +19,7 @@ export class Guestbook {
   private sortSelect: HTMLSelectElement;
   private searchQuery = '';
   private sortMode: 'newest' | 'oldest' | 'name' = 'newest';
+  private liked = new Set<string>();
 
   constructor() {
     this.container = document.createElement('div');
@@ -77,6 +79,11 @@ export class Guestbook {
     try {
       const saved = localStorage.getItem(NAME_KEY);
       if (saved) this.nameInput.value = saved;
+    } catch { /* private mode */ }
+    // Restore per-device liked set
+    try {
+      const raw = localStorage.getItem(LIKED_KEY);
+      if (raw) this.liked = new Set(JSON.parse(raw) as string[]);
     } catch { /* private mode */ }
 
     form.addEventListener('submit', async (e) => {
@@ -225,6 +232,23 @@ export class Guestbook {
     body.textContent = entry.message;
     row.appendChild(body);
 
+    // Like (heart) toggle in entry footer
+    const footer = document.createElement('div');
+    footer.className = 'gb-entry-footer';
+    const likeBtn = document.createElement('button');
+    likeBtn.className = 'gb-like';
+    likeBtn.type = 'button';
+    likeBtn.title = I18n.t('guestbook.like');
+    likeBtn.setAttribute('aria-label', I18n.t('guestbook.like'));
+    likeBtn.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg><span class="gb-like-count"></span>';
+    likeBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      void this.toggleLike(entry, row);
+    });
+    footer.appendChild(likeBtn);
+    row.appendChild(footer);
+    this.refreshLikeUi(row, entry);
+
     const removeBtn = document.createElement('button');
     removeBtn.className = 'gb-entry-remove';
     removeBtn.textContent = '×';
@@ -232,6 +256,8 @@ export class Guestbook {
     removeBtn.addEventListener('click', async (e) => {
       e.stopPropagation();
       await GuestbookStore.remove(entry.id);
+      this.liked.delete(entry.id);
+      this.persistLiked();
       await this.refreshList();
     });
     row.appendChild(removeBtn);
@@ -260,6 +286,34 @@ export class Guestbook {
 
   private localeTag(): string {
     return I18n.current === 'ko' ? 'ko-KR' : 'en-US';
+  }
+
+  private persistLiked(): void {
+    try { localStorage.setItem(LIKED_KEY, JSON.stringify([...this.liked])); }
+    catch { /* private mode */ }
+  }
+
+  private async toggleLike(entry: GuestbookEntry, row: HTMLElement): Promise<void> {
+    const wasLiked = this.liked.has(entry.id);
+    const delta = wasLiked ? -1 : 1;
+    // Optimistic: update local set + UI immediately
+    if (wasLiked) this.liked.delete(entry.id);
+    else this.liked.add(entry.id);
+    this.persistLiked();
+    const newCount = await GuestbookStore.adjustLikes(entry.id, delta);
+    entry.likes = newCount;
+    this.refreshLikeUi(row, entry);
+  }
+
+  private refreshLikeUi(row: HTMLElement, entry: GuestbookEntry): void {
+    const btn = row.querySelector('.gb-like') as HTMLButtonElement | null;
+    const countEl = row.querySelector('.gb-like-count') as HTMLElement | null;
+    if (!btn || !countEl) return;
+    const isLiked = this.liked.has(entry.id);
+    btn.classList.toggle('liked', isLiked);
+    btn.setAttribute('aria-pressed', isLiked ? 'true' : 'false');
+    const count = entry.likes ?? 0;
+    countEl.textContent = count > 0 ? String(count) : '';
   }
 
   private escape(s: string): string {

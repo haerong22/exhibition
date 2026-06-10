@@ -338,6 +338,34 @@
     }
     #guestbook .gb-entry:hover .gb-entry-remove { opacity: 1; }
     #guestbook .gb-entry-remove:hover { color: #ff8a8a; }
+    #guestbook .gb-entry-footer {
+      display: flex; align-items: center; margin-top: 0.45rem;
+    }
+    #guestbook .gb-like {
+      display: inline-flex; align-items: center; gap: 0.3rem;
+      padding: 0.22rem 0.5rem;
+      background: transparent; border: 1px solid var(--border-input);
+      border-radius: 999px; cursor: pointer;
+      color: var(--text-faint); font-family: inherit; font-size: 0.72rem;
+      transition: all 0.15s;
+    }
+    #guestbook .gb-like:hover { border-color: var(--border-strong); color: var(--text); }
+    #guestbook .gb-like.liked {
+      color: #ff5e7a; border-color: rgba(255,94,122,0.4);
+      background: rgba(255,94,122,0.08);
+    }
+    #guestbook .gb-like.liked svg { fill: #ff5e7a; }
+    #guestbook .gb-like-count:empty { display: none; }
+    /* tiny pop animation on like toggle */
+    @keyframes gbLikePop {
+      0% { transform: scale(1); }
+      40% { transform: scale(1.25); }
+      100% { transform: scale(1); }
+    }
+    #guestbook .gb-like.liked svg { animation: gbLikePop 0.25s ease-out; }
+    @media (prefers-reduced-motion: reduce) {
+      #guestbook .gb-like.liked svg { animation: none; }
+    }
     #guestbook .gb-more {
       align-self: center; margin-top: 0.3rem;
       padding: 0.45rem 1rem;

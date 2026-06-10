@@ -60,4 +60,18 @@ export class LocalStorageGuestbookAdapter implements GuestbookStorage {
   async count(exhibitionId: string): Promise<number> {
     return this.read()[exhibitionId]?.length ?? 0;
   }
+
+  async adjustLikes(id: string, delta: number): Promise<number> {
+    const store = this.read();
+    for (const key of Object.keys(store)) {
+      const list = store[key];
+      const entry = list.find((e) => e.id === id);
+      if (entry) {
+        entry.likes = Math.max(0, (entry.likes ?? 0) + delta);
+        this.write(store);
+        return entry.likes;
+      }
+    }
+    return 0;
+  }
 }
