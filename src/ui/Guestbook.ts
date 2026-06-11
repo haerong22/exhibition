@@ -18,7 +18,7 @@ export class Guestbook {
   private searchInput: HTMLInputElement;
   private sortSelect: HTMLSelectElement;
   private searchQuery = '';
-  private sortMode: 'newest' | 'oldest' | 'name' = 'newest';
+  private sortMode: 'newest' | 'oldest' | 'name' | 'likes' = 'newest';
   private liked = new Set<string>();
 
   constructor() {
@@ -38,6 +38,7 @@ export class Guestbook {
             <option value="newest"></option>
             <option value="oldest"></option>
             <option value="name"></option>
+            <option value="likes"></option>
           </select>
         </div>
         <div class="gb-list"></div>
@@ -64,7 +65,7 @@ export class Guestbook {
       void this.refreshList();
     });
     this.sortSelect.addEventListener('change', () => {
-      this.sortMode = this.sortSelect.value as 'newest' | 'oldest' | 'name';
+      this.sortMode = this.sortSelect.value as 'newest' | 'oldest' | 'name' | 'likes';
       this.visibleCount = PAGE_SIZE;
       void this.refreshList();
     });
@@ -156,6 +157,7 @@ export class Guestbook {
     opts[0].textContent = I18n.t('guestbook.sort.newest');
     opts[1].textContent = I18n.t('guestbook.sort.oldest');
     opts[2].textContent = I18n.t('guestbook.sort.name');
+    opts[3].textContent = I18n.t('guestbook.sort.likes');
   }
 
   private async refreshList(highlightId?: string): Promise<void> {
@@ -186,6 +188,12 @@ export class Guestbook {
       entries.sort((a, b) => Date.parse(a.createdAt) - Date.parse(b.createdAt));
     } else if (this.sortMode === 'name') {
       entries.sort((a, b) => a.name.localeCompare(b.name));
+    } else if (this.sortMode === 'likes') {
+      // Likes desc, then newest first as a tiebreaker
+      entries.sort((a, b) => {
+        const diff = (b.likes ?? 0) - (a.likes ?? 0);
+        return diff !== 0 ? diff : Date.parse(b.createdAt) - Date.parse(a.createdAt);
+      });
     }
     // After post: keep current page; newest is at index 0 (for newest sort)
     const visible = entries.slice(0, this.visibleCount);
