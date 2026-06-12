@@ -284,7 +284,19 @@
     }
     #guestbook .gb-search { flex: 1; }
     #guestbook .gb-sort { cursor: pointer; }
-    #guestbook .gb-search:focus, #guestbook .gb-sort:focus { border-color: var(--border-input-focus); }
+    #guestbook .gb-liked-only {
+      padding: 0.45rem 0.7rem;
+      background: var(--bg-input); color: var(--text-faint);
+      border: 1px solid var(--border-input); border-radius: 3px;
+      font-family: inherit; font-size: 0.9rem; line-height: 1;
+      cursor: pointer; transition: all 0.15s;
+    }
+    #guestbook .gb-liked-only:hover { border-color: var(--border-strong); color: var(--text); }
+    #guestbook .gb-liked-only.active {
+      color: #ff5e7a; border-color: rgba(255,94,122,0.5);
+      background: rgba(255,94,122,0.08);
+    }
+    #guestbook .gb-search:focus, #guestbook .gb-sort:focus, #guestbook .gb-liked-only:focus { border-color: var(--border-input-focus); outline: none; }
     #guestbook .gb-search::placeholder { color: var(--text-faint); }
     #guestbook .gb-list {
       flex: 1; overflow-y: auto;

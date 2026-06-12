@@ -19,6 +19,8 @@ export class Guestbook {
   private sortSelect: HTMLSelectElement;
   private searchQuery = '';
   private sortMode: 'newest' | 'oldest' | 'name' | 'likes' = 'newest';
+  private likedOnly = false;
+  private likedOnlyBtn: HTMLButtonElement;
   private liked = new Set<string>();
 
   constructor() {
@@ -34,6 +36,7 @@ export class Guestbook {
         </div>
         <div class="gb-filters">
           <input class="gb-search" type="search" />
+          <button class="gb-liked-only" type="button" aria-pressed="false">♥</button>
           <select class="gb-sort">
             <option value="newest"></option>
             <option value="oldest"></option>
@@ -59,6 +62,14 @@ export class Guestbook {
     this.countEl = this.container.querySelector('.gb-count') as HTMLElement;
     this.searchInput = this.container.querySelector('.gb-search') as HTMLInputElement;
     this.sortSelect = this.container.querySelector('.gb-sort') as HTMLSelectElement;
+    this.likedOnlyBtn = this.container.querySelector('.gb-liked-only') as HTMLButtonElement;
+    this.likedOnlyBtn.addEventListener('click', () => {
+      this.likedOnly = !this.likedOnly;
+      this.likedOnlyBtn.setAttribute('aria-pressed', this.likedOnly ? 'true' : 'false');
+      this.likedOnlyBtn.classList.toggle('active', this.likedOnly);
+      this.visibleCount = PAGE_SIZE;
+      void this.refreshList();
+    });
     this.searchInput.addEventListener('input', () => {
       this.searchQuery = this.searchInput.value;
       this.visibleCount = PAGE_SIZE;
@@ -138,6 +149,9 @@ export class Guestbook {
     this.searchInput.value = '';
     this.sortMode = 'newest';
     this.sortSelect.value = 'newest';
+    this.likedOnly = false;
+    this.likedOnlyBtn.classList.remove('active');
+    this.likedOnlyBtn.setAttribute('aria-pressed', 'false');
     await this.refreshList();
     this.container.classList.add('visible');
     // Focus message field for quick entry
@@ -158,6 +172,8 @@ export class Guestbook {
     opts[1].textContent = I18n.t('guestbook.sort.oldest');
     opts[2].textContent = I18n.t('guestbook.sort.name');
     opts[3].textContent = I18n.t('guestbook.sort.likes');
+    this.likedOnlyBtn.title = I18n.t('guestbook.likedOnly');
+    this.likedOnlyBtn.setAttribute('aria-label', I18n.t('guestbook.likedOnly'));
   }
 
   private async refreshList(highlightId?: string): Promise<void> {
@@ -174,11 +190,12 @@ export class Guestbook {
       this.listEl.innerHTML = `<div class="gb-empty">${this.escape(I18n.t('guestbook.empty'))}</div>`;
       return;
     }
-    // Apply case-insensitive filter on name + message
+    // Apply case-insensitive filter on name + message + optional liked-only
     const q = this.searchQuery.trim().toLowerCase();
     let entries = q
       ? all.filter((e) => e.name.toLowerCase().includes(q) || e.message.toLowerCase().includes(q))
       : [...all];
+    if (this.likedOnly) entries = entries.filter((e) => this.liked.has(e.id));
     if (entries.length === 0) {
       this.listEl.innerHTML = `<div class="gb-empty">${this.escape(I18n.t('guestbook.noResults'))}</div>`;
       return;
