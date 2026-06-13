@@ -5,6 +5,7 @@ import { TiledMapParser } from './gallery/TiledMapParser';
 import { TiledGalleryBuilder, type TextureConfig } from './gallery/TiledGalleryBuilder';
 import { TextureManager } from './systems/TextureManager';
 import { CustomMapStore, type CustomMap } from './systems/CustomMapStore';
+import { GuestbookStore, type GuestbookEntry } from './systems/GuestbookStore';
 import { I18n } from './systems/I18n';
 import { Theme } from './systems/Theme';
 import { disposeObject } from './utils/disposer';
@@ -424,6 +425,7 @@ class MapEditor {
       this.currentMapArtist = null;
       this.currentMapCurator = null;
       this.updateCurrentMapLabel();
+    void this.refreshGuestbookButton();
 
       this.resizeCanvas();
       this.render();
@@ -739,6 +741,15 @@ class MapEditor {
     // Help button → shortcut modal
     document.getElementById('btn-help')?.addEventListener('click', () => this.showShortcutHelp());
 
+    // Guestbook management button + modal close
+    document.getElementById('btn-guestbook')?.addEventListener('click', () => this.openEditorGuestbook());
+    document.getElementById('guestbook-modal-close')?.addEventListener('click', () => {
+      document.getElementById('guestbook-modal')?.classList.remove('visible');
+    });
+    document.querySelector('#guestbook-modal .modal-overlay')?.addEventListener('click', () => {
+      document.getElementById('guestbook-modal')?.classList.remove('visible');
+    });
+
     // Resize
     document.getElementById('btn-resize')!.addEventListener('click', () => {
       const w = parseInt((document.getElementById('map-width') as HTMLInputElement).value);
@@ -763,6 +774,7 @@ class MapEditor {
         this.previewInitialized = false;
         this.initGrid();
         this.updateCurrentMapLabel();
+    void this.refreshGuestbookButton();
         this.render();
         this.schedulePreviewUpdate();
         this.clearHistory();
@@ -1562,6 +1574,7 @@ class MapEditor {
     this.renderPlacedNotes();
     if (draft.editorMode) this.setEditorMode(draft.editorMode);
     this.updateCurrentMapLabel();
+    void this.refreshGuestbookButton();
     this.resizeCanvas();
     this.render();
     this.schedulePreviewUpdate();
@@ -1666,6 +1679,7 @@ class MapEditor {
     this.currentMapArtist = artist;
     this.currentMapCurator = curator;
     this.updateCurrentMapLabel();
+    void this.refreshGuestbookButton();
     this.isDirty = false;
     this.clearDraft();
 
@@ -1720,6 +1734,7 @@ class MapEditor {
     this.currentMapArtist = map.artist ?? null;
     this.currentMapCurator = map.curator ?? null;
     this.updateCurrentMapLabel();
+    void this.refreshGuestbookButton();
 
     this.resizeCanvas();
     this.render();
@@ -1966,6 +1981,7 @@ class MapEditor {
       // Re-render dynamic UI parts that aren't covered by data-i18n
       this.refreshArtworkSelect();
       this.updateCurrentMapLabel();
+    void this.refreshGuestbookButton();
       this.updateToolButtonTitles();
     });
     this.updateToolButtonTitles();
@@ -1979,6 +1995,92 @@ class MapEditor {
       const label = I18n.t(`editor.tool.${tool}`);
       btn.title = `${label} (${key})`;
     });
+  }
+
+  private async refreshGuestbookButton(): Promise<void> {
+    const btn = document.getElementById('btn-guestbook') as HTMLButtonElement | null;
+    if (!btn) return;
+    if (!this.currentMapId) {
+      btn.style.display = 'none';
+      return;
+    }
+    const count = await GuestbookStore.count(`custom-${this.currentMapId}`);
+    btn.textContent = I18n.t('editor.btn.guestbook', { n: count });
+    btn.style.display = '';
+  }
+
+  private async openEditorGuestbook(): Promise<void> {
+    if (!this.currentMapId) return;
+    const modal = document.getElementById('guestbook-modal');
+    const body = document.getElementById('guestbook-modal-body');
+    const titleEl = document.getElementById('guestbook-modal-title');
+    if (!modal || !body || !titleEl) return;
+    titleEl.textContent = I18n.t('editor.guestbook.title');
+    await this.renderEditorGuestbook(body);
+    modal.classList.add('visible');
+  }
+
+  private async renderEditorGuestbook(body: HTMLElement): Promise<void> {
+    if (!this.currentMapId) return;
+    const exhibitionId = `custom-${this.currentMapId}`;
+    const entries = await GuestbookStore.list(exhibitionId);
+    body.innerHTML = '';
+    if (entries.length === 0) {
+      const empty = document.createElement('div');
+      empty.className = 'modal-empty';
+      empty.textContent = I18n.t('editor.guestbook.empty');
+      body.appendChild(empty);
+      return;
+    }
+    for (const e of entries) {
+      body.appendChild(this.renderEditorGuestbookRow(e, body));
+    }
+  }
+
+  private renderEditorGuestbookRow(entry: GuestbookEntry, body: HTMLElement): HTMLElement {
+    const row = document.createElement('div');
+    row.className = 'gb-row';
+
+    const head = document.createElement('div');
+    head.className = 'gb-row-head';
+    const nameEl = document.createElement('span');
+    nameEl.className = 'gb-row-name';
+    nameEl.textContent = entry.name;
+    const timeEl = document.createElement('time');
+    timeEl.className = 'gb-row-time';
+    timeEl.dateTime = entry.createdAt;
+    timeEl.textContent = new Date(entry.createdAt).toLocaleString(
+      I18n.current === 'ko' ? 'ko-KR' : 'en-US',
+      { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' },
+    );
+    head.appendChild(nameEl);
+    head.appendChild(timeEl);
+    if ((entry.likes ?? 0) > 0) {
+      const likesEl = document.createElement('span');
+      likesEl.className = 'gb-row-likes';
+      likesEl.textContent = `♥ ${entry.likes}`;
+      head.appendChild(likesEl);
+    }
+    row.appendChild(head);
+
+    const bodyEl = document.createElement('p');
+    bodyEl.className = 'gb-row-body';
+    bodyEl.textContent = entry.message;
+    row.appendChild(bodyEl);
+
+    const removeBtn = document.createElement('button');
+    removeBtn.className = 'gb-row-remove';
+    removeBtn.textContent = '×';
+    removeBtn.title = I18n.t('guestbook.remove');
+    removeBtn.addEventListener('click', async () => {
+      const ok = await EditorModal.confirm(I18n.t('editor.guestbook.confirmRemove'));
+      if (!ok) return;
+      await GuestbookStore.remove(entry.id);
+      await this.renderEditorGuestbook(body);
+      await this.refreshGuestbookButton();
+    });
+    row.appendChild(removeBtn);
+    return row;
   }
 
   private showShortcutHelp(): void {
@@ -2094,6 +2196,7 @@ class MapEditor {
           this.currentMapId = null;
           this.currentMapName = null;
           this.updateCurrentMapLabel();
+    void this.refreshGuestbookButton();
         }
         this.openMapsModal();
       }

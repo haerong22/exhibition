@@ -280,6 +280,27 @@
     .map-item .map-btn.danger:hover { border-color: #a44; color: #ff8a8a; }
     .modal-empty { text-align: center; color: var(--text-min); font-size: 0.85rem; padding: 2rem 0; }
 
+    /* Editor guestbook list */
+    .gb-row {
+      position: relative; padding: 0.7rem 0.9rem; margin-bottom: 0.5rem;
+      background: var(--bg-tile); border: 1px solid var(--border-tile); border-radius: 4px;
+    }
+    .gb-row-head {
+      display: flex; align-items: baseline; gap: 0.6rem; margin-bottom: 0.3rem;
+    }
+    .gb-row-name { font-size: 0.82rem; font-weight: 500; color: var(--text); }
+    .gb-row-time { font-size: 0.7rem; color: var(--text-faint); }
+    .gb-row-likes { font-size: 0.7rem; color: #ff5e7a; margin-left: auto; }
+    .gb-row-body { font-size: 0.85rem; color: var(--text-muted); line-height: 1.55; white-space: pre-line; word-break: break-word; }
+    .gb-row-remove {
+      position: absolute; top: 0.4rem; right: 0.5rem;
+      width: 26px; height: 26px;
+      background: transparent; border: none; cursor: pointer;
+      color: var(--text-very-faint); font-size: 1.1rem; line-height: 1;
+      transition: color 0.15s;
+    }
+    .gb-row-remove:hover { color: #ff8a8a; }
+
     /* Mobile blocker — kept dark/light reactive */
     #mobile-blocker {
       position: fixed; inset: 0; z-index: 200;
@@ -346,6 +367,7 @@
       <span class="current-map" id="current-map-label" data-i18n="editor.label.newExhibition">새 전시회</span>
       <button class="btn" id="btn-new" data-i18n="editor.btn.new">새로 만들기</button>
       <button class="btn" id="btn-my-maps" data-i18n="editor.btn.myMaps">내 전시회</button>
+      <button class="btn" id="btn-guestbook" data-i18n="editor.btn.guestbook" style="display:none">방명록</button>
       <button class="btn" id="btn-save" data-i18n="editor.btn.save">저장</button>
       <button class="btn" id="btn-export" data-i18n="editor.btn.export">JSON 내보내기</button>
       <button class="btn primary" id="btn-preview" data-i18n="editor.btn.preview">3D 미리보기</button>
@@ -363,6 +385,17 @@
         <button class="modal-close" id="maps-modal-close">&times;</button>
       </div>
       <div class="modal-body" id="maps-modal-body"></div>
+    </div>
+  </div>
+
+  <div class="modal" id="guestbook-modal">
+    <div class="modal-overlay"></div>
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="guestbook-modal-title" data-i18n="editor.guestbook.title">방명록</h2>
+        <button class="modal-close" id="guestbook-modal-close">&times;</button>
+      </div>
+      <div class="modal-body" id="guestbook-modal-body"></div>
     </div>
   </div>
 
