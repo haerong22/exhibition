@@ -965,6 +965,8 @@ class App {
     const metaParts = [size, I18n.t('card.meta.artworkCount', { n: artCount }), updated];
     if (favCount > 0) metaParts.push(I18n.t('card.meta.favorites', { n: favCount }));
     if (gbEntries.length > 0) metaParts.push(I18n.t('card.meta.guestbookCount', { n: gbEntries.length }));
+    const totalLikes = gbEntries.reduce((sum, e) => sum + (e.likes ?? 0), 0);
+    if (totalLikes > 0) metaParts.push(I18n.t('card.meta.guestbookLikes', { n: totalLikes }));
     main.querySelector('.card-meta')!.textContent = metaParts.join(' · ');
 
     // Latest guestbook snippet (single line, ellipsised). Hidden if no entries.
