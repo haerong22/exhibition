@@ -955,19 +955,34 @@ class App {
     const updated = new Date(map.updatedAt).toLocaleString('ko-KR', {
       year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit',
     });
-    main.innerHTML = `<h3></h3><p class="card-meta"></p><p class="card-guestbook"></p>`;
+    main.innerHTML = `<h3></h3><p class="card-meta"></p><div class="card-stats"></div><p class="card-guestbook"></p>`;
     main.querySelector('h3')!.textContent = map.name;
     const exhibitionId = `custom-${map.id}`;
     const [favCount, gbEntries] = await Promise.all([
       FavoritesStore.count(exhibitionId),
       GuestbookStore.list(exhibitionId),
     ]);
+    // Base meta: dimensions / artwork count / updated date
     const metaParts = [size, I18n.t('card.meta.artworkCount', { n: artCount }), updated];
-    if (favCount > 0) metaParts.push(I18n.t('card.meta.favorites', { n: favCount }));
-    if (gbEntries.length > 0) metaParts.push(I18n.t('card.meta.guestbookCount', { n: gbEntries.length }));
-    const totalLikes = gbEntries.reduce((sum, e) => sum + (e.likes ?? 0), 0);
-    if (totalLikes > 0) metaParts.push(I18n.t('card.meta.guestbookLikes', { n: totalLikes }));
     main.querySelector('.card-meta')!.textContent = metaParts.join(' · ');
+
+    // Icon stats as pills (only those with non-zero counts)
+    const statsEl = main.querySelector('.card-stats') as HTMLElement;
+    const stats: { icon: string; n: number; cls: string }[] = [];
+    if (favCount > 0) stats.push({ icon: '★', n: favCount, cls: 'fav' });
+    if (gbEntries.length > 0) stats.push({ icon: '💬', n: gbEntries.length, cls: 'gb' });
+    const totalLikes = gbEntries.reduce((sum, e) => sum + (e.likes ?? 0), 0);
+    if (totalLikes > 0) stats.push({ icon: '♥', n: totalLikes, cls: 'like' });
+    if (stats.length === 0) {
+      statsEl.remove();
+    } else {
+      for (const s of stats) {
+        const pill = document.createElement('span');
+        pill.className = `card-stat card-stat-${s.cls}`;
+        pill.textContent = `${s.icon} ${s.n}`;
+        statsEl.appendChild(pill);
+      }
+    }
 
     // Latest guestbook snippet (single line, ellipsised). Hidden if no entries.
     const gbEl = main.querySelector('.card-guestbook') as HTMLElement;

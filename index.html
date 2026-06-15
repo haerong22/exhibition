@@ -888,6 +888,21 @@
       overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     }
     .exhibition-card .card-meta { font-size: 0.7rem; color: var(--text-very-faint); margin-top: 0.3rem; }
+    .exhibition-card .card-stats {
+      display: flex; flex-wrap: wrap; gap: 0.35rem;
+      margin-top: 0.4rem;
+    }
+    .exhibition-card .card-stat {
+      display: inline-flex; align-items: center;
+      padding: 0.18rem 0.5rem;
+      background: var(--bg-tag); color: var(--text-faint);
+      font-size: 0.68rem; letter-spacing: 0.04em;
+      border-radius: 999px;
+      line-height: 1.4;
+    }
+    .exhibition-card .card-stat-fav { color: #ffd166; }
+    .exhibition-card .card-stat-like { color: #ff5e7a; }
+    .exhibition-card .card-stat-gb { color: var(--text-muted); }
     .exhibition-card .card-guestbook {
       font-size: 0.72rem; color: var(--text-muted); margin-top: 0.35rem;
       font-style: italic; font-weight: 300;
