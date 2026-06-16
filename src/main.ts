@@ -49,7 +49,7 @@ class App {
   private templateTab: 'builtin' | 'custom' = 'builtin';
   private templateQuery = '';
   private exhibitionQuery = '';
-  private exhibitionSort: 'updated' | 'created' | 'name' = 'updated';
+  private exhibitionSort: 'updated' | 'created' | 'name' | 'popular' = 'updated';
   private static readonly TEMPLATES_PER_PAGE = 6;
   private loader: ExhibitionLoader;
   private router: Router;
@@ -570,7 +570,7 @@ class App {
       this.refreshCustomList(customEl);
     };
     exhSort.onchange = () => {
-      this.exhibitionSort = exhSort.value as 'updated' | 'created' | 'name';
+      this.exhibitionSort = exhSort.value as 'updated' | 'created' | 'name' | 'popular';
       this.refreshCustomList(customEl);
     };
 
@@ -648,15 +648,28 @@ class App {
     // Apply search filter
     const q = this.exhibitionQuery.trim().toLowerCase();
     const filtered = q ? all.filter((m) => m.name.toLowerCase().includes(q)) : all;
-    // Apply sort
-    const sorted = [...filtered].sort((a, b) => {
-      switch (this.exhibitionSort) {
-        case 'created': return Date.parse(b.createdAt) - Date.parse(a.createdAt);
-        case 'name': return a.name.localeCompare(b.name);
-        case 'updated':
-        default: return Date.parse(b.updatedAt) - Date.parse(a.updatedAt);
-      }
-    });
+    // Apply sort — popularity requires async fetches, others are sync on map fields
+    let sorted: typeof filtered;
+    if (this.exhibitionSort === 'popular') {
+      // Score = guestbook entry count + total likes (per exhibition)
+      const scored = await Promise.all(filtered.map(async (m) => {
+        const entries = await GuestbookStore.list(`custom-${m.id}`);
+        const score = entries.length + entries.reduce((s, e) => s + (e.likes ?? 0), 0);
+        return { m, score };
+      }));
+      // Higher score first; tiebreak by latest updated
+      scored.sort((a, b) => b.score - a.score || Date.parse(b.m.updatedAt) - Date.parse(a.m.updatedAt));
+      sorted = scored.map((x) => x.m);
+    } else {
+      sorted = [...filtered].sort((a, b) => {
+        switch (this.exhibitionSort) {
+          case 'created': return Date.parse(b.createdAt) - Date.parse(a.createdAt);
+          case 'name': return a.name.localeCompare(b.name);
+          case 'updated':
+          default: return Date.parse(b.updatedAt) - Date.parse(a.updatedAt);
+        }
+      });
+    }
 
     containerEl.innerHTML = '';
     if (sorted.length === 0) {
