@@ -35,7 +35,14 @@ export class LoadingScreen {
     }
   }
 
-  setMeta(opts: { artworkCount?: number; width?: number; height?: number }): void {
+  setMeta(opts: {
+    artworkCount?: number;
+    width?: number;
+    height?: number;
+    favorites?: number;
+    guestbook?: number;
+    likes?: number;
+  }): void {
     const parts: string[] = [];
     if (typeof opts.artworkCount === 'number' && opts.artworkCount > 0) {
       parts.push(this.escape(I18n.t('meta.artworkCount', { n: opts.artworkCount })));
@@ -43,12 +50,25 @@ export class LoadingScreen {
     if (opts.width && opts.height) {
       parts.push(this.escape(I18n.t('meta.size', { w: opts.width, h: opts.height })));
     }
-    if (parts.length === 0) {
+    // Engagement stats — only show pills when > 0, color-coded
+    const stats: string[] = [];
+    if (opts.favorites && opts.favorites > 0) {
+      stats.push(`<span class="meta-stat meta-fav">★ ${opts.favorites}</span>`);
+    }
+    if (opts.guestbook && opts.guestbook > 0) {
+      stats.push(`<span class="meta-stat meta-gb">💬 ${opts.guestbook}</span>`);
+    }
+    if (opts.likes && opts.likes > 0) {
+      stats.push(`<span class="meta-stat meta-like">♥ ${opts.likes}</span>`);
+    }
+    if (parts.length === 0 && stats.length === 0) {
       this.meta.innerHTML = '';
       this.meta.classList.remove('has-content');
       return;
     }
-    this.meta.innerHTML = parts.map((p) => `<span>${p}</span>`).join('<span class="sep">·</span>');
+    const baseHtml = parts.map((p) => `<span>${p}</span>`).join('<span class="sep">·</span>');
+    const statsHtml = stats.length > 0 ? `<span class="meta-stats">${stats.join('')}</span>` : '';
+    this.meta.innerHTML = baseHtml + statsHtml;
     this.meta.classList.add('has-content');
   }
 

@@ -1176,10 +1176,19 @@ class App {
     const { gridMap, artworks, textures, configId, name, description, artist, curator } = params;
     this.loadingScreen.setDescription(description);
     this.loadingScreen.setCredits({ artist, curator });
+    // Engagement stats — fetch in parallel, fall back to 0 on any error
+    const [favCount, gbEntries] = await Promise.all([
+      FavoritesStore.count(configId).catch(() => 0),
+      GuestbookStore.list(configId).catch(() => []),
+    ]);
+    const likesTotal = gbEntries.reduce((s, e) => s + (e.likes ?? 0), 0);
     this.loadingScreen.setMeta({
       artworkCount: artworks?.length ?? 0,
       width: gridMap.width,
       height: gridMap.height,
+      favorites: favCount,
+      guestbook: gbEntries.length,
+      likes: likesTotal,
     });
 
     const parser = new TiledMapParser();
@@ -1330,10 +1339,18 @@ class App {
       this.loadingScreen.setTitle(I18n.pick(config.name, config.nameKo));
       this.loadingScreen.setDescription(I18n.pick(config.description, config.descriptionKo));
       this.loadingScreen.setCredits({ artist: config.artist, curator: config.curator });
+      const [bfav, bgb] = await Promise.all([
+        FavoritesStore.count(config.id).catch(() => 0),
+        GuestbookStore.list(config.id).catch(() => []),
+      ]);
+      const blikes = bgb.reduce((s, e) => s + (e.likes ?? 0), 0);
       this.loadingScreen.setMeta({
         artworkCount: config.artworks?.length ?? 0,
         width: config.roomWidth,
         height: config.roomDepth,
+        favorites: bfav,
+        guestbook: bgb.length,
+        likes: blikes,
       });
 
       this.loadingScreen.setStage(I18n.t('loading.stage.texturesArtworks'), 0.15, 0.9);
