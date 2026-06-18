@@ -502,6 +502,7 @@ class App {
     this.hideGuestbookButton();
     this.guestbook.close();
     this.guestbook.setExhibitionId(null);
+    this.guestbook.setArtworks([]);
     this.infoPanel.setExhibitionId(null);
     this.currentFavorites = [];
     this.currentExhibitionId = null;
@@ -1235,6 +1236,7 @@ class App {
     this.artworkInteraction.setArtworks(this.tiledBuilder.artworkFrames);
     this.infoPanel.setExhibitionId(configId);
     this.guestbook.setExhibitionId(configId);
+    this.guestbook.setArtworks(this.tiledBuilder.artworkFrames.map((f) => f.config));
     this.currentExhibitionId = configId;
     await this.wireFavoritesTour(configId);
 
@@ -1374,6 +1376,7 @@ class App {
       this.artworkInteraction.setArtworks(this.galleryBuilder.artworkFrames);
       this.infoPanel.setExhibitionId(config.id);
       this.guestbook.setExhibitionId(config.id);
+      this.guestbook.setArtworks(this.galleryBuilder.artworkFrames.map((f) => f.config));
       this.currentExhibitionId = config.id;
       await this.wireFavoritesTour(config.id);
 

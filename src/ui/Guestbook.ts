@@ -1,5 +1,6 @@
 import { I18n } from '../systems/I18n';
 import { GuestbookStore, type GuestbookEntry } from '../systems/GuestbookStore';
+import type { ArtworkConfig } from '../types/exhibition';
 
 const NAME_KEY = 'gallery-guestbook-name';
 const LIKED_KEY = 'gallery-guestbook-liked';
@@ -14,6 +15,8 @@ export class Guestbook {
   private titleEl: HTMLElement;
   private countEl: HTMLElement;
   private exhibitionId: string | null = null;
+  private artworks: ArtworkConfig[] = [];
+  private formArtworkIds: string[] = [];
   private visibleCount = PAGE_SIZE;
   private searchInput: HTMLInputElement;
   private sortSelect: HTMLSelectElement;
@@ -48,6 +51,10 @@ export class Guestbook {
         <form class="gb-form" novalidate>
           <input class="gb-name" type="text" maxlength="40" />
           <textarea class="gb-message" rows="3" maxlength="500"></textarea>
+          <div class="gb-tag-row">
+            <select class="gb-tag-select"><option value=""></option></select>
+            <div class="gb-tag-chips"></div>
+          </div>
           <button type="submit" class="gb-submit"></button>
         </form>
       </div>
@@ -63,6 +70,14 @@ export class Guestbook {
     this.searchInput = this.container.querySelector('.gb-search') as HTMLInputElement;
     this.sortSelect = this.container.querySelector('.gb-sort') as HTMLSelectElement;
     this.likedOnlyBtn = this.container.querySelector('.gb-liked-only') as HTMLButtonElement;
+    const tagSelect = this.container.querySelector('.gb-tag-select') as HTMLSelectElement;
+    tagSelect.addEventListener('change', () => {
+      const id = tagSelect.value;
+      if (!id) return;
+      if (!this.formArtworkIds.includes(id)) this.formArtworkIds.push(id);
+      tagSelect.value = '';
+      this.renderTagChips();
+    });
     this.likedOnlyBtn.addEventListener('click', () => {
       this.likedOnly = !this.likedOnly;
       this.likedOnlyBtn.setAttribute('aria-pressed', this.likedOnly ? 'true' : 'false');
@@ -110,9 +125,12 @@ export class Guestbook {
           exhibitionId: this.exhibitionId,
           name,
           message,
+          ...(this.formArtworkIds.length > 0 ? { artworkIds: [...this.formArtworkIds] } : {}),
         });
         try { localStorage.setItem(NAME_KEY, name); } catch { /* ignore */ }
         this.messageInput.value = '';
+        this.formArtworkIds = [];
+        this.renderTagChips();
         await this.refreshList(created.id);
       } finally {
         this.submitBtn.disabled = false;
@@ -141,6 +159,10 @@ export class Guestbook {
     this.exhibitionId = id;
   }
 
+  setArtworks(artworks: ArtworkConfig[]): void {
+    this.artworks = artworks;
+  }
+
   async open(): Promise<void> {
     if (!this.exhibitionId) return;
     this.refreshLabels();
@@ -152,6 +174,9 @@ export class Guestbook {
     this.likedOnly = false;
     this.likedOnlyBtn.classList.remove('active');
     this.likedOnlyBtn.setAttribute('aria-pressed', 'false');
+    this.formArtworkIds = [];
+    this.renderTagSelector();
+    this.renderTagChips();
     await this.refreshList();
     this.container.classList.add('visible');
     // Focus message field for quick entry
@@ -257,6 +282,21 @@ export class Guestbook {
     body.textContent = entry.message;
     row.appendChild(body);
 
+    // Inline artwork tag chips
+    if (entry.artworkIds && entry.artworkIds.length > 0) {
+      const tagsEl = document.createElement('div');
+      tagsEl.className = 'gb-entry-tags';
+      for (const id of entry.artworkIds) {
+        const art = this.artworks.find((a) => a.id === id);
+        const label = art ? I18n.pick(art.title, art.titleKo) : id;
+        const chip = document.createElement('span');
+        chip.className = 'gb-entry-tag';
+        chip.textContent = `🖼 ${label}`;
+        tagsEl.appendChild(chip);
+      }
+      row.appendChild(tagsEl);
+    }
+
     // Like (heart) toggle in entry footer
     const footer = document.createElement('div');
     footer.className = 'gb-entry-footer';
@@ -328,6 +368,46 @@ export class Guestbook {
     const newCount = await GuestbookStore.adjustLikes(entry.id, delta);
     entry.likes = newCount;
     this.refreshLikeUi(row, entry);
+  }
+
+  private renderTagSelector(): void {
+    const select = this.container.querySelector('.gb-tag-select') as HTMLSelectElement;
+    select.innerHTML = '';
+    const placeholder = document.createElement('option');
+    placeholder.value = '';
+    placeholder.textContent = I18n.t('guestbook.tagPlaceholder');
+    select.appendChild(placeholder);
+    for (const art of this.artworks) {
+      const opt = document.createElement('option');
+      opt.value = art.id;
+      opt.textContent = I18n.pick(art.title, art.titleKo);
+      select.appendChild(opt);
+    }
+    // Hide entirely if no artworks available
+    select.style.display = this.artworks.length === 0 ? 'none' : '';
+  }
+
+  private renderTagChips(): void {
+    const wrap = this.container.querySelector('.gb-tag-chips') as HTMLElement;
+    wrap.innerHTML = '';
+    for (const id of this.formArtworkIds) {
+      const art = this.artworks.find((a) => a.id === id);
+      const label = art ? I18n.pick(art.title, art.titleKo) : id;
+      const chip = document.createElement('span');
+      chip.className = 'gb-tag-chip';
+      chip.textContent = label;
+      const x = document.createElement('button');
+      x.type = 'button';
+      x.className = 'gb-tag-chip-x';
+      x.textContent = '×';
+      x.title = I18n.t('guestbook.tagRemove');
+      x.addEventListener('click', () => {
+        this.formArtworkIds = this.formArtworkIds.filter((a) => a !== id);
+        this.renderTagChips();
+      });
+      chip.appendChild(x);
+      wrap.appendChild(chip);
+    }
   }
 
   private refreshLikeUi(row: HTMLElement, entry: GuestbookEntry): void {

@@ -88,6 +88,8 @@ const ko: Messages = {
   'guestbook.sort.likes': '좋아요순',
   'guestbook.like': '좋아요',
   'guestbook.likedOnly': '내가 좋아한 글만 보기',
+  'guestbook.tagPlaceholder': '+ 관련 작품 추가',
+  'guestbook.tagRemove': '제거',
   // Relative time
   'time.justNow': '방금 전',
   'time.minutesAgo': '{n}분 전',
@@ -302,6 +304,8 @@ const en: Messages = {
   'guestbook.sort.likes': 'Most liked',
   'guestbook.like': 'Like',
   'guestbook.likedOnly': 'Show only liked',
+  'guestbook.tagPlaceholder': '+ Tag artwork',
+  'guestbook.tagRemove': 'Remove',
   'time.justNow': 'Just now',
   'time.minutesAgo': '{n}m ago',
   'time.hoursAgo': '{n}h ago',

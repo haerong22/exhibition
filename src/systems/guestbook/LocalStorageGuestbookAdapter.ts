@@ -35,6 +35,7 @@ export class LocalStorageGuestbookAdapter implements GuestbookStorage {
       name: draft.name.trim().slice(0, 40) || '익명',
       message: draft.message.trim().slice(0, 500),
       createdAt: draft.createdAt ?? new Date().toISOString(),
+      ...(draft.artworkIds && draft.artworkIds.length > 0 ? { artworkIds: [...draft.artworkIds] } : {}),
     };
     const list = store[draft.exhibitionId] ? [...store[draft.exhibitionId]] : [];
     list.push(entry);

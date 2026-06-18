@@ -421,6 +421,43 @@
     #guestbook .gb-form input::placeholder, #guestbook .gb-form textarea::placeholder {
       color: var(--text-faint);
     }
+    #guestbook .gb-tag-row {
+      display: flex; flex-direction: column; gap: 0.4rem;
+    }
+    #guestbook .gb-tag-select {
+      padding: 0.4rem 0.6rem;
+      background: var(--bg-input); color: var(--text-muted);
+      border: 1px solid var(--border-input); border-radius: 3px;
+      font-family: inherit; font-size: 0.78rem; outline: none; cursor: pointer;
+    }
+    #guestbook .gb-tag-select:focus { border-color: var(--border-input-focus); }
+    #guestbook .gb-tag-chips:empty { display: none; }
+    #guestbook .gb-tag-chips {
+      display: flex; flex-wrap: wrap; gap: 0.3rem;
+    }
+    #guestbook .gb-tag-chip {
+      display: inline-flex; align-items: center; gap: 0.3rem;
+      padding: 0.2rem 0.55rem;
+      background: rgba(74,158,255,0.12); color: #4a9eff;
+      border: 1px solid rgba(74,158,255,0.3); border-radius: 999px;
+      font-size: 0.7rem;
+    }
+    #guestbook .gb-tag-chip-x {
+      background: transparent; border: none; cursor: pointer;
+      color: inherit; font-size: 0.95rem; line-height: 1; padding: 0;
+      opacity: 0.6;
+    }
+    #guestbook .gb-tag-chip-x:hover { opacity: 1; }
+    #guestbook .gb-entry-tags {
+      display: flex; flex-wrap: wrap; gap: 0.3rem; margin-top: 0.4rem;
+    }
+    #guestbook .gb-entry-tag {
+      display: inline-flex; align-items: center;
+      padding: 0.15rem 0.5rem;
+      background: rgba(74,158,255,0.1); color: #4a9eff;
+      border-radius: 999px; font-size: 0.66rem;
+      letter-spacing: 0.02em;
+    }
     #guestbook .gb-submit {
       align-self: flex-end; padding: 0.55rem 1.2rem;
       background: var(--text); color: var(--bg);

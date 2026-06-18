@@ -8,6 +8,8 @@ export interface GuestbookEntry {
   message: string;
   createdAt: string; // ISO timestamp
   likes?: number;
+  // Optional artwork IDs this entry references
+  artworkIds?: string[];
 }
 
 export interface GuestbookDraft {
@@ -16,6 +18,7 @@ export interface GuestbookDraft {
   message: string;
   // Optional — set by import flow to preserve original timestamp
   createdAt?: string;
+  artworkIds?: string[];
 }
 
 export interface GuestbookStorage {
