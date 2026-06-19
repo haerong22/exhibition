@@ -213,6 +213,7 @@ const ko: Messages = {
   'editor.notes.noNote': '메모 없음',
   // Artwork panel — curator note
   'panel.curatorNote': '큐레이터 노트',
+  'panel.taggedComments': '이 작품 관련 코멘트 {n}',
   // Welcome guide
   'welcome.step': '{current} / {total}',
   'welcome.skip': '건너뛰기',
@@ -419,6 +420,7 @@ const en: Messages = {
   'editor.notes.hasNote': 'Has note',
   'editor.notes.noNote': 'No note',
   'panel.curatorNote': 'Curator note',
+  'panel.taggedComments': '{n} comment(s) about this work',
   'welcome.step': '{current} / {total}',
   'welcome.skip': 'Skip',
   'welcome.next': 'Next',

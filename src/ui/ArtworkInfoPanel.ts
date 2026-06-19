@@ -1,5 +1,6 @@
 import type { ArtworkConfig } from '../types/exhibition';
 import { FavoritesStore } from '../systems/FavoritesStore';
+import { GuestbookStore } from '../systems/GuestbookStore';
 import { I18n } from '../systems/I18n';
 import { ImageZoom } from './ImageZoom';
 
@@ -42,6 +43,7 @@ export class ArtworkInfoPanel {
   private imageWrap: HTMLElement;
   private artImage: HTMLImageElement;
   private curatorNoteEl: HTMLElement;
+  private commentsEl: HTMLElement;
   private zoom: ImageZoom;
   private onCloseCallback: (() => void) | null = null;
   private onPrevCallback: (() => void) | null = null;
@@ -69,6 +71,7 @@ export class ArtworkInfoPanel {
     this.imageWrap = this.panel.querySelector('.art-image-wrap') as HTMLElement;
     this.artImage = this.panel.querySelector('.art-image') as HTMLImageElement;
     this.curatorNoteEl = this.panel.querySelector('.art-curator-note') as HTMLElement;
+    this.commentsEl = this.panel.querySelector('.art-comments') as HTMLElement;
     this.zoom = new ImageZoom();
 
     this.imageWrap.addEventListener('click', () => {
@@ -179,8 +182,64 @@ export class ArtworkInfoPanel {
     this.refreshFavButton(false);
     this.refreshFavStateAsync(config.id);
 
+    // Clear & refresh tagged guestbook comments for this artwork
+    this.commentsEl.innerHTML = '';
+    this.commentsEl.classList.remove('has-content');
+    void this.refreshTaggedComments(config.id);
+
     // Fetch project detail from API
     this.fetchProjectDetail(config.id);
+  }
+
+  private async refreshTaggedComments(artworkId: string): Promise<void> {
+    if (!this.exhibitionId) return;
+    const all = await GuestbookStore.list(this.exhibitionId);
+    // Stale guard: another artwork was opened during await
+    if (this.currentArtworkId !== artworkId) return;
+    const matches = all.filter((e) => e.artworkIds?.includes(artworkId));
+    if (matches.length === 0) {
+      this.commentsEl.innerHTML = '';
+      this.commentsEl.classList.remove('has-content');
+      return;
+    }
+    this.commentsEl.innerHTML = '';
+    const title = document.createElement('div');
+    title.className = 'art-comments-title';
+    title.textContent = I18n.t('panel.taggedComments', { n: matches.length });
+    this.commentsEl.appendChild(title);
+    for (const e of matches) {
+      this.commentsEl.appendChild(this.renderComment(e));
+    }
+    this.commentsEl.classList.add('has-content');
+  }
+
+  private renderComment(entry: { name: string; message: string; createdAt: string; likes?: number }): HTMLElement {
+    const row = document.createElement('div');
+    row.className = 'art-comment';
+    const head = document.createElement('div');
+    head.className = 'art-comment-head';
+    const name = document.createElement('span');
+    name.className = 'art-comment-name';
+    name.textContent = entry.name;
+    const time = document.createElement('time');
+    time.className = 'art-comment-time';
+    time.dateTime = entry.createdAt;
+    const localeTag = I18n.current === 'ko' ? 'ko-KR' : 'en-US';
+    time.textContent = new Date(entry.createdAt).toLocaleDateString(localeTag, { month: '2-digit', day: '2-digit' });
+    head.appendChild(name);
+    head.appendChild(time);
+    if ((entry.likes ?? 0) > 0) {
+      const likes = document.createElement('span');
+      likes.className = 'art-comment-likes';
+      likes.textContent = `♥ ${entry.likes}`;
+      head.appendChild(likes);
+    }
+    row.appendChild(head);
+    const body = document.createElement('p');
+    body.className = 'art-comment-body';
+    body.textContent = entry.message;
+    row.appendChild(body);
+    return row;
   }
 
   private async refreshFavStateAsync(artworkId: string): Promise<void> {

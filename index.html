@@ -783,6 +783,38 @@
     #artwork-panel .art-body a { color: #8ab4f8; text-decoration: none; }
     #artwork-panel .art-body a:hover { text-decoration: underline; }
 
+    /* Tagged guestbook comments referencing this artwork */
+    #artwork-panel .art-comments {
+      display: none; margin-top: 1.5rem; padding-top: 1.2rem;
+      border-top: 1px solid var(--border-input);
+    }
+    #artwork-panel .art-comments.has-content { display: block; }
+    #artwork-panel .art-comments-title {
+      font-size: 0.7rem; color: #4a9eff; letter-spacing: 0.2em;
+      text-transform: uppercase; margin-bottom: 0.8rem;
+    }
+    #artwork-panel .art-comment {
+      padding: 0.6rem 0.7rem; margin-bottom: 0.5rem;
+      background: var(--bg-tag); border-radius: 4px;
+    }
+    #artwork-panel .art-comment-head {
+      display: flex; align-items: baseline; gap: 0.5rem;
+      margin-bottom: 0.2rem;
+    }
+    #artwork-panel .art-comment-name {
+      font-size: 0.75rem; font-weight: 500; color: var(--text);
+    }
+    #artwork-panel .art-comment-time {
+      font-size: 0.62rem; color: var(--text-faint);
+    }
+    #artwork-panel .art-comment-likes {
+      margin-left: auto; font-size: 0.65rem; color: #ff5e7a;
+    }
+    #artwork-panel .art-comment-body {
+      font-size: 0.78rem; line-height: 1.55; color: var(--text-muted);
+      white-space: pre-line; word-break: break-word;
+    }
+
     /* Exhibition Picker */
     #exhibition-picker {
       position: fixed; inset: 0; z-index: 50;
@@ -1122,6 +1154,7 @@
     <p class="art-stats"></p>
     <a class="art-link" data-i18n="panel.link" target="_blank" rel="noopener noreferrer">Grafolio에서 보기 →</a>
     <div class="art-body"></div>
+    <div class="art-comments"></div>
     <p class="art-loading"></p>
   </div>
 
