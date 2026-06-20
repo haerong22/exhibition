@@ -90,6 +90,7 @@ class App {
     this.welcomeGuide = new WelcomeGuide(this.isMobile);
     this.shortcutHelp.setReplayCallback(() => this.welcomeGuide.show());
     this.guestbook = new Guestbook();
+    this.guestbook.onChange(() => void this.refreshMinimapTags());
     this.soundManager = new SoundManager();
     this.minimap.onTeleport((wx, wz) => this.teleportTo(wx, wz));
 
@@ -508,6 +509,7 @@ class App {
     this.currentExhibitionId = null;
     this.autoTour.setFavoritesAvailable(false);
     this.minimap.setFavorites([]);
+    this.minimap.setTaggedArtworks([]);
     if (!this.isMobile) this.fpControls.unlock();
     this.engine.scene.clear();
     this.engine.scene.fog = null;
@@ -1239,6 +1241,7 @@ class App {
     this.guestbook.setArtworks(this.tiledBuilder.artworkFrames.map((f) => f.config));
     this.currentExhibitionId = configId;
     await this.wireFavoritesTour(configId);
+    await this.refreshMinimapTags();
 
     // Setup minimap with grid + artwork positions
     this.minimap.setup(gridMap, parsedMap.artworkSlots);
@@ -1275,6 +1278,20 @@ class App {
       await refresh();
     });
     await refresh();
+  }
+
+  // Collect artwork IDs referenced by guestbook entries → minimap rings
+  private async refreshMinimapTags(): Promise<void> {
+    if (!this.currentExhibitionId) {
+      this.minimap.setTaggedArtworks([]);
+      return;
+    }
+    const entries = await GuestbookStore.list(this.currentExhibitionId).catch(() => []);
+    const tagged = new Set<string>();
+    for (const e of entries) {
+      if (e.artworkIds) for (const id of e.artworkIds) tagged.add(id);
+    }
+    this.minimap.setTaggedArtworks(tagged);
   }
 
   private teleportTo(worldX: number, worldZ: number): boolean {

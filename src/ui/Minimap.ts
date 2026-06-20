@@ -24,6 +24,7 @@ export class Minimap {
   private mapDepth = 0;
   private artworkSlots: ParsedArtworkSlot[] = [];
   private favoriteIds = new Set<string>();
+  private taggedIds = new Set<string>();
   private tileSize = 1;
   private offsetX = 0;
   private offsetY = 0;
@@ -43,6 +44,10 @@ export class Minimap {
 
   setFavorites(ids: string[] | Set<string>): void {
     this.favoriteIds = ids instanceof Set ? new Set(ids) : new Set(ids);
+  }
+
+  setTaggedArtworks(ids: string[] | Set<string>): void {
+    this.taggedIds = ids instanceof Set ? new Set(ids) : new Set(ids);
   }
 
   private handleClick(e: MouseEvent): void {
@@ -66,6 +71,7 @@ export class Minimap {
     this.mapDepth = gridMap.height;
     this.artworkSlots = artworkSlots;
     this.favoriteIds = new Set();
+    this.taggedIds = new Set();
 
     // Scale to fit
     const dpr = Math.min(window.devicePixelRatio, 2);
@@ -120,20 +126,31 @@ export class Minimap {
       }
     }
 
-    // Draw artwork positions — favorites in gold, others in blue
+    // Draw artwork positions — favorites in gold, others in blue.
+    // Tagged artworks (referenced by guestbook comments) get an outer cyan ring.
     const dotR = Math.max(2, ts * 0.4);
     for (const slot of this.artworkSlots) {
       const ax = fx(slot.worldX);
       const ay = fy(-slot.worldZ); // worldZ = -(row+0.5)
       const isFav = this.favoriteIds.has(slot.artworkId);
+      const isTagged = this.taggedIds.has(slot.artworkId);
+      const r = isFav ? dotR * 1.2 : dotR;
       ctx.fillStyle = isFav ? '#ffd166' : '#4a9eff';
       ctx.beginPath();
-      ctx.arc(ax, ay, isFav ? dotR * 1.2 : dotR, 0, Math.PI * 2);
+      ctx.arc(ax, ay, r, 0, Math.PI * 2);
       ctx.fill();
       if (isFav) {
         // Thin dark outline so the gold dot stays readable on light walls
         ctx.strokeStyle = 'rgba(0,0,0,0.4)';
         ctx.lineWidth = 1;
+        ctx.stroke();
+      }
+      if (isTagged) {
+        // Cyan ring around the dot — denotes "guestbook references this artwork"
+        ctx.strokeStyle = '#7ee0ff';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(ax, ay, r + 3, 0, Math.PI * 2);
         ctx.stroke();
       }
     }

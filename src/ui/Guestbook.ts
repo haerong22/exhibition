@@ -25,6 +25,7 @@ export class Guestbook {
   private likedOnly = false;
   private likedOnlyBtn: HTMLButtonElement;
   private liked = new Set<string>();
+  private onChangeCallback: (() => void) | null = null;
 
   constructor() {
     this.container = document.createElement('div');
@@ -132,6 +133,7 @@ export class Guestbook {
         this.formArtworkIds = [];
         this.renderTagChips();
         await this.refreshList(created.id);
+        this.onChangeCallback?.();
       } finally {
         this.submitBtn.disabled = false;
       }
@@ -161,6 +163,10 @@ export class Guestbook {
 
   setArtworks(artworks: ArtworkConfig[]): void {
     this.artworks = artworks;
+  }
+
+  onChange(cb: () => void): void {
+    this.onChangeCallback = cb;
   }
 
   async open(): Promise<void> {
@@ -324,6 +330,7 @@ export class Guestbook {
       this.liked.delete(entry.id);
       this.persistLiked();
       await this.refreshList();
+      this.onChangeCallback?.();
     });
     row.appendChild(removeBtn);
     return row;
