@@ -247,6 +247,7 @@ class App {
     this.setupThemeToggle();
     this.setupScreenshotButton();
     this.setupGuestbookButton();
+    this.setupPickerScrollShadow();
 
     // Router
     this.router.onRouteChange((route) => {
@@ -278,6 +279,15 @@ class App {
         this.showPicker();
       }
     });
+  }
+
+  private setupPickerScrollShadow(): void {
+    const picker = document.getElementById('exhibition-picker');
+    const header = picker?.querySelector('.picker-header') as HTMLElement | null;
+    if (!picker || !header) return;
+    picker.addEventListener('scroll', () => {
+      header.classList.toggle('scrolled', picker.scrollTop > 4);
+    }, { passive: true });
   }
 
   private setupThemeToggle(): void {
