@@ -846,6 +846,32 @@
       position: absolute; top: 1.1rem; right: 0;
       display: flex; gap: 0.4rem;
     }
+    /* Quick-resume last visited exhibition */
+    .resume-btn {
+      position: absolute; top: 1.1rem; left: 0;
+      display: inline-flex; align-items: center; gap: 0.45rem;
+      max-width: 260px;
+      padding: 0.45rem 0.9rem;
+      background: var(--bg-tag); color: var(--text);
+      border: 1px solid var(--border); border-radius: 999px;
+      font-family: inherit; font-size: 0.72rem;
+      letter-spacing: 0.05em; cursor: pointer;
+      transition: all 0.2s ease;
+      overflow: hidden;
+    }
+    .resume-btn:hover {
+      border-color: var(--border-strong);
+      background: var(--bg-card-hover);
+    }
+    .resume-btn .resume-icon { color: #4a9eff; font-size: 0.8rem; line-height: 1; }
+    .resume-btn .resume-name {
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+      max-width: 180px;
+    }
+    .resume-btn .resume-label {
+      color: var(--text-faint); font-size: 0.62rem;
+      letter-spacing: 0.15em; text-transform: uppercase;
+    }
     .lang-toggle, .theme-toggle {
       padding: 0.4rem 0.9rem;
       background: transparent; color: var(--text-muted);
@@ -1080,8 +1106,11 @@
       #artwork-panel .art-curator-note::before { font-size: 0.62rem; margin-bottom: 0.35rem; }
       #loading-title { font-size: 1.3rem; }
       #minimap { bottom: 0.8rem; right: 0.8rem; }
-      #exhibition-picker { padding: 2rem 1rem; }
-      #picker-title { font-size: 1rem; margin-bottom: 1.5rem; }
+      #exhibition-picker { padding: 0 1rem 2rem; }
+      #picker-title { font-size: 1rem; }
+      .resume-btn { max-width: 140px; padding: 0.4rem 0.7rem; font-size: 0.66rem; }
+      .resume-btn .resume-label { display: none; }
+      .resume-btn .resume-name { max-width: 100px; }
       .template-grid { grid-template-columns: 1fr 1fr; gap: 0.6rem; }
       .template-card .template-preview { height: 100px; }
       .template-card .card-body { padding: 0.6rem 0.7rem; }
@@ -1176,6 +1205,7 @@
   <div id="exhibition-picker" class="hidden">
     <div class="picker-header">
       <div id="picker-title" data-i18n="picker.title">전시 선택</div>
+      <button id="resume-btn" class="resume-btn" style="display:none"></button>
       <div class="picker-toggles">
         <button id="theme-toggle" class="theme-toggle" data-i18n-title="btn.theme.title" aria-label="Theme"></button>
         <button id="lang-toggle" class="lang-toggle" data-i18n-title="btn.lang.title" aria-label="Language"></button>

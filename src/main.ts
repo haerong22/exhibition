@@ -281,6 +281,52 @@ class App {
     });
   }
 
+  private static readonly LAST_VISIT_KEY = 'gallery-last-visit';
+
+  // Persist last visited exhibition for the quick-resume button
+  private recordLastVisit(exhibitionId: string, name: string): void {
+    try {
+      localStorage.setItem(App.LAST_VISIT_KEY, JSON.stringify({
+        id: exhibitionId,
+        name,
+        at: new Date().toISOString(),
+      }));
+    } catch { /* private mode */ }
+  }
+
+  // Show the resume button if the last-visited exhibition still resolves
+  private async refreshResumeButton(): Promise<void> {
+    const btn = document.getElementById('resume-btn') as HTMLButtonElement | null;
+    if (!btn) return;
+    let last: { id: string; name: string; at: string } | null = null;
+    try {
+      const raw = localStorage.getItem(App.LAST_VISIT_KEY);
+      if (raw) last = JSON.parse(raw);
+    } catch { /* ignore */ }
+    if (!last?.id) { btn.style.display = 'none'; return; }
+    // Validate that the target still exists (skip check for built-in IDs)
+    if (last.id.startsWith('custom-')) {
+      const map = await CustomMapStore.get(last.id.replace(/^custom-/, ''));
+      if (!map) { btn.style.display = 'none'; return; }
+      last.name = map.name; // refresh in case it was renamed
+    }
+    btn.innerHTML = '';
+    const icon = document.createElement('span');
+    icon.className = 'resume-icon';
+    icon.textContent = '↻';
+    const label = document.createElement('span');
+    label.className = 'resume-label';
+    label.textContent = I18n.t('picker.resume.label');
+    const name = document.createElement('span');
+    name.className = 'resume-name';
+    name.textContent = last.name;
+    btn.appendChild(icon);
+    btn.appendChild(label);
+    btn.appendChild(name);
+    btn.style.display = 'inline-flex';
+    btn.onclick = () => { this.router.navigateTo(last!.id); };
+  }
+
   private setupPickerScrollShadow(): void {
     const picker = document.getElementById('exhibition-picker');
     const header = picker?.querySelector('.picker-header') as HTMLElement | null;
@@ -527,6 +573,7 @@ class App {
 
     const picker = document.getElementById('exhibition-picker');
     picker?.classList.remove('hidden');
+    void this.refreshResumeButton();
 
     const templatesEl = document.getElementById('picker-templates')!;
     const customEl = document.getElementById('picker-custom')!;
@@ -1252,6 +1299,7 @@ class App {
     this.currentExhibitionId = configId;
     await this.wireFavoritesTour(configId);
     await this.refreshMinimapTags();
+    this.recordLastVisit(configId, name);
 
     // Setup minimap with grid + artwork positions
     this.minimap.setup(gridMap, parsedMap.artworkSlots);
@@ -1405,6 +1453,7 @@ class App {
       this.guestbook.setExhibitionId(config.id);
       this.guestbook.setArtworks(this.galleryBuilder.artworkFrames.map((f) => f.config));
       this.currentExhibitionId = config.id;
+      this.recordLastVisit(config.id, I18n.pick(config.name, config.nameKo));
       await this.wireFavoritesTour(config.id);
 
       // Show enter button
