@@ -26,6 +26,9 @@ export class Guestbook {
   private likedOnlyBtn: HTMLButtonElement;
   private liked = new Set<string>();
   private onChangeCallback: (() => void) | null = null;
+  private autocompleteEl: HTMLElement | null = null;
+  private autocompleteItems: ArtworkConfig[] = [];
+  private autocompleteIndex = -1;
 
   constructor() {
     this.container = document.createElement('div');
@@ -51,7 +54,10 @@ export class Guestbook {
         <div class="gb-list"></div>
         <form class="gb-form" novalidate>
           <input class="gb-name" type="text" maxlength="40" />
-          <textarea class="gb-message" rows="3" maxlength="500"></textarea>
+          <div class="gb-message-wrap">
+            <textarea class="gb-message" rows="3" maxlength="500"></textarea>
+            <div class="gb-autocomplete" hidden></div>
+          </div>
           <div class="gb-tag-row">
             <select class="gb-tag-select"><option value=""></option></select>
             <div class="gb-tag-chips"></div>
@@ -71,6 +77,15 @@ export class Guestbook {
     this.searchInput = this.container.querySelector('.gb-search') as HTMLInputElement;
     this.sortSelect = this.container.querySelector('.gb-sort') as HTMLSelectElement;
     this.likedOnlyBtn = this.container.querySelector('.gb-liked-only') as HTMLButtonElement;
+    // Autocomplete dropdown — triggered by @ in message field
+    this.autocompleteEl = this.container.querySelector('.gb-autocomplete') as HTMLElement;
+    this.messageInput.addEventListener('input', () => this.updateAutocomplete());
+    this.messageInput.addEventListener('keydown', (e) => this.handleAutocompleteKey(e));
+    this.messageInput.addEventListener('blur', () => {
+      // Defer so a click on a suggestion can register first
+      setTimeout(() => this.hideAutocomplete(), 150);
+    });
+
     const tagSelect = this.container.querySelector('.gb-tag-select') as HTMLSelectElement;
     tagSelect.addEventListener('change', () => {
       const id = tagSelect.value;
@@ -375,6 +390,115 @@ export class Guestbook {
     const newCount = await GuestbookStore.adjustLikes(entry.id, delta);
     entry.likes = newCount;
     this.refreshLikeUi(row, entry);
+  }
+
+  // Parse the @query under the caret. Returns { query, start } or null when no trigger.
+  private currentMention(): { query: string; start: number } | null {
+    const caret = this.messageInput.selectionStart ?? 0;
+    const text = this.messageInput.value.slice(0, caret);
+    const at = text.lastIndexOf('@');
+    if (at < 0) return null;
+    // Must be preceded by start-of-line or whitespace
+    if (at > 0 && !/\s/.test(text[at - 1])) return null;
+    const query = text.slice(at + 1);
+    if (query.length > 30 || /\s/.test(query)) return null;
+    return { query, start: at };
+  }
+
+  private updateAutocomplete(): void {
+    const mention = this.currentMention();
+    if (!mention || this.artworks.length === 0) {
+      this.hideAutocomplete();
+      return;
+    }
+    const q = mention.query.toLowerCase();
+    const matches = this.artworks
+      .filter((a) => {
+        if (this.formArtworkIds.includes(a.id)) return false;
+        const title = I18n.pick(a.title, a.titleKo).toLowerCase();
+        return q === '' ? true : title.includes(q) || a.artist.toLowerCase().includes(q);
+      })
+      .slice(0, 6);
+    if (matches.length === 0) {
+      this.hideAutocomplete();
+      return;
+    }
+    this.autocompleteItems = matches;
+    this.autocompleteIndex = 0;
+    this.renderAutocomplete();
+  }
+
+  private renderAutocomplete(): void {
+    const el = this.autocompleteEl;
+    if (!el) return;
+    el.innerHTML = '';
+    this.autocompleteItems.forEach((art, i) => {
+      const item = document.createElement('button');
+      item.type = 'button';
+      item.className = 'gb-ac-item' + (i === this.autocompleteIndex ? ' active' : '');
+      const title = document.createElement('span');
+      title.className = 'gb-ac-title';
+      title.textContent = I18n.pick(art.title, art.titleKo);
+      const artist = document.createElement('span');
+      artist.className = 'gb-ac-artist';
+      artist.textContent = art.artist;
+      item.appendChild(title);
+      item.appendChild(artist);
+      item.addEventListener('mousedown', (e) => {
+        // mousedown to fire before textarea blur
+        e.preventDefault();
+        this.commitAutocomplete(i);
+      });
+      item.addEventListener('mouseenter', () => {
+        this.autocompleteIndex = i;
+        this.renderAutocomplete();
+      });
+      el.appendChild(item);
+    });
+    el.hidden = false;
+  }
+
+  private hideAutocomplete(): void {
+    if (this.autocompleteEl) this.autocompleteEl.hidden = true;
+    this.autocompleteItems = [];
+    this.autocompleteIndex = -1;
+  }
+
+  private handleAutocompleteKey(e: KeyboardEvent): void {
+    if (this.autocompleteEl?.hidden || this.autocompleteItems.length === 0) return;
+    if (e.code === 'ArrowDown') {
+      e.preventDefault();
+      this.autocompleteIndex = (this.autocompleteIndex + 1) % this.autocompleteItems.length;
+      this.renderAutocomplete();
+    } else if (e.code === 'ArrowUp') {
+      e.preventDefault();
+      this.autocompleteIndex = (this.autocompleteIndex - 1 + this.autocompleteItems.length) % this.autocompleteItems.length;
+      this.renderAutocomplete();
+    } else if (e.code === 'Enter' || e.code === 'Tab') {
+      e.preventDefault();
+      this.commitAutocomplete(this.autocompleteIndex);
+    } else if (e.code === 'Escape') {
+      e.preventDefault();
+      this.hideAutocomplete();
+    }
+  }
+
+  private commitAutocomplete(index: number): void {
+    const art = this.autocompleteItems[index];
+    if (!art) return;
+    // Remove the @query from the textarea
+    const mention = this.currentMention();
+    if (mention) {
+      const before = this.messageInput.value.slice(0, mention.start);
+      const after = this.messageInput.value.slice((this.messageInput.selectionStart ?? mention.start));
+      this.messageInput.value = before + after;
+      const caret = mention.start;
+      this.messageInput.setSelectionRange(caret, caret);
+    }
+    if (!this.formArtworkIds.includes(art.id)) this.formArtworkIds.push(art.id);
+    this.renderTagChips();
+    this.hideAutocomplete();
+    this.messageInput.focus();
   }
 
   private renderTagSelector(): void {

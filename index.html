@@ -421,6 +421,30 @@
     #guestbook .gb-form input::placeholder, #guestbook .gb-form textarea::placeholder {
       color: var(--text-faint);
     }
+    #guestbook .gb-message-wrap { position: relative; }
+    #guestbook .gb-autocomplete {
+      position: absolute; left: 0; right: 0; top: calc(100% + 2px);
+      z-index: 10; max-height: 200px; overflow-y: auto;
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 3px; box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+    }
+    #guestbook .gb-ac-item {
+      display: block; width: 100%; text-align: left;
+      padding: 0.5rem 0.75rem;
+      background: transparent; border: none; border-bottom: 1px solid var(--divider);
+      font-family: inherit; cursor: pointer;
+      color: var(--text);
+    }
+    #guestbook .gb-ac-item:last-child { border-bottom: none; }
+    #guestbook .gb-ac-item.active { background: var(--bg-tag); }
+    #guestbook .gb-ac-title {
+      display: block; font-size: 0.8rem; color: var(--text);
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    #guestbook .gb-ac-artist {
+      display: block; font-size: 0.66rem; color: var(--text-faint);
+      margin-top: 0.1rem;
+    }
     #guestbook .gb-tag-row {
       display: flex; flex-direction: column; gap: 0.4rem;
     }
