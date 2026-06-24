@@ -436,14 +436,33 @@ export class Guestbook {
       const item = document.createElement('button');
       item.type = 'button';
       item.className = 'gb-ac-item' + (i === this.autocompleteIndex ? ' active' : '');
+
+      if (art.imageUrl) {
+        const img = document.createElement('img');
+        img.className = 'gb-ac-thumb';
+        img.src = art.imageUrl;
+        img.alt = '';
+        img.loading = 'lazy';
+        img.onerror = () => img.remove();
+        item.appendChild(img);
+      } else {
+        // Placeholder to preserve layout when image is missing
+        const placeholder = document.createElement('span');
+        placeholder.className = 'gb-ac-thumb gb-ac-thumb-empty';
+        item.appendChild(placeholder);
+      }
+
+      const text = document.createElement('span');
+      text.className = 'gb-ac-text';
       const title = document.createElement('span');
       title.className = 'gb-ac-title';
       title.textContent = I18n.pick(art.title, art.titleKo);
       const artist = document.createElement('span');
       artist.className = 'gb-ac-artist';
       artist.textContent = art.artist;
-      item.appendChild(title);
-      item.appendChild(artist);
+      text.appendChild(title);
+      text.appendChild(artist);
+      item.appendChild(text);
       item.addEventListener('mousedown', (e) => {
         // mousedown to fire before textarea blur
         e.preventDefault();

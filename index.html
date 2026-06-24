@@ -429,14 +429,25 @@
       border-radius: 3px; box-shadow: 0 6px 20px rgba(0,0,0,0.3);
     }
     #guestbook .gb-ac-item {
-      display: block; width: 100%; text-align: left;
-      padding: 0.5rem 0.75rem;
+      display: flex; align-items: center; gap: 0.6rem;
+      width: 100%; text-align: left;
+      padding: 0.45rem 0.6rem;
       background: transparent; border: none; border-bottom: 1px solid var(--divider);
       font-family: inherit; cursor: pointer;
       color: var(--text);
     }
     #guestbook .gb-ac-item:last-child { border-bottom: none; }
     #guestbook .gb-ac-item.active { background: var(--bg-tag); }
+    #guestbook .gb-ac-thumb {
+      flex-shrink: 0; width: 34px; height: 34px;
+      object-fit: cover; border-radius: 3px;
+      background: var(--bg-input-deep, var(--divider));
+      display: block;
+    }
+    #guestbook .gb-ac-text {
+      flex: 1; min-width: 0;
+      display: flex; flex-direction: column;
+    }
     #guestbook .gb-ac-title {
       display: block; font-size: 0.8rem; color: var(--text);
       overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
@@ -444,6 +455,7 @@
     #guestbook .gb-ac-artist {
       display: block; font-size: 0.66rem; color: var(--text-faint);
       margin-top: 0.1rem;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     }
     #guestbook .gb-tag-row {
       display: flex; flex-direction: column; gap: 0.4rem;
