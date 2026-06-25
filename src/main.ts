@@ -28,6 +28,7 @@ import { Minimap } from './ui/Minimap';
 import { ShortcutHelp } from './ui/ShortcutHelp';
 import { WelcomeGuide } from './ui/WelcomeGuide';
 import { Guestbook } from './ui/Guestbook';
+import { DataResetModal } from './ui/DataResetModal';
 import { SoundManager } from './systems/SoundManager';
 import { DEFAULTS } from './utils/constants';
 
@@ -61,6 +62,7 @@ class App {
   private shortcutHelp: ShortcutHelp;
   private welcomeGuide: WelcomeGuide;
   private guestbook: Guestbook;
+  private dataResetModal: DataResetModal;
   private soundManager: SoundManager;
   private lastFootstepPos = new THREE.Vector3();
   private currentFavorites: string[] = [];
@@ -91,6 +93,7 @@ class App {
     this.shortcutHelp.setReplayCallback(() => this.welcomeGuide.show());
     this.guestbook = new Guestbook();
     this.guestbook.onChange(() => void this.refreshMinimapTags());
+    this.dataResetModal = new DataResetModal();
     this.soundManager = new SoundManager();
     this.minimap.onTeleport((wx, wz) => this.teleportTo(wx, wz));
 
@@ -248,6 +251,7 @@ class App {
     this.setupScreenshotButton();
     this.setupGuestbookButton();
     this.setupPickerScrollShadow();
+    document.getElementById('data-toggle')?.addEventListener('click', () => this.dataResetModal.open());
 
     // Router
     this.router.onRouteChange((route) => {

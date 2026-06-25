@@ -518,6 +518,81 @@
     #screenshot-btn.hidden { display: none; }
     #screenshot-btn svg { width: 18px; height: 18px; display: block; }
 
+    /* Data reset modal */
+    #data-reset {
+      position: fixed; inset: 0; z-index: 90;
+      display: none; align-items: center; justify-content: center;
+    }
+    #data-reset.visible { display: flex; }
+    #data-reset .dr-backdrop {
+      position: absolute; inset: 0;
+      background: rgba(0,0,0,0.85); backdrop-filter: blur(10px);
+    }
+    #data-reset .dr-card {
+      position: relative; width: 92%; max-width: 460px;
+      max-height: 86vh; display: flex; flex-direction: column;
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: 6px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.5); color: var(--text);
+      padding: 1.6rem 1.6rem 1.2rem;
+    }
+    #data-reset .dr-close {
+      position: absolute; top: 0.5rem; right: 0.8rem;
+      width: 30px; height: 30px;
+      background: transparent; border: none; color: var(--text-faint);
+      font-size: 1.3rem; cursor: pointer;
+    }
+    #data-reset .dr-close:hover { color: var(--text); }
+    #data-reset .dr-title {
+      font-size: 0.9rem; font-weight: 300; letter-spacing: 0.25em;
+      text-transform: uppercase; color: var(--text-muted);
+      margin-bottom: 0.5rem;
+    }
+    #data-reset .dr-desc {
+      font-size: 0.75rem; color: var(--text-faint);
+      margin-bottom: 1rem; line-height: 1.5;
+    }
+    #data-reset .dr-list {
+      flex: 1; overflow-y: auto;
+      display: flex; flex-direction: column; gap: 0.4rem;
+      margin-bottom: 1rem; max-height: 50vh;
+    }
+    #data-reset .dr-row {
+      display: flex; align-items: center; gap: 0.7rem;
+      padding: 0.55rem 0.7rem;
+      background: var(--bg-tag); border-radius: 4px;
+    }
+    #data-reset .dr-row-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+    #data-reset .dr-row-label { font-size: 0.78rem; color: var(--text); }
+    #data-reset .dr-row-meta {
+      font-size: 0.65rem; color: var(--text-faint); margin-top: 0.15rem;
+    }
+    #data-reset .dr-row-btn {
+      flex-shrink: 0; padding: 0.3rem 0.6rem;
+      background: transparent; color: var(--text-muted);
+      border: 1px solid var(--border-input); border-radius: 3px;
+      font-family: inherit; font-size: 0.7rem; cursor: pointer;
+      transition: all 0.15s;
+    }
+    #data-reset .dr-row-btn:hover:not(:disabled) {
+      border-color: var(--border-strong); color: var(--text);
+    }
+    #data-reset .dr-row-btn:disabled { opacity: 0.3; cursor: default; }
+    #data-reset .dr-row-btn.danger:hover:not(:disabled) {
+      border-color: #a44; color: #ff8a8a;
+    }
+    #data-reset .dr-actions {
+      padding-top: 0.8rem; border-top: 1px solid var(--border);
+      display: flex; justify-content: flex-end;
+    }
+    #data-reset .dr-reset-all {
+      padding: 0.55rem 1rem;
+      background: transparent; color: #ff8a8a;
+      border: 1px solid #a44; border-radius: 3px;
+      font-family: inherit; font-size: 0.78rem; cursor: pointer;
+      transition: all 0.15s;
+    }
+    #data-reset .dr-reset-all:hover { background: rgba(170,68,68,0.15); }
+
     /* Shortcut help overlay */
     #shortcut-help {
       position: fixed; inset: 0; z-index: 85;
@@ -1243,6 +1318,7 @@
       <div id="picker-title" data-i18n="picker.title">전시 선택</div>
       <button id="resume-btn" class="resume-btn" style="display:none"></button>
       <div class="picker-toggles">
+        <button id="data-toggle" class="theme-toggle" data-i18n-title="btn.data.title" aria-label="Data">⚙</button>
         <button id="theme-toggle" class="theme-toggle" data-i18n-title="btn.theme.title" aria-label="Theme"></button>
         <button id="lang-toggle" class="lang-toggle" data-i18n-title="btn.lang.title" aria-label="Language"></button>
       </div>
