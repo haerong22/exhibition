@@ -34,6 +34,7 @@ export class DataResetModal {
         <button class="dr-close" aria-label="닫기">&times;</button>
         <h2 class="dr-title"></h2>
         <p class="dr-desc"></p>
+        <div class="dr-summary"></div>
         <div class="dr-list"></div>
         <div class="dr-actions">
           <button class="dr-reset-all" type="button"></button>
@@ -73,6 +74,33 @@ export class DataResetModal {
     (this.container.querySelector('.dr-title') as HTMLElement).textContent = I18n.t('data.title');
     (this.container.querySelector('.dr-desc') as HTMLElement).textContent = I18n.t('data.desc');
     (this.container.querySelector('.dr-reset-all') as HTMLButtonElement).textContent = I18n.t('data.resetAll');
+
+    // Aggregate stats first so summary stays in sync with rows
+    let totalBytes = 0;
+    let usedCount = 0;
+    for (const k of KEYS) {
+      const v = localStorage.getItem(k.key);
+      if (v !== null) {
+        totalBytes += v.length;
+        usedCount++;
+      }
+    }
+    const summaryEl = this.container.querySelector('.dr-summary') as HTMLElement;
+    summaryEl.innerHTML = '';
+    if (usedCount === 0) {
+      summaryEl.classList.add('empty');
+      summaryEl.textContent = I18n.t('data.summary.empty');
+    } else {
+      summaryEl.classList.remove('empty');
+      const total = document.createElement('span');
+      total.className = 'dr-summary-total';
+      total.textContent = this.humanSize(totalBytes);
+      const items = document.createElement('span');
+      items.className = 'dr-summary-items';
+      items.textContent = I18n.t('data.summary.items', { used: usedCount, total: KEYS.length });
+      summaryEl.appendChild(total);
+      summaryEl.appendChild(items);
+    }
 
     this.listEl.innerHTML = '';
     for (const k of KEYS) {

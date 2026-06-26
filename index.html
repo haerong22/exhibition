@@ -551,6 +551,23 @@
       font-size: 0.75rem; color: var(--text-faint);
       margin-bottom: 1rem; line-height: 1.5;
     }
+    #data-reset .dr-summary {
+      display: flex; align-items: baseline; gap: 0.5rem;
+      padding: 0.65rem 0.8rem; margin-bottom: 0.8rem;
+      background: var(--bg-tag); border-radius: 4px;
+      font-family: inherit;
+    }
+    #data-reset .dr-summary.empty {
+      justify-content: center; color: var(--text-faint); font-size: 0.78rem;
+    }
+    #data-reset .dr-summary-total {
+      font-size: 1.05rem; font-weight: 500; color: var(--text);
+      letter-spacing: 0.02em;
+    }
+    #data-reset .dr-summary-items {
+      font-size: 0.7rem; color: var(--text-faint);
+      letter-spacing: 0.06em;
+    }
     #data-reset .dr-list {
       flex: 1; overflow-y: auto;
       display: flex; flex-direction: column; gap: 0.4rem;
