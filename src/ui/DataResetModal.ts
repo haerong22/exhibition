@@ -37,8 +37,11 @@ export class DataResetModal {
         <div class="dr-summary"></div>
         <div class="dr-list"></div>
         <div class="dr-actions">
+          <button class="dr-backup" type="button"></button>
+          <button class="dr-restore" type="button"></button>
           <button class="dr-reset-all" type="button"></button>
         </div>
+        <input type="file" class="dr-restore-input" accept="application/json,.json" hidden />
       </div>
     `;
     document.body.appendChild(this.container);
@@ -47,10 +50,20 @@ export class DataResetModal {
     const closeBtn = this.container.querySelector('.dr-close') as HTMLButtonElement;
     const backdrop = this.container.querySelector('.dr-backdrop') as HTMLElement;
     const resetAllBtn = this.container.querySelector('.dr-reset-all') as HTMLButtonElement;
+    const backupBtn = this.container.querySelector('.dr-backup') as HTMLButtonElement;
+    const restoreBtn = this.container.querySelector('.dr-restore') as HTMLButtonElement;
+    const restoreInput = this.container.querySelector('.dr-restore-input') as HTMLInputElement;
 
     closeBtn.addEventListener('click', () => this.close());
     backdrop.addEventListener('click', () => this.close());
     resetAllBtn.addEventListener('click', () => void this.resetAll());
+    backupBtn.addEventListener('click', () => this.backup());
+    restoreBtn.addEventListener('click', () => restoreInput.click());
+    restoreInput.addEventListener('change', () => {
+      const file = restoreInput.files?.[0];
+      restoreInput.value = '';
+      if (file) void this.restore(file);
+    });
 
     window.addEventListener('keydown', (e) => {
       if (this.isOpen() && e.code === 'Escape') {
@@ -74,6 +87,8 @@ export class DataResetModal {
     (this.container.querySelector('.dr-title') as HTMLElement).textContent = I18n.t('data.title');
     (this.container.querySelector('.dr-desc') as HTMLElement).textContent = I18n.t('data.desc');
     (this.container.querySelector('.dr-reset-all') as HTMLButtonElement).textContent = I18n.t('data.resetAll');
+    (this.container.querySelector('.dr-backup') as HTMLButtonElement).textContent = I18n.t('data.backup');
+    (this.container.querySelector('.dr-restore') as HTMLButtonElement).textContent = I18n.t('data.restore');
 
     // Aggregate stats first so summary stays in sync with rows
     let totalBytes = 0;
@@ -150,6 +165,64 @@ export class DataResetModal {
     }
     this.render();
     // Reload so app picks up clean defaults (locale, theme, etc.)
+    setTimeout(() => { window.location.reload(); }, 200);
+  }
+
+  // Download a single JSON envelope with all known keys' values
+  private backup(): void {
+    const data: Record<string, string> = {};
+    for (const k of KEYS) {
+      const v = localStorage.getItem(k.key);
+      if (v !== null) data[k.key] = v;
+    }
+    const envelope = {
+      format: 'gallery-backup',
+      version: 1,
+      exportedAt: new Date().toISOString(),
+      data,
+    };
+    const blob = new Blob([JSON.stringify(envelope, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    const ts = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+    a.download = `gallery-backup-${ts}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
+  private async restore(file: File): Promise<void> {
+    let envelope: unknown;
+    try {
+      envelope = JSON.parse(await file.text());
+    } catch {
+      alert(I18n.t('data.restoreInvalid'));
+      return;
+    }
+    if (
+      typeof envelope !== 'object' || envelope === null ||
+      (envelope as { format?: string }).format !== 'gallery-backup' ||
+      typeof (envelope as { data?: unknown }).data !== 'object' ||
+      (envelope as { data?: unknown }).data === null
+    ) {
+      alert(I18n.t('data.restoreInvalid'));
+      return;
+    }
+    const data = (envelope as { data: Record<string, unknown> }).data;
+    const allowed = new Set(KEYS.map((k) => k.key));
+    const entries = Object.entries(data).filter(([k, v]) => allowed.has(k) && typeof v === 'string');
+    if (entries.length === 0) {
+      alert(I18n.t('data.restoreEmpty'));
+      return;
+    }
+    const ok = confirm(I18n.t('data.confirmRestore', { n: entries.length }));
+    if (!ok) return;
+    for (const [k, v] of entries) {
+      try { localStorage.setItem(k, v as string); } catch { /* quota */ }
+    }
+    this.render();
     setTimeout(() => { window.location.reload(); }, 200);
   }
 

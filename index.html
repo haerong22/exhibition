@@ -599,9 +599,22 @@
     }
     #data-reset .dr-actions {
       padding-top: 0.8rem; border-top: 1px solid var(--border);
-      display: flex; justify-content: flex-end;
+      display: flex; gap: 0.4rem; align-items: center;
+      flex-wrap: wrap;
+    }
+    #data-reset .dr-backup, #data-reset .dr-restore {
+      padding: 0.55rem 0.9rem;
+      background: transparent; color: var(--text-muted);
+      border: 1px solid var(--border-input); border-radius: 3px;
+      font-family: inherit; font-size: 0.75rem; cursor: pointer;
+      transition: all 0.15s;
+    }
+    #data-reset .dr-backup:hover, #data-reset .dr-restore:hover {
+      border-color: var(--border-strong); color: var(--text);
+      background: var(--bg-tag);
     }
     #data-reset .dr-reset-all {
+      margin-left: auto;
       padding: 0.55rem 1rem;
       background: transparent; color: #ff8a8a;
       border: 1px solid #a44; border-radius: 3px;
