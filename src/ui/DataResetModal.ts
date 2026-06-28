@@ -210,20 +210,89 @@ export class DataResetModal {
       alert(I18n.t('data.restoreInvalid'));
       return;
     }
-    const data = (envelope as { data: Record<string, unknown> }).data;
+    const env = envelope as { data: Record<string, unknown>; exportedAt?: string };
     const allowed = new Set(KEYS.map((k) => k.key));
-    const entries = Object.entries(data).filter(([k, v]) => allowed.has(k) && typeof v === 'string');
+    const entries = Object.entries(env.data).filter(([k, v]) => allowed.has(k) && typeof v === 'string');
     if (entries.length === 0) {
       alert(I18n.t('data.restoreEmpty'));
       return;
     }
-    const ok = confirm(I18n.t('data.confirmRestore', { n: entries.length }));
+    const typedEntries = entries as [string, string][];
+    const ok = await this.previewRestore(typedEntries, env.exportedAt, file.name);
     if (!ok) return;
-    for (const [k, v] of entries) {
-      try { localStorage.setItem(k, v as string); } catch { /* quota */ }
+    for (const [k, v] of typedEntries) {
+      try { localStorage.setItem(k, v); } catch { /* quota */ }
     }
     this.render();
     setTimeout(() => { window.location.reload(); }, 200);
+  }
+
+  // Show a preview dialog listing what will be restored before committing
+  private previewRestore(entries: [string, string][], exportedAt: string | undefined, filename: string): Promise<boolean> {
+    return new Promise((resolve) => {
+      const overlay = document.createElement('div');
+      overlay.className = 'dr-preview';
+      const localeTag = I18n.current === 'ko' ? 'ko-KR' : 'en-US';
+      const exportedStr = exportedAt
+        ? new Date(exportedAt).toLocaleString(localeTag, {
+            year: 'numeric', month: '2-digit', day: '2-digit',
+            hour: '2-digit', minute: '2-digit',
+          })
+        : '—';
+      const labelByKey: Record<string, string> = {};
+      for (const k of KEYS) labelByKey[k.key] = I18n.t(k.labelKey);
+      const totalBytes = entries.reduce((s, [, v]) => s + v.length, 0);
+
+      overlay.innerHTML = `
+        <div class="dr-preview-card">
+          <h3 class="dr-preview-title"></h3>
+          <div class="dr-preview-meta"></div>
+          <ul class="dr-preview-list"></ul>
+          <div class="dr-preview-warn"></div>
+          <div class="dr-preview-actions">
+            <button class="dr-preview-cancel" type="button"></button>
+            <button class="dr-preview-confirm" type="button"></button>
+          </div>
+        </div>
+      `;
+      this.container.appendChild(overlay);
+
+      (overlay.querySelector('.dr-preview-title') as HTMLElement).textContent = I18n.t('data.previewTitle');
+      (overlay.querySelector('.dr-preview-meta') as HTMLElement).innerHTML = `
+        <div><span class="dr-pm-label">${this.escape(I18n.t('data.preview.file'))}</span><span class="dr-pm-val">${this.escape(filename)}</span></div>
+        <div><span class="dr-pm-label">${this.escape(I18n.t('data.preview.exportedAt'))}</span><span class="dr-pm-val">${this.escape(exportedStr)}</span></div>
+        <div><span class="dr-pm-label">${this.escape(I18n.t('data.preview.itemCount'))}</span><span class="dr-pm-val">${entries.length} · ${this.humanSize(totalBytes)}</span></div>
+      `;
+      const list = overlay.querySelector('.dr-preview-list') as HTMLElement;
+      for (const [k, v] of entries) {
+        const li = document.createElement('li');
+        const name = document.createElement('span');
+        name.className = 'dr-pl-name';
+        name.textContent = labelByKey[k] ?? k;
+        const size = document.createElement('span');
+        size.className = 'dr-pl-size';
+        size.textContent = this.humanSize(v.length);
+        li.appendChild(name);
+        li.appendChild(size);
+        list.appendChild(li);
+      }
+      (overlay.querySelector('.dr-preview-warn') as HTMLElement).textContent = I18n.t('data.preview.warn');
+      const cancelBtn = overlay.querySelector('.dr-preview-cancel') as HTMLButtonElement;
+      const confirmBtn = overlay.querySelector('.dr-preview-confirm') as HTMLButtonElement;
+      cancelBtn.textContent = I18n.t('data.preview.cancel');
+      confirmBtn.textContent = I18n.t('data.preview.confirm');
+
+      const cleanup = (result: boolean) => {
+        overlay.remove();
+        resolve(result);
+      };
+      cancelBtn.addEventListener('click', () => cleanup(false));
+      confirmBtn.addEventListener('click', () => cleanup(true));
+    });
+  }
+
+  private escape(s: string): string {
+    return s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));
   }
 
   private humanSize(n: number): string {
