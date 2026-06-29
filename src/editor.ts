@@ -8,6 +8,7 @@ import { CustomMapStore, type CustomMap } from './systems/CustomMapStore';
 import { GuestbookStore, type GuestbookEntry } from './systems/GuestbookStore';
 import { I18n } from './systems/I18n';
 import { Theme } from './systems/Theme';
+import { DataResetModal } from './ui/DataResetModal';
 import { disposeObject } from './utils/disposer';
 
 const TILE_SIZE = 32;
@@ -350,6 +351,7 @@ class MapEditor {
     this.bindEvents();
     this.setupLanguageToggle();
     this.setupThemeToggle();
+    this.setupDataResetButton();
     this.render();
     this.resizePreview();
     this.startPreviewLoop();
@@ -1946,6 +1948,13 @@ class MapEditor {
       artBtn?.classList.add('active');
       document.getElementById('artwork-options')!.classList.add('visible');
     }
+  }
+
+  private setupDataResetButton(): void {
+    const btn = document.getElementById('btn-data');
+    if (!btn) return;
+    const modal = new DataResetModal();
+    btn.addEventListener('click', () => modal.open());
   }
 
   private setupThemeToggle(): void {
