@@ -1954,7 +1954,17 @@ class MapEditor {
     const btn = document.getElementById('btn-data');
     if (!btn) return;
     const modal = new DataResetModal();
-    btn.addEventListener('click', () => modal.open());
+    btn.addEventListener('click', async () => {
+      // Warn before opening if there are unsaved edits — the reset modal can wipe editor-draft
+      if (this.isDirty) {
+        const ok = await EditorModal.confirm(
+          I18n.t('editor.data.dirtyWarn'),
+          { title: I18n.t('btn.data.title'), confirmText: I18n.t('editor.data.dirtyProceed'), cancelText: I18n.t('editor.data.dirtyCancel') },
+        );
+        if (!ok) return;
+      }
+      modal.open();
+    });
   }
 
   private setupThemeToggle(): void {
