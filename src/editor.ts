@@ -293,6 +293,7 @@ class MapEditor {
   private currentMapCurator: string | null = null;
   private editorMode: 'map' | 'exhibition' = 'map';
   private isDirty = false;
+  private lastSavedAt: Date | null = null;
   private autoSaveTimer: ReturnType<typeof setInterval> | null = null;
   private static readonly DRAFT_KEY = 'editor-draft';
   private static readonly AUTO_SAVE_INTERVAL_MS = 30_000;
@@ -781,6 +782,8 @@ class MapEditor {
         this.schedulePreviewUpdate();
         this.clearHistory();
         this.isDirty = false;
+        this.lastSavedAt = null;
+        this.updateSaveStatus();
         this.clearDraft();
       }
     });
@@ -1499,12 +1502,50 @@ class MapEditor {
     this.redoStack = [];
     this.updateUndoRedoButtons();
     this.isDirty = true;
+    this.updateSaveStatus();
   }
 
   // ── Draft auto-save ──
   private startAutoSave(): void {
     if (this.autoSaveTimer) return;
     this.autoSaveTimer = setInterval(() => this.saveDraft(), MapEditor.AUTO_SAVE_INTERVAL_MS);
+    // Refresh "N분 전 저장됨" text every 30s
+    setInterval(() => this.updateSaveStatus(), 30_000);
+    this.updateSaveStatus();
+  }
+
+  private updateSaveStatus(): void {
+    const el = document.getElementById('status-save');
+    if (!el) return;
+    let cls = '';
+    let text = '';
+    if (this.isDirty) {
+      cls = 'dirty';
+      text = I18n.t('editor.save.dirty');
+    } else if (this.lastSavedAt) {
+      cls = 'saved';
+      text = I18n.t('editor.save.saved', { rel: this.relativeTime(this.lastSavedAt) });
+    } else {
+      cls = '';
+      text = I18n.t('editor.save.idle');
+    }
+    el.className = `status-save ${cls}`;
+    el.innerHTML = '';
+    const dot = document.createElement('span');
+    dot.className = 'status-save-dot';
+    const label = document.createElement('span');
+    label.textContent = text;
+    el.appendChild(dot);
+    el.appendChild(label);
+  }
+
+  private relativeTime(d: Date): string {
+    const diffMs = Date.now() - d.getTime();
+    const min = 60_000, hour = 60 * min;
+    if (diffMs < 10_000) return I18n.t('time.justNow');
+    if (diffMs < min) return I18n.t('time.secondsAgo', { n: Math.floor(diffMs / 1000) });
+    if (diffMs < hour) return I18n.t('time.minutesAgo', { n: Math.floor(diffMs / min) });
+    return I18n.t('time.hoursAgo', { n: Math.floor(diffMs / hour) });
   }
 
   private saveDraft(): void {
@@ -1528,6 +1569,8 @@ class MapEditor {
       };
       localStorage.setItem(MapEditor.DRAFT_KEY, JSON.stringify(draft));
       this.isDirty = false;
+      this.lastSavedAt = new Date();
+      this.updateSaveStatus();
     } catch {
       // Quota exceeded etc. — silent fail
     }
@@ -1683,6 +1726,8 @@ class MapEditor {
     this.updateCurrentMapLabel();
     void this.refreshGuestbookButton();
     this.isDirty = false;
+    this.lastSavedAt = new Date();
+    this.updateSaveStatus();
     this.clearDraft();
 
     if (isTemplate) {
@@ -2002,6 +2047,7 @@ class MapEditor {
       this.updateCurrentMapLabel();
     void this.refreshGuestbookButton();
       this.updateToolButtonTitles();
+      this.updateSaveStatus();
     });
     this.updateToolButtonTitles();
   }

@@ -242,7 +242,22 @@
     .preview-overlay { position: absolute; inset: 0; top: 32px; display: flex; align-items: center; justify-content: center; color: var(--text-min); font-size: 0.85rem; pointer-events: none; }
 
     /* Status */
-    .status { padding: 0.4rem 1.5rem; background: var(--bg-panel); border-top: 1px solid var(--border); font-size: 0.75rem; color: var(--text-very-faint); display: flex; justify-content: space-between; }
+    .status { padding: 0.4rem 1.5rem; background: var(--bg-panel); border-top: 1px solid var(--border); font-size: 0.75rem; color: var(--text-very-faint); display: flex; justify-content: space-between; gap: 1rem; align-items: center; }
+    .status-save { display: inline-flex; align-items: center; gap: 0.35rem; margin-left: auto; }
+    .status-save-dot {
+      display: inline-block; width: 7px; height: 7px; border-radius: 50%;
+      background: var(--text-very-faint);
+      transition: background 0.2s;
+    }
+    .status-save.saved .status-save-dot { background: #4eff7e; }
+    .status-save.dirty .status-save-dot { background: #ffd166; animation: statusDirty 1.2s ease-in-out infinite; }
+    @keyframes statusDirty {
+      50% { opacity: 0.4; }
+    }
+    .status-save.saving .status-save-dot { background: #4a9eff; animation: statusDirty 0.7s ease-in-out infinite; }
+    @media (prefers-reduced-motion: reduce) {
+      .status-save.dirty .status-save-dot, .status-save.saving .status-save-dot { animation: none; }
+    }
 
     /* Current map indicator */
     .current-map { font-size: 0.75rem; color: var(--text-faint); padding: 0.3rem 0.8rem; border: 1px solid var(--border); border-radius: 3px; }
@@ -602,6 +617,7 @@
   <div class="status">
     <span id="status-pos">0, 0</span>
     <span id="status-info">클릭/드래그로 타일 배치</span>
+    <span id="status-save" class="status-save"></span>
   </div>
 
   <script type="module" src="/src/editor.ts"></script>
