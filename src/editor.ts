@@ -1515,8 +1515,18 @@ class MapEditor {
   }
 
   private updateSaveStatus(): void {
-    const el = document.getElementById('status-save');
+    const el = document.getElementById('status-save') as HTMLButtonElement | null;
     if (!el) return;
+    // Wire the click-to-save handler once
+    if (!el.dataset.wired) {
+      el.dataset.wired = '1';
+      el.addEventListener('click', () => {
+        if (!this.isDirty) return; // only actionable while dirty
+        this.saveDraft();
+      });
+    }
+    el.disabled = !this.isDirty;
+    el.title = this.isDirty ? I18n.t('editor.save.clickToSave') : '';
     let cls = '';
     let text = '';
     if (this.isDirty) {

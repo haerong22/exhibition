@@ -243,7 +243,17 @@
 
     /* Status */
     .status { padding: 0.4rem 1.5rem; background: var(--bg-panel); border-top: 1px solid var(--border); font-size: 0.75rem; color: var(--text-very-faint); display: flex; justify-content: space-between; gap: 1rem; align-items: center; }
-    .status-save { display: inline-flex; align-items: center; gap: 0.35rem; margin-left: auto; }
+    .status-save {
+      display: inline-flex; align-items: center; gap: 0.35rem;
+      margin-left: auto; padding: 0.2rem 0.6rem;
+      background: transparent; border: 1px solid transparent; border-radius: 999px;
+      color: inherit; font: inherit; cursor: default;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    /* Only dirty state is actionable — clicking triggers immediate save */
+    .status-save.dirty { cursor: pointer; }
+    .status-save.dirty:hover { background: var(--bg-tag); border-color: var(--border-input); }
+    .status-save:focus-visible { outline: 2px solid var(--border-input-focus); outline-offset: 1px; }
     .status-save-dot {
       display: inline-block; width: 7px; height: 7px; border-radius: 50%;
       background: var(--text-very-faint);
@@ -617,7 +627,7 @@
   <div class="status">
     <span id="status-pos">0, 0</span>
     <span id="status-info">클릭/드래그로 타일 배치</span>
-    <span id="status-save" class="status-save"></span>
+    <button id="status-save" class="status-save" type="button"></button>
   </div>
 
   <script type="module" src="/src/editor.ts"></script>
