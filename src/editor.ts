@@ -718,6 +718,13 @@ class MapEditor {
         return;
       }
 
+      // Save draft immediately (Cmd/Ctrl+S)
+      if (mod && e.key.toLowerCase() === 's') {
+        e.preventDefault();
+        if (this.isDirty) this.saveDraft();
+        return;
+      }
+
       // Shortcut help (? = Shift+/)
       if (!mod && e.key === '?') {
         e.preventDefault();
@@ -2185,6 +2192,7 @@ class MapEditor {
     lines.push(isKo ? '— 편집 —' : '— Edit —');
     lines.push(isKo ? '  ⌘/Ctrl+Z        실행 취소' : '  ⌘/Ctrl+Z        Undo');
     lines.push(isKo ? '  ⌘/Ctrl+⇧+Z      다시 실행' : '  ⌘/Ctrl+⇧+Z      Redo');
+    lines.push(isKo ? '  ⌘/Ctrl+S        지금 저장' : '  ⌘/Ctrl+S        Save now');
     lines.push('');
     lines.push(isKo ? '  ?              이 도움말' : '  ?              This help');
     return lines.join('\n');
