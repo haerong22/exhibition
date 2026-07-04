@@ -374,7 +374,15 @@ class MapEditor {
     // Periodically save drafts so refresh/crash doesn't lose work
     this.startAutoSave();
     // Save final draft on unload as a safety net
-    window.addEventListener('beforeunload', () => this.saveDraft());
+    window.addEventListener('beforeunload', (e) => {
+      // Best-effort draft save first (sync localStorage write)
+      this.saveDraft();
+      // Standard browser "unsaved changes" prompt if anything is still dirty
+      if (this.isDirty) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    });
   }
 
   private async handleInitialLoad(): Promise<void> {
