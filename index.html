@@ -848,6 +848,49 @@
       background: #000;
     }
 
+    /* Backup hint toast — bottom center in picker */
+    #backup-hint {
+      position: fixed; left: 50%; bottom: 1.5rem;
+      transform: translateX(-50%) translateY(20px);
+      z-index: 55;
+      display: none; align-items: center; gap: 0.8rem;
+      max-width: 92vw; width: 460px;
+      padding: 0.7rem 0.9rem;
+      background: var(--bg-card); color: var(--text);
+      border: 1px solid var(--border); border-radius: 6px;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.35);
+      opacity: 0;
+      transition: opacity 0.3s ease, transform 0.3s ease;
+    }
+    #backup-hint.visible {
+      display: flex; opacity: 1; transform: translateX(-50%) translateY(0);
+    }
+    #backup-hint .bh-icon { font-size: 1.2rem; flex-shrink: 0; }
+    #backup-hint .bh-body { flex: 1; min-width: 0; }
+    #backup-hint .bh-title {
+      font-size: 0.8rem; font-weight: 500; color: var(--text);
+      margin-bottom: 0.15rem;
+    }
+    #backup-hint .bh-desc {
+      font-size: 0.7rem; color: var(--text-faint); line-height: 1.4;
+      overflow: hidden; text-overflow: ellipsis;
+    }
+    #backup-hint .bh-action {
+      flex-shrink: 0; padding: 0.4rem 0.85rem;
+      background: var(--text); color: var(--bg);
+      border: none; border-radius: 3px;
+      font-family: inherit; font-size: 0.72rem; cursor: pointer;
+      transition: opacity 0.15s;
+    }
+    #backup-hint .bh-action:hover { opacity: 0.85; }
+    #backup-hint .bh-close {
+      flex-shrink: 0; width: 24px; height: 24px;
+      background: transparent; border: none; color: var(--text-faint);
+      font-size: 1.1rem; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+    }
+    #backup-hint .bh-close:hover { color: var(--text); }
+
     /* Cinematic entry fade — black overlay that fades to transparent on gallery entry */
     #scene-fade {
       position: fixed; inset: 0; z-index: 70;

@@ -168,6 +168,9 @@ export class DataResetModal {
     setTimeout(() => { window.location.reload(); }, 200);
   }
 
+  // Public: trigger a backup download without opening the modal
+  exportBackup(): void { this.backup(); }
+
   // Download a single JSON envelope with all known keys' values
   private backup(): void {
     const data: Record<string, string> = {};

@@ -29,6 +29,7 @@ import { ShortcutHelp } from './ui/ShortcutHelp';
 import { WelcomeGuide } from './ui/WelcomeGuide';
 import { Guestbook } from './ui/Guestbook';
 import { DataResetModal } from './ui/DataResetModal';
+import { BackupHint } from './ui/BackupHint';
 import { SoundManager } from './systems/SoundManager';
 import { DEFAULTS } from './utils/constants';
 
@@ -63,6 +64,7 @@ class App {
   private welcomeGuide: WelcomeGuide;
   private guestbook: Guestbook;
   private dataResetModal: DataResetModal;
+  private backupHint: BackupHint;
   private soundManager: SoundManager;
   private lastFootstepPos = new THREE.Vector3();
   private currentFavorites: string[] = [];
@@ -94,6 +96,7 @@ class App {
     this.guestbook = new Guestbook();
     this.guestbook.onChange(() => void this.refreshMinimapTags());
     this.dataResetModal = new DataResetModal();
+    this.backupHint = new BackupHint(() => this.dataResetModal.exportBackup());
     this.soundManager = new SoundManager();
     this.minimap.onTeleport((wx, wz) => this.teleportTo(wx, wz));
 
@@ -534,6 +537,7 @@ class App {
     const picker = document.getElementById('exhibition-picker');
     if (route.type === 'exhibition') {
       picker?.classList.add('hidden');
+      this.backupHint.hide();
       const id = route.exhibitionId ?? 'default';
       if (id === 'editor-preview') {
         await this.loadEditorPreview();
@@ -578,6 +582,7 @@ class App {
     const picker = document.getElementById('exhibition-picker');
     picker?.classList.remove('hidden');
     void this.refreshResumeButton();
+    this.backupHint.maybeShow();
 
     const templatesEl = document.getElementById('picker-templates')!;
     const customEl = document.getElementById('picker-custom')!;
