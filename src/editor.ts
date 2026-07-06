@@ -1530,6 +1530,7 @@ class MapEditor {
   }
 
   private updateSaveStatus(): void {
+    this.updateDocumentTitle();
     const el = document.getElementById('status-save') as HTMLButtonElement | null;
     if (!el) return;
     // Wire the click-to-save handler once
@@ -1562,6 +1563,14 @@ class MapEditor {
     label.textContent = text;
     el.appendChild(dot);
     el.appendChild(label);
+  }
+
+  // Prefix the tab title with ● when there are unsaved changes so it's visible
+  // even when the tab is in the background
+  private updateDocumentTitle(): void {
+    const base = 'Gallery Map Editor';
+    const name = this.currentMapName ? `${base} — ${this.currentMapName}` : base;
+    document.title = this.isDirty ? `● ${name}` : name;
   }
 
   private relativeTime(d: Date): string {
@@ -2224,6 +2233,7 @@ class MapEditor {
       label.dataset.i18n = 'editor.label.newExhibition';
       label.textContent = I18n.t('editor.label.newExhibition');
     }
+    this.updateDocumentTitle();
   }
 
   private async openMapsModal(): Promise<void> {
