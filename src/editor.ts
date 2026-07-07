@@ -1531,6 +1531,7 @@ class MapEditor {
 
   private updateSaveStatus(): void {
     this.updateDocumentTitle();
+    this.updateHeaderSaveButton();
     const el = document.getElementById('status-save') as HTMLButtonElement | null;
     if (!el) return;
     // Wire the click-to-save handler once
@@ -1563,6 +1564,20 @@ class MapEditor {
     label.textContent = text;
     el.appendChild(dot);
     el.appendChild(label);
+  }
+
+  // Mirror the dirty/saved status onto the header Save button as a small dot
+  private updateHeaderSaveButton(): void {
+    const btn = document.getElementById('btn-save');
+    if (!btn) return;
+    let dot = btn.querySelector('.btn-save-dot') as HTMLElement | null;
+    if (!dot) {
+      dot = document.createElement('span');
+      dot.className = 'btn-save-dot';
+      btn.appendChild(dot);
+    }
+    btn.classList.toggle('has-dirty', this.isDirty);
+    btn.classList.toggle('is-saved', !this.isDirty && this.lastSavedAt !== null);
   }
 
   // Prefix the tab title with ● when there are unsaved changes so it's visible
