@@ -353,6 +353,7 @@ class MapEditor {
     this.setupLanguageToggle();
     this.setupThemeToggle();
     this.setupDataResetButton();
+    this.updateDocumentTitle();
     this.render();
     this.resizePreview();
     this.startPreviewLoop();
@@ -1583,7 +1584,7 @@ class MapEditor {
   // Prefix the tab title with ● when there are unsaved changes so it's visible
   // even when the tab is in the background
   private updateDocumentTitle(): void {
-    const base = 'Gallery Map Editor';
+    const base = I18n.t('editor.title');
     const name = this.currentMapName ? `${base} — ${this.currentMapName}` : base;
     document.title = this.isDirty ? `● ${name}` : name;
   }
