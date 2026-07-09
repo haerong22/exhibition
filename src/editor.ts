@@ -2033,7 +2033,15 @@ class MapEditor {
     label.textContent = I18n.t(label.dataset.i18n);
 
     const dot = document.getElementById('mode-dot')!;
+    const wasFlash = dot.className !== `mode-dot ${mode}`;
     dot.className = `mode-dot ${mode}`;
+    if (wasFlash) {
+      // Restart the flash animation reliably by reflow-toggling the class
+      dot.classList.remove('flash');
+      void dot.offsetWidth;
+      dot.classList.add('flash');
+      setTimeout(() => dot.classList.remove('flash'), 600);
+    }
 
     // If current tool is now hidden, auto-switch to artwork
     if (mode === 'exhibition' && MAP_ONLY_TILES.has(this.currentTool)) {

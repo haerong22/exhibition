@@ -290,9 +290,23 @@
 
     /* Editor mode toggle */
     .mode-toggle { display: flex; align-items: center; gap: 0.4rem; }
-    .mode-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
-    .mode-dot.map { background: #4eff7e; }
-    .mode-dot.exhibition { background: #4a9eff; }
+    .mode-dot {
+      width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+      transition: background 0.25s ease, box-shadow 0.25s ease;
+      position: relative;
+    }
+    .mode-dot.map { background: #4eff7e; box-shadow: 0 0 0 3px rgba(78,255,126,0.15); }
+    .mode-dot.exhibition { background: #4a9eff; box-shadow: 0 0 0 3px rgba(74,158,255,0.18); }
+    /* Brief pulse when the mode changes — keyframe injected via .flash toggling */
+    .mode-dot.flash { animation: modeDotFlash 0.55s ease-out; }
+    @keyframes modeDotFlash {
+      0%   { transform: scale(1); box-shadow: 0 0 0 3px rgba(255,255,255,0.35); }
+      50%  { transform: scale(1.5); box-shadow: 0 0 0 8px rgba(255,255,255,0); }
+      100% { transform: scale(1); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .mode-dot.flash { animation: none; }
+    }
 
     /* Exhibition mode: hide map-only UI via body class */
     body.mode-exhibition .tool-btn[data-mode="map"] { display: none; }
