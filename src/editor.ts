@@ -294,6 +294,7 @@ class MapEditor {
   private editorMode: 'map' | 'exhibition' = 'map';
   private isDirty = false;
   private lastSavedAt: Date | null = null;
+  private modeToastTimer: ReturnType<typeof setTimeout> | null = null;
   private autoSaveTimer: ReturnType<typeof setInterval> | null = null;
   private static readonly DRAFT_KEY = 'editor-draft';
   private static readonly AUTO_SAVE_INTERVAL_MS = 30_000;
@@ -1567,6 +1568,21 @@ class MapEditor {
     el.appendChild(label);
   }
 
+  // Brief toast shown near the bottom when mode changes
+  private showModeToast(mode: 'map' | 'exhibition'): void {
+    const el = document.getElementById('mode-toast');
+    if (!el) return;
+    el.className = mode; // clears prior visible + color class
+    const title = mode === 'map' ? I18n.t('editor.mode.map') : I18n.t('editor.mode.exhibition');
+    const desc = mode === 'map' ? I18n.t('editor.mode.mapDesc') : I18n.t('editor.mode.exhibitionDesc');
+    (el.querySelector('.mt-title') as HTMLElement).textContent = title;
+    (el.querySelector('.mt-desc') as HTMLElement).textContent = ' · ' + desc;
+    // Ensure the dot span is preserved (className reset removed .visible only)
+    requestAnimationFrame(() => el.classList.add('visible'));
+    if (this.modeToastTimer) clearTimeout(this.modeToastTimer);
+    this.modeToastTimer = setTimeout(() => el.classList.remove('visible'), 2400);
+  }
+
   // Mirror the dirty/saved status onto the header Save button as a small dot
   private updateHeaderSaveButton(): void {
     const btn = document.getElementById('btn-save');
@@ -2041,6 +2057,7 @@ class MapEditor {
       void dot.offsetWidth;
       dot.classList.add('flash');
       setTimeout(() => dot.classList.remove('flash'), 600);
+      this.showModeToast(mode);
     }
 
     // If current tool is now hidden, auto-switch to artwork

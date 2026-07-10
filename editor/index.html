@@ -307,6 +307,29 @@
     @media (prefers-reduced-motion: reduce) {
       .mode-dot.flash { animation: none; }
     }
+    /* Mode change toast — brief hint shown near canvas bottom */
+    #mode-toast {
+      position: fixed; left: 50%; bottom: 3rem;
+      transform: translateX(-50%) translateY(10px);
+      z-index: 150; pointer-events: none;
+      display: flex; align-items: center; gap: 0.5rem;
+      padding: 0.6rem 1.1rem;
+      background: var(--bg-card); color: var(--text);
+      border: 1px solid var(--border); border-radius: 999px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+      font-size: 0.78rem;
+      opacity: 0;
+      transition: opacity 0.25s ease, transform 0.25s ease;
+    }
+    #mode-toast.visible { opacity: 1; transform: translateX(-50%) translateY(0); }
+    #mode-toast .mt-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: currentColor; flex-shrink: 0;
+    }
+    #mode-toast.map { color: #4eff7e; }
+    #mode-toast.exhibition { color: #4a9eff; }
+    #mode-toast .mt-title { color: var(--text); font-weight: 500; }
+    #mode-toast .mt-desc { color: var(--text-faint); }
 
     /* Exhibition mode: hide map-only UI via body class */
     body.mode-exhibition .tool-btn[data-mode="map"] { display: none; }
@@ -657,6 +680,12 @@
     <span id="status-pos">0, 0</span>
     <span id="status-info">클릭/드래그로 타일 배치</span>
     <button id="status-save" class="status-save" type="button"></button>
+  </div>
+
+  <div id="mode-toast" aria-live="polite">
+    <span class="mt-dot"></span>
+    <span class="mt-title"></span>
+    <span class="mt-desc"></span>
   </div>
 
   <script type="module" src="/src/editor.ts"></script>
