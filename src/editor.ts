@@ -735,6 +735,13 @@ class MapEditor {
         return;
       }
 
+      // Toggle editor mode (M) — map ↔ exhibition
+      if (!mod && !e.shiftKey && !e.altKey && e.key.toLowerCase() === 'm') {
+        e.preventDefault();
+        this.setEditorMode(this.editorMode === 'map' ? 'exhibition' : 'map');
+        return;
+      }
+
       // Shortcut help (? = Shift+/)
       if (!mod && e.key === '?') {
         e.preventDefault();
@@ -2251,6 +2258,7 @@ class MapEditor {
     lines.push(isKo ? '  ⌘/Ctrl+Z        실행 취소' : '  ⌘/Ctrl+Z        Undo');
     lines.push(isKo ? '  ⌘/Ctrl+⇧+Z      다시 실행' : '  ⌘/Ctrl+⇧+Z      Redo');
     lines.push(isKo ? '  ⌘/Ctrl+S        지금 저장' : '  ⌘/Ctrl+S        Save now');
+    lines.push(isKo ? '  M              맵/전시 모드 전환' : '  M              Toggle map/exhibition mode');
     lines.push('');
     lines.push(isKo ? '  ?              이 도움말' : '  ?              This help');
     return lines.join('\n');
