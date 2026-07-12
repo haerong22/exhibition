@@ -563,6 +563,43 @@ class MapEditor {
     }
   }
 
+  // ── Moodboard ID history (recent 5) ──
+  private static readonly MOODBOARD_HISTORY_KEY = 'gallery-moodboard-history';
+  private static readonly MOODBOARD_HISTORY_MAX = 5;
+
+  private readMoodboardHistory(): string[] {
+    try {
+      const raw = localStorage.getItem(MapEditor.MOODBOARD_HISTORY_KEY);
+      if (!raw) return [];
+      const arr = JSON.parse(raw);
+      return Array.isArray(arr) ? arr.filter((x) => typeof x === 'string') : [];
+    } catch {
+      return [];
+    }
+  }
+
+  private pushMoodboardHistory(id: string): void {
+    const trimmed = id.trim();
+    if (!trimmed) return;
+    const prev = this.readMoodboardHistory().filter((x) => x !== trimmed);
+    prev.unshift(trimmed);
+    const next = prev.slice(0, MapEditor.MOODBOARD_HISTORY_MAX);
+    try { localStorage.setItem(MapEditor.MOODBOARD_HISTORY_KEY, JSON.stringify(next)); }
+    catch { /* private mode */ }
+    this.renderMoodboardHistory();
+  }
+
+  private renderMoodboardHistory(): void {
+    const dl = document.getElementById('moodboard-history') as HTMLDataListElement | null;
+    if (!dl) return;
+    dl.innerHTML = '';
+    for (const id of this.readMoodboardHistory()) {
+      const opt = document.createElement('option');
+      opt.value = id;
+      dl.appendChild(opt);
+    }
+  }
+
   private async loadMoodboard(moodboardId: string): Promise<void> {
     const statusEl = document.getElementById('moodboard-status')!;
     const lib = document.getElementById('artwork-library')!;
@@ -582,6 +619,8 @@ class MapEditor {
       statusEl.style.color = '#4eff7e';
       const autoBtn = document.getElementById('btn-auto-exhibit')!;
       autoBtn.style.display = this.projects.length > 0 ? 'block' : 'none';
+      // Success → remember this ID for autocomplete on future visits
+      this.pushMoodboardHistory(moodboardId);
     } catch {
       this.projects = [];
       this.refreshArtworkSelect();
@@ -868,6 +907,7 @@ class MapEditor {
       const id = (document.getElementById('moodboard-id') as HTMLInputElement).value.trim();
       if (id) this.loadMoodboard(id);
     });
+    this.renderMoodboardHistory();
     (document.getElementById('moodboard-id') as HTMLInputElement).addEventListener('keydown', (e) => {
       if (e.key === 'Enter') {
         const id = (e.target as HTMLInputElement).value.trim();

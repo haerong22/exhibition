@@ -19,6 +19,7 @@ const KEYS: DataKey[] = [
   { key: 'gallery-theme', labelKey: 'data.key.theme' },
   { key: 'gallery-locale', labelKey: 'data.key.locale' },
   { key: 'editor-draft', labelKey: 'data.key.editorDraft' },
+  { key: 'gallery-moodboard-history', labelKey: 'data.key.moodboardHistory' },
 ];
 
 export class DataResetModal {

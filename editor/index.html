@@ -510,9 +510,10 @@
       <div class="tool-section">
         <h3 data-i18n="editor.section.moodboard">무드보드</h3>
         <div style="display:flex;gap:0.3rem">
-          <input type="text" id="moodboard-id" data-i18n-placeholder="editor.moodboard.placeholder" placeholder="무드보드 ID" style="flex:1;background:var(--bg-input);border:1px solid var(--border-input);color:var(--text);padding:0.4rem;font-size:0.75rem;" />
+          <input type="text" id="moodboard-id" list="moodboard-history" autocomplete="off" data-i18n-placeholder="editor.moodboard.placeholder" placeholder="무드보드 ID" style="flex:1;background:var(--bg-input);border:1px solid var(--border-input);color:var(--text);padding:0.4rem;font-size:0.75rem;" />
           <button class="btn" id="btn-load-moodboard" data-i18n="editor.moodboard.load" style="padding:0.4rem 0.6rem;font-size:0.7rem;">불러오기</button>
         </div>
+        <datalist id="moodboard-history"></datalist>
         <div id="moodboard-status" style="font-size:0.7rem;color:#666;margin-top:0.3rem;"></div>
         <button class="btn" id="btn-auto-exhibit" data-i18n="editor.moodboard.autoExhibit" style="margin-top:0.5rem;width:100%;display:none">자동 전시</button>
       </div>
