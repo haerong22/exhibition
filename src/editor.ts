@@ -563,26 +563,36 @@ class MapEditor {
     }
   }
 
-  // ── Moodboard ID history (recent 5) ──
+  // ── Moodboard ID history (recent 5, with cached count) ──
   private static readonly MOODBOARD_HISTORY_KEY = 'gallery-moodboard-history';
   private static readonly MOODBOARD_HISTORY_MAX = 5;
 
-  private readMoodboardHistory(): string[] {
+  private readMoodboardHistory(): { id: string; count?: number; at?: string }[] {
     try {
       const raw = localStorage.getItem(MapEditor.MOODBOARD_HISTORY_KEY);
       if (!raw) return [];
       const arr = JSON.parse(raw);
-      return Array.isArray(arr) ? arr.filter((x) => typeof x === 'string') : [];
+      if (!Array.isArray(arr)) return [];
+      // Migrate legacy string[] format if encountered
+      return arr
+        .map((x): { id: string; count?: number; at?: string } | null => {
+          if (typeof x === 'string') return { id: x };
+          if (x && typeof x === 'object' && typeof x.id === 'string') {
+            return { id: x.id, count: typeof x.count === 'number' ? x.count : undefined, at: typeof x.at === 'string' ? x.at : undefined };
+          }
+          return null;
+        })
+        .filter((x): x is { id: string; count?: number; at?: string } => x !== null);
     } catch {
       return [];
     }
   }
 
-  private pushMoodboardHistory(id: string): void {
+  private pushMoodboardHistory(id: string, count: number): void {
     const trimmed = id.trim();
     if (!trimmed) return;
-    const prev = this.readMoodboardHistory().filter((x) => x !== trimmed);
-    prev.unshift(trimmed);
+    const prev = this.readMoodboardHistory().filter((x) => x.id !== trimmed);
+    prev.unshift({ id: trimmed, count, at: new Date().toISOString() });
     const next = prev.slice(0, MapEditor.MOODBOARD_HISTORY_MAX);
     try { localStorage.setItem(MapEditor.MOODBOARD_HISTORY_KEY, JSON.stringify(next)); }
     catch { /* private mode */ }
@@ -593,9 +603,13 @@ class MapEditor {
     const dl = document.getElementById('moodboard-history') as HTMLDataListElement | null;
     if (!dl) return;
     dl.innerHTML = '';
-    for (const id of this.readMoodboardHistory()) {
+    for (const entry of this.readMoodboardHistory()) {
       const opt = document.createElement('option');
-      opt.value = id;
+      opt.value = entry.id;
+      // Some browsers (Chromium, Firefox) show the label on the right in gray
+      if (typeof entry.count === 'number') {
+        opt.label = I18n.t('editor.moodboard.loaded', { n: entry.count });
+      }
       dl.appendChild(opt);
     }
   }
@@ -619,8 +633,8 @@ class MapEditor {
       statusEl.style.color = '#4eff7e';
       const autoBtn = document.getElementById('btn-auto-exhibit')!;
       autoBtn.style.display = this.projects.length > 0 ? 'block' : 'none';
-      // Success → remember this ID for autocomplete on future visits
-      this.pushMoodboardHistory(moodboardId);
+      // Success → remember this ID + artwork count for autocomplete label
+      this.pushMoodboardHistory(moodboardId, this.projects.length);
     } catch {
       this.projects = [];
       this.refreshArtworkSelect();
@@ -908,10 +922,27 @@ class MapEditor {
       if (id) this.loadMoodboard(id);
     });
     this.renderMoodboardHistory();
-    (document.getElementById('moodboard-id') as HTMLInputElement).addEventListener('keydown', (e) => {
+    const moodboardInput = document.getElementById('moodboard-id') as HTMLInputElement;
+    moodboardInput.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') {
         const id = (e.target as HTMLInputElement).value.trim();
         if (id) this.loadMoodboard(id);
+      }
+    });
+    // Hint status if the current input matches a cached moodboard
+    moodboardInput.addEventListener('input', () => {
+      const id = moodboardInput.value.trim();
+      const statusEl = document.getElementById('moodboard-status')!;
+      if (!id) { statusEl.textContent = ''; return; }
+      const cached = this.readMoodboardHistory().find((x) => x.id === id);
+      if (cached && typeof cached.count === 'number') {
+        statusEl.textContent = I18n.t('editor.moodboard.cached', { n: cached.count });
+        statusEl.style.color = 'var(--text-faint)';
+      } else {
+        // Don't wipe active status messages from an in-flight load
+        if (statusEl.style.color !== 'rgb(78, 255, 126)' && statusEl.style.color !== 'rgb(255, 107, 107)') {
+          statusEl.textContent = '';
+        }
       }
     });
 
