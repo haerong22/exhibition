@@ -158,6 +158,36 @@
     /* Canvas drag-over feedback */
     #grid-canvas.dragging-over { outline: 2px dashed #4eff7e; outline-offset: -4px; }
 
+    /* Recent moodboard pills */
+    .mb-recent {
+      display: flex; flex-wrap: wrap; gap: 0.25rem;
+      margin-top: 0.35rem;
+    }
+    .mb-recent:empty { display: none; }
+    .mb-recent-pill {
+      display: inline-flex; align-items: center; gap: 0.3rem;
+      max-width: 100%;
+      padding: 0.2rem 0.4rem 0.2rem 0.55rem;
+      background: var(--bg-tag); color: var(--text-muted);
+      border: 1px solid var(--border-input); border-radius: 999px;
+      font-family: inherit; font-size: 0.66rem;
+      cursor: pointer; transition: all 0.15s;
+    }
+    .mb-recent-pill:hover { border-color: var(--border-strong); color: var(--text); }
+    .mb-recent-pill .mb-recent-id {
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+      max-width: 8rem;
+    }
+    .mb-recent-pill .mb-recent-count {
+      color: var(--text-faint); font-size: 0.6rem;
+    }
+    .mb-recent-pill .mb-recent-x {
+      background: transparent; border: none; cursor: pointer;
+      color: var(--text-faint); font-size: 0.75rem; line-height: 1;
+      padding: 0 0.15rem; opacity: 0.6;
+    }
+    .mb-recent-pill .mb-recent-x:hover { opacity: 1; color: #ff8a8a; }
+
     /* Placed artworks notes panel */
     #notes-section {
       display: none;
@@ -514,6 +544,7 @@
           <button class="btn" id="btn-load-moodboard" data-i18n="editor.moodboard.load" style="padding:0.4rem 0.6rem;font-size:0.7rem;">불러오기</button>
         </div>
         <datalist id="moodboard-history"></datalist>
+        <div id="moodboard-recent" class="mb-recent"></div>
         <div id="moodboard-status" style="font-size:0.7rem;color:#666;margin-top:0.3rem;"></div>
         <button class="btn" id="btn-auto-exhibit" data-i18n="editor.moodboard.autoExhibit" style="margin-top:0.5rem;width:100%;display:none">자동 전시</button>
       </div>

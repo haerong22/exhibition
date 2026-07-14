@@ -600,18 +600,60 @@ class MapEditor {
   }
 
   private renderMoodboardHistory(): void {
+    const entries = this.readMoodboardHistory();
     const dl = document.getElementById('moodboard-history') as HTMLDataListElement | null;
-    if (!dl) return;
-    dl.innerHTML = '';
-    for (const entry of this.readMoodboardHistory()) {
-      const opt = document.createElement('option');
-      opt.value = entry.id;
-      // Some browsers (Chromium, Firefox) show the label on the right in gray
-      if (typeof entry.count === 'number') {
-        opt.label = I18n.t('editor.moodboard.loaded', { n: entry.count });
+    if (dl) {
+      dl.innerHTML = '';
+      for (const entry of entries) {
+        const opt = document.createElement('option');
+        opt.value = entry.id;
+        if (typeof entry.count === 'number') {
+          opt.label = I18n.t('editor.moodboard.loaded', { n: entry.count });
+        }
+        dl.appendChild(opt);
       }
-      dl.appendChild(opt);
     }
+    const recentEl = document.getElementById('moodboard-recent');
+    if (!recentEl) return;
+    recentEl.innerHTML = '';
+    for (const entry of entries) {
+      const pill = document.createElement('span');
+      pill.className = 'mb-recent-pill';
+      pill.title = entry.id;
+      const idSpan = document.createElement('span');
+      idSpan.className = 'mb-recent-id';
+      idSpan.textContent = entry.id;
+      pill.appendChild(idSpan);
+      if (typeof entry.count === 'number') {
+        const c = document.createElement('span');
+        c.className = 'mb-recent-count';
+        c.textContent = `· ${entry.count}`;
+        pill.appendChild(c);
+      }
+      pill.addEventListener('click', (e) => {
+        if ((e.target as HTMLElement).classList.contains('mb-recent-x')) return;
+        (document.getElementById('moodboard-id') as HTMLInputElement).value = entry.id;
+        void this.loadMoodboard(entry.id);
+      });
+      const x = document.createElement('button');
+      x.type = 'button';
+      x.className = 'mb-recent-x';
+      x.textContent = '×';
+      x.title = I18n.t('editor.moodboard.removeRecent');
+      x.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.removeMoodboardHistory(entry.id);
+      });
+      pill.appendChild(x);
+      recentEl.appendChild(pill);
+    }
+  }
+
+  private removeMoodboardHistory(id: string): void {
+    const next = this.readMoodboardHistory().filter((x) => x.id !== id);
+    try { localStorage.setItem(MapEditor.MOODBOARD_HISTORY_KEY, JSON.stringify(next)); }
+    catch { /* private mode */ }
+    this.renderMoodboardHistory();
   }
 
   private async loadMoodboard(moodboardId: string): Promise<void> {
