@@ -412,7 +412,14 @@ class MapEditor {
     }
 
     // No URL param — offer to restore draft if any
-    await this.restoreDraftIfAny();
+    const restored = await this.restoreDraftIfAny();
+    if (restored) return;
+    // Fresh session: auto-load the most recent moodboard so the artwork library appears immediately
+    const recent = this.readMoodboardHistory()[0];
+    if (recent) {
+      (document.getElementById('moodboard-id') as HTMLInputElement).value = recent.id;
+      void this.loadMoodboard(recent.id);
+    }
   }
 
   private async loadTemplate(templateId: string): Promise<void> {
@@ -1766,15 +1773,15 @@ class MapEditor {
     localStorage.removeItem(MapEditor.DRAFT_KEY);
   }
 
-  private async restoreDraftIfAny(): Promise<void> {
+  private async restoreDraftIfAny(): Promise<boolean> {
     const raw = localStorage.getItem(MapEditor.DRAFT_KEY);
-    if (!raw) return;
+    if (!raw) return false;
     let draft;
     try {
       draft = JSON.parse(raw);
     } catch {
       this.clearDraft();
-      return;
+      return false;
     }
     const savedAt = new Date(draft.savedAt).toLocaleString('ko-KR');
     const ok = await EditorModal.confirm(
@@ -1783,7 +1790,7 @@ class MapEditor {
     );
     if (!ok) {
       this.clearDraft();
-      return;
+      return false;
     }
     // Apply draft
     const gm = draft.gridMap;
@@ -1810,6 +1817,7 @@ class MapEditor {
     this.render();
     this.schedulePreviewUpdate();
     this.clearHistory();
+    return true;
   }
 
   private applySnapshot(snap: { grid: TileCell[][]; width: number; height: number; wallHeight: number }): void {
