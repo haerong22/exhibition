@@ -411,9 +411,16 @@ class MapEditor {
       return;
     }
 
-    // No URL param — offer to restore draft if any
+    // No map URL param — offer to restore draft if any
     const restored = await this.restoreDraftIfAny();
     if (restored) return;
+    // Explicit moodboard param takes precedence over recent-history auto-load
+    const moodboardId = params.get('moodboard');
+    if (moodboardId) {
+      (document.getElementById('moodboard-id') as HTMLInputElement).value = moodboardId;
+      void this.loadMoodboard(moodboardId);
+      return;
+    }
     // Fresh session: auto-load the most recent moodboard so the artwork library appears immediately
     const recent = this.readMoodboardHistory()[0];
     if (recent) {
