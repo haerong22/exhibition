@@ -558,6 +558,8 @@ class I18nImpl {
     } else {
       this.locale = navigator.language.toLowerCase().startsWith('ko') ? 'ko' : 'en';
     }
+    // Sync <html lang> as early as possible (HTML default may mismatch stored locale)
+    try { document.documentElement.lang = this.locale; } catch { /* SSR guard */ }
   }
 
   get current(): Locale { return this.locale; }
