@@ -128,6 +128,13 @@ export class LoadingScreen {
   setTitle(name: string): void {
     const titleEl = document.getElementById('loading-title')!;
     titleEl.textContent = name;
+    // Mirror to document.title so browser tab / share sheet reflects the exhibition
+    document.title = name ? `${name} · 3D Exhibition` : '3D Exhibition';
+    // Update dynamic OG tags for in-page share sheets (SPA-only; crawlers won't run JS)
+    const ogTitle = document.querySelector('meta[property="og:title"]');
+    if (ogTitle) ogTitle.setAttribute('content', name ? `${name} · 3D Exhibition` : '3D Exhibition');
+    const twTitle = document.querySelector('meta[name="twitter:title"]');
+    if (twTitle) twTitle.setAttribute('content', name ? `${name} · 3D Exhibition` : '3D Exhibition');
   }
 
   // Begin a stage: messages and bar fill within [start, end] of total range (0~1)
