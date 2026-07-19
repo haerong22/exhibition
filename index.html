@@ -21,6 +21,16 @@
   <meta name="twitter:title" content="3D Exhibition — 브라우저에서 걸어보는 전시" />
   <meta name="twitter:description" content="나만의 갤러리를 만들고 링크로 공유하세요." />
   <meta name="twitter:image" content="/og-image.png" />
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <script>
+    // PWA — register service worker once the page is idle. Dev builds skip so live-reload works.
+    if ('serviceWorker' in navigator && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').catch(() => { /* ignore registration failures */ });
+      });
+    }
+  </script>
   <style>
     /* Theme tokens — dark default, light override via [data-theme="light"] */
     :root {

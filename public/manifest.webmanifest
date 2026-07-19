@@ -1,0 +1,15 @@
+{
+  "name": "3D Exhibition",
+  "short_name": "3D Exhibition",
+  "description": "브라우저에서 걸어다니며 감상하는 3D 전시회. 나만의 갤러리를 만들고 링크로 공유하세요.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0a0a0a",
+  "theme_color": "#0a0a0a",
+  "lang": "ko",
+  "icons": [
+    { "src": "/og-image.png", "sizes": "1200x630", "type": "image/png", "purpose": "any" }
+  ]
+}
