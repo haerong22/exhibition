@@ -1157,6 +1157,21 @@
       color: var(--text-faint); font-size: 0.62rem;
       letter-spacing: 0.15em; text-transform: uppercase;
     }
+    /* PWA install prompt button — appears next to resume when beforeinstallprompt fires */
+    .install-btn {
+      position: absolute; top: 1.1rem; left: 290px;
+      display: inline-flex; align-items: center; gap: 0.4rem;
+      padding: 0.45rem 0.9rem;
+      background: transparent; color: var(--text-muted);
+      border: 1px solid var(--border-input); border-radius: 999px;
+      font-family: inherit; font-size: 0.7rem;
+      letter-spacing: 0.08em; cursor: pointer;
+      transition: all 0.2s;
+    }
+    .install-btn:hover { border-color: var(--border-strong); color: var(--text); background: var(--bg-tag); }
+    .install-btn::before {
+      content: '↓'; color: #4a9eff; font-weight: 700;
+    }
     .lang-toggle, .theme-toggle {
       padding: 0.4rem 0.9rem;
       background: transparent; color: var(--text-muted);
@@ -1396,6 +1411,7 @@
       .resume-btn { max-width: 140px; padding: 0.4rem 0.7rem; font-size: 0.66rem; }
       .resume-btn .resume-label { display: none; }
       .resume-btn .resume-name { max-width: 100px; }
+      .install-btn { left: 165px; font-size: 0.62rem; padding: 0.35rem 0.6rem; }
       .template-grid { grid-template-columns: 1fr 1fr; gap: 0.6rem; }
       .template-card .template-preview { height: 100px; }
       .template-card .card-body { padding: 0.6rem 0.7rem; }
@@ -1491,6 +1507,7 @@
     <div class="picker-header">
       <div id="picker-title" data-i18n="picker.title">전시 선택</div>
       <button id="resume-btn" class="resume-btn" style="display:none"></button>
+      <button id="install-btn" class="install-btn" style="display:none" data-i18n-title="btn.install.title"></button>
       <div class="picker-toggles">
         <button id="data-toggle" class="theme-toggle" data-i18n-title="btn.data.title" aria-label="Data">⚙</button>
         <button id="theme-toggle" class="theme-toggle" data-i18n-title="btn.theme.title" aria-label="Theme"></button>

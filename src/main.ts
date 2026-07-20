@@ -255,6 +255,7 @@ class App {
     this.setupGuestbookButton();
     this.setupPickerScrollShadow();
     document.getElementById('data-toggle')?.addEventListener('click', () => this.dataResetModal.open());
+    this.setupInstallPrompt();
 
     // Router
     this.router.onRouteChange((route) => {
@@ -332,6 +333,35 @@ class App {
     btn.appendChild(name);
     btn.style.display = 'inline-flex';
     btn.onclick = () => { this.router.navigateTo(last!.id); };
+  }
+
+  // Capture the deferred PWA install prompt and surface it as a picker button.
+  // Chromium fires beforeinstallprompt when the site is installable and not yet installed.
+  private setupInstallPrompt(): void {
+    const btn = document.getElementById('install-btn') as HTMLButtonElement | null;
+    if (!btn) return;
+    btn.textContent = I18n.t('btn.install.label');
+    I18n.onChange(() => { btn.textContent = I18n.t('btn.install.label'); });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let deferred: any = null;
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferred = e;
+      btn.style.display = 'inline-flex';
+    });
+    btn.addEventListener('click', async () => {
+      if (!deferred) return;
+      deferred.prompt();
+      try {
+        await deferred.userChoice;
+      } catch { /* dismissed */ }
+      deferred = null;
+      btn.style.display = 'none';
+    });
+    window.addEventListener('appinstalled', () => {
+      deferred = null;
+      btn.style.display = 'none';
+    });
   }
 
   private setupPickerScrollShadow(): void {
