@@ -95,6 +95,14 @@ class App {
     this.shortcutHelp.setReplayCallback(() => this.welcomeGuide.show());
     this.guestbook = new Guestbook();
     this.guestbook.onChange(() => void this.refreshMinimapTags());
+    this.guestbook.onArtworkJump((artworkId) => {
+      const ids = this.artworkInteraction.getArtworkIds();
+      const idx = ids.indexOf(artworkId);
+      if (idx < 0) return;
+      // Stop auto-tour if running so it doesn't override
+      if (this.autoTour.running) this.autoTour.stop();
+      this.artworkInteraction.focusByIndex(idx);
+    });
     this.dataResetModal = new DataResetModal();
     this.backupHint = new BackupHint(() => this.dataResetModal.exportBackup());
     this.soundManager = new SoundManager();

@@ -130,6 +130,7 @@ const ko: Messages = {
   'guestbook.likedOnly': '내가 좋아한 글만 보기',
   'guestbook.tagPlaceholder': '+ 관련 작품 추가',
   'guestbook.tagRemove': '제거',
+  'guestbook.jumpToArtwork': '이 작품으로 이동',
   // Relative time
   'time.justNow': '방금 전',
   'time.minutesAgo': '{n}분 전',
@@ -400,6 +401,7 @@ const en: Messages = {
   'guestbook.likedOnly': 'Show only liked',
   'guestbook.tagPlaceholder': '+ Tag artwork',
   'guestbook.tagRemove': 'Remove',
+  'guestbook.jumpToArtwork': 'Jump to this artwork',
   'time.justNow': 'Just now',
   'time.minutesAgo': '{n}m ago',
   'time.hoursAgo': '{n}h ago',

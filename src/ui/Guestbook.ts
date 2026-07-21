@@ -26,6 +26,7 @@ export class Guestbook {
   private likedOnlyBtn: HTMLButtonElement;
   private liked = new Set<string>();
   private onChangeCallback: (() => void) | null = null;
+  private onArtworkJumpCallback: ((artworkId: string) => void) | null = null;
   private autocompleteEl: HTMLElement | null = null;
   private autocompleteItems: ArtworkConfig[] = [];
   private autocompleteIndex = -1;
@@ -184,6 +185,10 @@ export class Guestbook {
     this.onChangeCallback = cb;
   }
 
+  onArtworkJump(cb: (artworkId: string) => void): void {
+    this.onArtworkJumpCallback = cb;
+  }
+
   async open(): Promise<void> {
     if (!this.exhibitionId) return;
     this.refreshLabels();
@@ -310,10 +315,26 @@ export class Guestbook {
       for (const id of entry.artworkIds) {
         const art = this.artworks.find((a) => a.id === id);
         const label = art ? I18n.pick(art.title, art.titleKo) : id;
-        const chip = document.createElement('span');
-        chip.className = 'gb-entry-tag';
-        chip.textContent = `🖼 ${label}`;
-        tagsEl.appendChild(chip);
+        // Only make jumpable when the artwork exists in the current session AND
+        // a jump handler is wired — otherwise render as a static display chip
+        if (art && this.onArtworkJumpCallback) {
+          const chip = document.createElement('button');
+          chip.type = 'button';
+          chip.className = 'gb-entry-tag gb-entry-tag-clickable';
+          chip.textContent = `🖼 ${label}`;
+          chip.title = I18n.t('guestbook.jumpToArtwork');
+          chip.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.close();
+            this.onArtworkJumpCallback!(id);
+          });
+          tagsEl.appendChild(chip);
+        } else {
+          const chip = document.createElement('span');
+          chip.className = 'gb-entry-tag';
+          chip.textContent = `🖼 ${label}`;
+          tagsEl.appendChild(chip);
+        }
       }
       row.appendChild(tagsEl);
     }
