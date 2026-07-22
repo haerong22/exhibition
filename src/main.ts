@@ -959,10 +959,36 @@ class App {
       actions.appendChild(deleteBtn);
       card.appendChild(actions);
     } else {
-      // Built-in template
-      card.addEventListener('click', () => {
+      // Built-in template: card click opens editor; input row lets user pin a moodboard
+      card.addEventListener('click', (e) => {
+        if ((e.target as HTMLElement).closest('.tpl-mb-row')) return;
         window.location.href = `/editor/?template=${encodeURIComponent(t.id)}`;
       });
+      const mbRow = document.createElement('div');
+      mbRow.className = 'tpl-mb-row';
+      const mbInput = document.createElement('input');
+      mbInput.type = 'text';
+      mbInput.className = 'tpl-mb-input';
+      mbInput.placeholder = I18n.t('picker.template.moodboardPlaceholder');
+      mbInput.addEventListener('click', (e) => e.stopPropagation());
+      const mbBtn = document.createElement('button');
+      mbBtn.type = 'button';
+      mbBtn.className = 'tpl-mb-go';
+      mbBtn.textContent = I18n.t('picker.template.moodboardGo');
+      const go = () => {
+        const id = mbInput.value.trim();
+        const q = id
+          ? `template=${encodeURIComponent(t.id)}&moodboard=${encodeURIComponent(id)}`
+          : `template=${encodeURIComponent(t.id)}`;
+        window.location.href = `/editor/?${q}`;
+      };
+      mbBtn.addEventListener('click', (e) => { e.stopPropagation(); go(); });
+      mbInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') { e.preventDefault(); e.stopPropagation(); go(); }
+      });
+      mbRow.appendChild(mbInput);
+      mbRow.appendChild(mbBtn);
+      card.appendChild(mbRow);
     }
     return card;
   }

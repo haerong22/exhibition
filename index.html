@@ -1291,6 +1291,27 @@
     .template-card h3 { font-weight: 500; font-size: 0.9rem; margin-bottom: 0.3rem; color: var(--text); }
     .template-card p { font-size: 0.7rem; color: var(--text-faint); line-height: 1.4; margin-bottom: 0.3rem; }
     .template-card .card-meta { font-size: 0.65rem; color: var(--text-very-faint); }
+    .template-card .tpl-mb-row {
+      display: flex; gap: 0.3rem;
+      padding: 0 0.9rem 0.9rem;
+    }
+    .template-card .tpl-mb-input {
+      flex: 1; min-width: 0;
+      padding: 0.35rem 0.55rem;
+      background: var(--bg-input); color: var(--text);
+      border: 1px solid var(--border-input); border-radius: 3px;
+      font-family: inherit; font-size: 0.68rem; outline: none;
+    }
+    .template-card .tpl-mb-input:focus { border-color: var(--border-input-focus); }
+    .template-card .tpl-mb-input::placeholder { color: var(--text-faint); }
+    .template-card .tpl-mb-go {
+      flex-shrink: 0; padding: 0.35rem 0.6rem;
+      background: transparent; color: var(--text-muted);
+      border: 1px solid var(--border-input); border-radius: 3px;
+      font-family: inherit; font-size: 0.68rem; cursor: pointer;
+      transition: all 0.15s;
+    }
+    .template-card .tpl-mb-go:hover { border-color: var(--border-strong); color: var(--text); background: var(--bg-tag); }
     /* Exhibition list cards (내 전시회) */
     .exhibition-card {
       display: flex; align-items: center; gap: 1rem;
