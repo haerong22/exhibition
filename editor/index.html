@@ -297,6 +297,14 @@
 
     /* Status */
     .status { padding: 0.4rem 1.5rem; background: var(--bg-panel); border-top: 1px solid var(--border); font-size: 0.75rem; color: var(--text-very-faint); display: flex; justify-content: space-between; gap: 1rem; align-items: center; }
+    .status-tool {
+      display: inline-flex; align-items: center; gap: 0.3rem;
+      padding: 0.15rem 0.6rem;
+      background: var(--bg-tag); color: var(--text);
+      border-radius: 999px; font-size: 0.7rem;
+      letter-spacing: 0.03em;
+    }
+    .status-tool .st-icon { font-size: 0.85rem; line-height: 1; }
     .status-save {
       display: inline-flex; align-items: center; gap: 0.35rem;
       margin-left: auto; padding: 0.2rem 0.6rem;
@@ -718,6 +726,7 @@
   </div>
 
   <div class="status">
+    <span id="status-tool" class="status-tool"></span>
     <span id="status-pos">0, 0</span>
     <span id="status-info">클릭/드래그로 타일 배치</span>
     <button id="status-save" class="status-save" type="button"></button>

@@ -355,6 +355,7 @@ class MapEditor {
     this.setupThemeToggle();
     this.setupDataResetButton();
     this.updateDocumentTitle();
+    this.updateStatusTool();
     this.render();
     this.resizePreview();
     this.startPreviewLoop();
@@ -723,6 +724,7 @@ class MapEditor {
         document.querySelectorAll('.tool-btn').forEach((b) => b.classList.remove('active'));
         btn.classList.add('active');
         this.currentTool = (btn as HTMLElement).dataset.tool as TileType;
+        this.updateStatusTool();
 
         const artOptions = document.getElementById('artwork-options')!;
         artOptions.classList.toggle('visible', this.currentTool === 'artwork');
@@ -1702,6 +1704,26 @@ class MapEditor {
     el.appendChild(label);
   }
 
+  private static readonly TOOL_ICONS: Record<TileType, string> = {
+    floor: '⬜', wall: '⬛', door: '🚪', artwork: '🖼', spawn: '📍',
+    bench: '🪑', pillar: '🏛', pedestal: '🗿', model: '📦', empty: '✕',
+  };
+
+  private updateStatusTool(): void {
+    const el = document.getElementById('status-tool');
+    if (!el) return;
+    const icon = MapEditor.TOOL_ICONS[this.currentTool] ?? '·';
+    const label = I18n.t(`editor.tool.${this.currentTool}`);
+    el.innerHTML = '';
+    const iconEl = document.createElement('span');
+    iconEl.className = 'st-icon';
+    iconEl.textContent = icon;
+    const labelEl = document.createElement('span');
+    labelEl.textContent = label;
+    el.appendChild(iconEl);
+    el.appendChild(labelEl);
+  }
+
   // Brief toast shown near the bottom when mode changes
   private showModeToast(mode: 'map' | 'exhibition'): void {
     const el = document.getElementById('mode-toast');
@@ -2258,6 +2280,7 @@ class MapEditor {
     void this.refreshGuestbookButton();
       this.updateToolButtonTitles();
       this.updateSaveStatus();
+      this.updateStatusTool();
     });
     this.updateToolButtonTitles();
   }
