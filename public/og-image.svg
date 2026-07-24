@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0a0a0a"/>
+      <stop offset="100%" stop-color="#1a1a24"/>
+    </linearGradient>
+    <linearGradient id="wall" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#2c2c34"/>
+      <stop offset="100%" stop-color="#1a1a20"/>
+    </linearGradient>
+    <linearGradient id="floor" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#232326"/>
+      <stop offset="100%" stop-color="#0e0e10"/>
+    </linearGradient>
+    <radialGradient id="spot" cx="0.5" cy="0" r="0.9">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.18"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="1200" height="630" fill="url(#bg)"/>
+
+  <!-- Perspective gallery interior -->
+  <!-- Left wall -->
+  <polygon points="0,120 380,240 380,480 0,540" fill="url(#wall)"/>
+  <!-- Right wall -->
+  <polygon points="1200,120 820,240 820,480 1200,540" fill="url(#wall)"/>
+  <!-- Back wall -->
+  <rect x="380" y="240" width="440" height="240" fill="#26262c"/>
+  <!-- Floor -->
+  <polygon points="0,540 380,480 820,480 1200,540 1200,630 0,630" fill="url(#floor)"/>
+  <!-- Ceiling gradient light -->
+  <rect x="0" y="0" width="1200" height="240" fill="url(#spot)"/>
+
+  <!-- Three framed artworks on the back wall -->
+  <g>
+    <rect x="440" y="290" width="90" height="130" fill="#3a3a44" stroke="#0a0a0a" stroke-width="4"/>
+    <rect x="450" y="300" width="70" height="110" fill="#ffd166"/>
+    <rect x="555" y="290" width="90" height="130" fill="#3a3a44" stroke="#0a0a0a" stroke-width="4"/>
+    <rect x="565" y="300" width="70" height="110" fill="#4a9eff"/>
+    <rect x="670" y="290" width="90" height="130" fill="#3a3a44" stroke="#0a0a0a" stroke-width="4"/>
+    <rect x="680" y="300" width="70" height="110" fill="#ff5e7a"/>
+  </g>
+
+  <!-- Left wall artwork (tilted) -->
+  <polygon points="200,290 320,320 320,440 200,470" fill="#3a3a44" stroke="#0a0a0a" stroke-width="3"/>
+  <polygon points="210,302 310,327 310,433 210,458" fill="#4eff7e"/>
+
+  <!-- Right wall artwork (tilted) -->
+  <polygon points="1000,290 880,320 880,440 1000,470" fill="#3a3a44" stroke="#0a0a0a" stroke-width="3"/>
+  <polygon points="990,302 890,327 890,433 990,458" fill="#c78aff"/>
+
+  <!-- Brand mark -->
+  <g transform="translate(600, 555)" text-anchor="middle">
+    <text font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
+          font-size="46" font-weight="300" letter-spacing="18" fill="#ffffff">
+      3D EXHIBITION
+    </text>
+    <text y="42" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
+          font-size="18" font-weight="300" letter-spacing="4" fill="#8a8a94">
+      브라우저에서 걸어보는 전시
+    </text>
+  </g>
+</svg>

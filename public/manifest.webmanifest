@@ -10,6 +10,7 @@
   "theme_color": "#0a0a0a",
   "lang": "ko",
   "icons": [
-    { "src": "/og-image.png", "sizes": "1200x630", "type": "image/png", "purpose": "any" }
+    { "src": "/og-image.svg", "sizes": "1200x630", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
   ]
 }
