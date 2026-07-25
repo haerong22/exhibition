@@ -1107,6 +1107,18 @@
       font-size: 0.78rem; line-height: 1.55; color: var(--text-muted);
       white-space: pre-line; word-break: break-word;
     }
+    #artwork-panel .art-comment-tags {
+      display: flex; flex-wrap: wrap; gap: 0.3rem; margin-top: 0.4rem;
+    }
+    #artwork-panel .art-comment-tag {
+      display: inline-flex; align-items: center;
+      padding: 0.15rem 0.5rem;
+      background: rgba(74,158,255,0.12); color: #4a9eff;
+      border: none; border-radius: 999px;
+      font-family: inherit; font-size: 0.66rem;
+      cursor: pointer; transition: background 0.15s;
+    }
+    #artwork-panel .art-comment-tag:hover { background: rgba(74,158,255,0.24); }
 
     /* Exhibition Picker */
     #exhibition-picker {

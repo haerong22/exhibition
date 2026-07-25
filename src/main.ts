@@ -95,14 +95,8 @@ class App {
     this.shortcutHelp.setReplayCallback(() => this.welcomeGuide.show());
     this.guestbook = new Guestbook();
     this.guestbook.onChange(() => void this.refreshMinimapTags());
-    this.guestbook.onArtworkJump((artworkId) => {
-      const ids = this.artworkInteraction.getArtworkIds();
-      const idx = ids.indexOf(artworkId);
-      if (idx < 0) return;
-      // Stop auto-tour if running so it doesn't override
-      if (this.autoTour.running) this.autoTour.stop();
-      this.artworkInteraction.focusByIndex(idx);
-    });
+    this.guestbook.onArtworkJump((id) => this.jumpToArtwork(id));
+    this.infoPanel.onArtworkJump((id) => this.jumpToArtwork(id));
     this.dataResetModal = new DataResetModal();
     this.backupHint = new BackupHint(() => this.dataResetModal.exportBackup());
     this.soundManager = new SoundManager();
@@ -607,6 +601,7 @@ class App {
     this.guestbook.setExhibitionId(null);
     this.guestbook.setArtworks([]);
     this.infoPanel.setExhibitionId(null);
+    this.infoPanel.setArtworks([]);
     this.currentFavorites = [];
     this.currentExhibitionId = null;
     this.autoTour.setFavoritesAvailable(false);
@@ -1367,8 +1362,10 @@ class App {
 
     this.artworkInteraction.setArtworks(this.tiledBuilder.artworkFrames);
     this.infoPanel.setExhibitionId(configId);
+    const artworkConfigs = this.tiledBuilder.artworkFrames.map((f) => f.config);
     this.guestbook.setExhibitionId(configId);
-    this.guestbook.setArtworks(this.tiledBuilder.artworkFrames.map((f) => f.config));
+    this.guestbook.setArtworks(artworkConfigs);
+    this.infoPanel.setArtworks(artworkConfigs);
     this.currentExhibitionId = configId;
     await this.wireFavoritesTour(configId);
     await this.refreshMinimapTags();
@@ -1423,6 +1420,15 @@ class App {
       if (e.artworkIds) for (const id of e.artworkIds) tagged.add(id);
     }
     this.minimap.setTaggedArtworks(tagged);
+  }
+
+  // Focus an artwork by id from tagged-comment chips (guestbook or info panel)
+  private jumpToArtwork(artworkId: string): void {
+    const ids = this.artworkInteraction.getArtworkIds();
+    const idx = ids.indexOf(artworkId);
+    if (idx < 0) return;
+    if (this.autoTour.running) this.autoTour.stop();
+    this.artworkInteraction.focusByIndex(idx);
   }
 
   private teleportTo(worldX: number, worldZ: number): boolean {
@@ -1523,8 +1529,10 @@ class App {
       // Set artworks for interaction
       this.artworkInteraction.setArtworks(this.galleryBuilder.artworkFrames);
       this.infoPanel.setExhibitionId(config.id);
+      const artworkConfigs = this.galleryBuilder.artworkFrames.map((f) => f.config);
       this.guestbook.setExhibitionId(config.id);
-      this.guestbook.setArtworks(this.galleryBuilder.artworkFrames.map((f) => f.config));
+      this.guestbook.setArtworks(artworkConfigs);
+      this.infoPanel.setArtworks(artworkConfigs);
       this.currentExhibitionId = config.id;
       this.recordLastVisit(config.id, I18n.pick(config.name, config.nameKo));
       await this.wireFavoritesTour(config.id);

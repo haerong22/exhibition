@@ -49,6 +49,8 @@ export class ArtworkInfoPanel {
   private onPrevCallback: (() => void) | null = null;
   private onNextCallback: (() => void) | null = null;
   private onFavoriteChangeCallback: ((artworkId: string, starred: boolean) => void) | null = null;
+  private onArtworkJumpCallback: ((artworkId: string) => void) | null = null;
+  private artworkRegistry: { id: string; title?: string; titleKo?: string }[] = [];
   private exhibitionId: string | null = null;
   private currentArtworkId: string | null = null;
 
@@ -113,6 +115,16 @@ export class ArtworkInfoPanel {
 
   onFavoriteChange(cb: (artworkId: string, starred: boolean) => void): void {
     this.onFavoriteChangeCallback = cb;
+  }
+
+  onArtworkJump(cb: (artworkId: string) => void): void {
+    this.onArtworkJumpCallback = cb;
+  }
+
+  // Called by main.ts each time exhibition artworks change, so panel can render
+  // jump chips with proper titles for other artworks referenced in comments
+  setArtworks(artworks: { id: string; title?: string; titleKo?: string }[]): void {
+    this.artworkRegistry = artworks;
   }
 
   private async toggleFavorite(): Promise<void> {
@@ -208,12 +220,12 @@ export class ArtworkInfoPanel {
     title.textContent = I18n.t('panel.taggedComments', { n: matches.length });
     this.commentsEl.appendChild(title);
     for (const e of matches) {
-      this.commentsEl.appendChild(this.renderComment(e));
+      this.commentsEl.appendChild(this.renderComment(e, artworkId));
     }
     this.commentsEl.classList.add('has-content');
   }
 
-  private renderComment(entry: { name: string; message: string; createdAt: string; likes?: number }): HTMLElement {
+  private renderComment(entry: { name: string; message: string; createdAt: string; likes?: number; artworkIds?: string[] }, currentArtworkId: string): HTMLElement {
     const row = document.createElement('div');
     row.className = 'art-comment';
     const head = document.createElement('div');
@@ -239,6 +251,28 @@ export class ArtworkInfoPanel {
     body.className = 'art-comment-body';
     body.textContent = entry.message;
     row.appendChild(body);
+
+    // Jump chips for OTHER artworks this comment references (skip currently viewed one)
+    const others = (entry.artworkIds ?? []).filter((id) => id !== currentArtworkId);
+    if (others.length > 0 && this.onArtworkJumpCallback) {
+      const tags = document.createElement('div');
+      tags.className = 'art-comment-tags';
+      for (const id of others) {
+        const art = this.artworkRegistry.find((a) => a.id === id);
+        if (!art) continue; // silently skip unresolved (imported archive etc.)
+        const chip = document.createElement('button');
+        chip.type = 'button';
+        chip.className = 'art-comment-tag';
+        chip.title = I18n.t('guestbook.jumpToArtwork');
+        chip.textContent = `🖼 ${I18n.pick(art.title, art.titleKo)}`;
+        chip.addEventListener('click', (e) => {
+          e.stopPropagation();
+          this.onArtworkJumpCallback!(id);
+        });
+        tags.appendChild(chip);
+      }
+      if (tags.childElementCount > 0) row.appendChild(tags);
+    }
     return row;
   }
 
